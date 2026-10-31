@@ -1,25 +1,44 @@
 {
-  "version": "0.2.189-test",
+  "version": "0.2.190-test",
   "status": "Testing build",
   "date": "October 31, 2026",
-  "baseline": "0.2.188-test",
-  "scope": "When something goes wrong, Voice Companion keeps running, keeps your words, and tells you what to do.",
+  "baseline": "0.2.189-test",
+  "scope": "Your answers to the sweep questions, a safety net on every screen, and safer email.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Clear help when something goes wrong",
+          "title": "A safety net on every screen",
           "details": [
-            "A full disk, a locked file or a lost connection no longer closes Voice Companion.",
-            "You hear what happened and what to do next. You no longer hear error codes or file paths.",
-            "Your words stay where they are when a save fails."
+            "If a command or key fails because of a problem in Voice Companion, you hear that it did not work.",
+            "The app keeps running, and you stay where you were. Try again, or press F1 for help."
           ]
         },
         {
-          "title": "Yahoo says flagged and replied",
+          "title": "Undo in notes",
           "details": [
-            "Yahoo messages now say when they are flagged, replied to or forwarded."
+            "In a note, say Undo, or press Control+Z. Say Redo, or press Control+Y.",
+            "Say Scratch that to remove the words you said last. You hear the words it removed."
+          ]
+        },
+        {
+          "title": "Open an earlier copy",
+          "details": [
+            "If a document is damaged, you hear what to do next.",
+            "When Voice Companion kept a copy from before your last save, say Open earlier copy to use it. The damaged file is kept too."
+          ]
+        },
+        {
+          "title": "Easier words",
+          "details": [
+            "On the main menu, say Help me or What can I say to open Help.",
+            "In a Yes or No question, press F1 to hear the question again.",
+            "When nothing is playing, Pause stops Companion's speech.",
+            "In email, say Send my email or Send now to start the review. Only the whole sentence counts.",
+            "In the inbox, Open email opens the message you are on.",
+            "The calendar understands half past two, quarter past nine and quarter to three.",
+            "On YouTube, Skip skips an ad when one is playing."
           ]
         }
       ]
@@ -28,71 +47,48 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Startup, Options and sleep",
-          "details": [
-            "A damaged settings file no longer stops startup. If your saved options cannot be read, you hear it once, and Alt+O sets them again.",
-            "If a setting cannot be saved, it still works until you close Companion. You hear that it was not saved.",
-            "Options opens even when a podcast, radio or AI voice file is damaged.",
-            "Restart, Shut down and updates wait when your note cannot be saved. Your words are not lost.",
-            "Going to sleep with a draft or note that cannot be saved keeps your words and says so.",
-            "Help and the tutorial say when the guide cannot open, and you stay where you were.",
-            "An update no longer says it could not start when it is still starting."
-          ]
-        },
-        {
           "title": "Email",
           "details": [
-            "If a draft cannot be saved, new email, send, reply and file manager keep the draft open and say why.",
-            "After a move or delete stops partway, you hear to list the folder again. Keys no longer act on a message that is gone.",
-            "After a folder change, the Inbox is listed again.",
-            "A damaged or locked draft says what is wrong, not to list your drafts.",
-            "If the link to Thunderbird cannot be updated, Thunderbird restarts just once. You hear why."
+            "A subject such as High priority stays the subject. It no longer changes the importance.",
+            "In the message, Subject is followed by words is part of your message. Say Go to Subject to change the subject.",
+            "Error messages no longer blame your account when the account is not the cause.",
+            "Drafts are written all the way to the disk before they replace the saved copy.",
+            "A message already in Trash is never deleted for good. Thunderbird restarts once to get this change."
           ]
         },
         {
           "title": "Calendar and Contacts",
           "details": [
-            "A slow Thunderbird is no longer called not connected. You hear to wait a minute and try again.",
-            "If a change took too long, you hear to check it before you try again. This avoids a second copy.",
-            "A failed read keeps the address book you chose.",
-            "A failed delete says that nothing was deleted and what to try.",
-            "Email John Smith finds John when Thunderbird is slow to answer.",
-            "A bad reply from Thunderbird no longer stops Contacts. It no longer stops Calendar."
+            "Next Tuesday means Tuesday of next week. Tuesday and This Tuesday mean the nearest one.",
+            "When a day cannot be read, you hear only why. You no longer hear No events first.",
+            "If a new event cannot be saved, its name and time are kept. Say Yes to try again.",
+            "A change is never sent twice when Thunderbird closes. You hear to check it first, so you do not get two copies."
           ]
         },
         {
-          "title": "Documents and files",
+          "title": "Files and documents",
           "details": [
-            "A change to a document that is open in Word stays in your document. You hear that it was not saved, and the app keeps running.",
-            "Undo while the file is locked no longer loses your words. Redo still works.",
-            "Documents are safer if the power goes out just after a save.",
-            "Documents you deleted or renamed no longer come back.",
-            "A full disk no longer empties your Recent documents list.",
-            "In the typing window, keys that would break a table are stopped. You hear to type in one cell at a time."
+            "A name you say for a file keeps its old type. Budget stays a Word file.",
+            "You can change only the capitals of a document name, such as budget to Budget.",
+            "Recent documents drop files that are gone, and you hear how many."
           ]
         },
         {
           "title": "Web",
           "details": [
-            "A bad list of favorites or history no longer stops the browser.",
-            "If favorites cannot be saved, you hear that nothing changed and to try again.",
-            "Download history is no longer lost when its file is busy.",
-            "A page that will not load says why: no internet, no such website, too slow, or a security problem.",
-            "Spoken web commands that fail say to press F5 and try again, instead of closing the app.",
-            "Pages with no title or blank fields no longer leave gaps in what you hear.",
-            "The browser add-on no longer gets stuck when it checks the link."
+            "After Escape in a text box, what you say is not typed into the page. Press Enter to type there again.",
+            "One word must be a whole link name. If several links have that word, you choose from a short list.",
+            "Site names with letters such as ü work, such as münchen.de.",
+            "At the end of a list, you hear just No next heading.",
+            "Tab on an empty page says one thing, not two."
           ]
         },
         {
-          "title": "Media and the window",
+          "title": "Other changes",
           "details": [
-            "A station or podcast that sends a broken reply no longer closes the app.",
-            "Recording a station that fails now says so, and a disk problem is named as a disk problem.",
-            "A podcast download that stops partway says it did not finish.",
-            "Damaged station lists and podcast subscriptions are skipped.",
-            "Keys on Radio, Podcasts and the Media player no longer close the app on an error.",
-            "Errors are said in plain words with what to do next.",
-            "Counts are right: 1 new episode, not 1 new episodes."
+            "Text size with a number that is not a size tells you the sizes, and changes nothing.",
+            "On the main menu, Go back tells you it is the first screen.",
+            "In radio results, Go back leaves the results, as Escape does."
           ]
         }
       ]

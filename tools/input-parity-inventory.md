@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 745
-- Already had both ways: 582
-- Gaps found: 163
-- Gaps fixed (Added): 155
+- Actions inventoried: 748
+- Already had both ways: 584
+- Gaps found: 164
+- Gaps fixed (Added): 156
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -2435,16 +2435,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Ctrl+O
 - Status: Both
 
-### New line
-
-- Voice: "New line"
-- Keyboard: Alt, 4
-- Status: Added: Alt menu path
-
 ### Notepad options
 
 - Voice: "Options, then Notepad options"
-- Keyboard: Alt, 5
+- Keyboard: Alt, 1, 4
 - Status: Added: Alt menu path
 
 ### Notepad help
@@ -2456,7 +2450,33 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Main menu
 
 - Voice: "Main menu"
-- Keyboard: Alt, 7
+- Keyboard: Alt, 1, 6
+- Status: Added: Alt menu path
+
+## Alt menu, Note: Edit
+
+### New line
+
+- Voice: "New line"
+- Keyboard: Alt, 2, 1
+- Status: Added: Alt menu path
+
+### Undo
+
+- Voice: "Undo"
+- Keyboard: Ctrl+Z
+- Status: Both
+
+### Redo
+
+- Voice: "Redo"
+- Keyboard: Ctrl+Y
+- Status: Both
+
+### Remove last words
+
+- Voice: "Scratch that"
+- Keyboard: Alt, 2, 4
 - Status: Added: Alt menu path
 
 ## Alt menu, Web page: Page
