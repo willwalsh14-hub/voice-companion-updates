@@ -423,5 +423,22 @@ class SafetyNetTests(CompanionCase):
         self.assertIn('You are still on Email.', ' '.join(self.said))
 
 
+
+class LeavingANoteTests(CompanionCase):
+    """Found in this sweep: "Media menu" said in a note left it without saving; a new note then lost the words."""
+    def test_a_command_that_leaves_the_note_saves_it_first(self):
+        with patch.object(companion, 'note_buffer', companion.NoteBuffer()), patch.object(companion, 'OPEN_NOTE', None):
+            companion.handle('Buy milk.', 'note')
+            self.assertEqual(companion.handle('media menu', 'note'), 'media_menu')
+            self.assertEqual([n.text for n in companion.notepad.read_notes(companion.APP)], ['Buy milk.'])
+            self.assertEqual(list(companion.note_buffer), [])
+
+    def test_help_comes_back_to_the_note_with_its_words(self):
+        with patch.object(companion, 'note_buffer', companion.NoteBuffer()), patch.object(companion, 'OPEN_NOTE', None):
+            companion.handle('Buy milk.', 'note')
+            companion.handle('help', 'note')
+            self.assertEqual(list(companion.note_buffer), ['Buy milk.'])
+
+
 if __name__ == '__main__':
     unittest.main()

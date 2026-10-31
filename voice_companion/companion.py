@@ -5884,6 +5884,8 @@ _HANDLE_DEPTH = 0
 # says what happened and keeps the app running on the same screen. Under tests it is off, so a
 # bug still stops the test that found it; SAFETY_NET = True turns it on there.
 SAFETY_NET = None
+# Screens that come back to the note with its words: questions, Help, sleep and Options.
+NOTE_KEPT_OPEN = ('note','sleep','help','tutorial','exit_confirm','power_confirm','settings','update_offer','exit')
 COMMAND_FAILED = 'That did not work because of a problem in Voice Companion. You are still on {screen}. Try again, or press F1 for help.'
 
 
@@ -5942,6 +5944,12 @@ def handle(text, mode, typed=False):
         except Exception as exc:
             if _HANDLE_DEPTH!=1 or isinstance(exc,user_stop.Stopped) or not safety_net_on():raise
             result = command_failed(exc, mode)
+        if _HANDLE_DEPTH==1 and mode=='note' and result not in NOTE_KEPT_OPEN and note_buffer:
+            # Any command that leaves the note ("Media menu", "Radio") saves it first, as Main menu does.
+            # If it cannot be saved, the note stays open with its words (save_note said why).
+            said=[]
+            if flush_note('note',said.append) is False:
+                speak(' '.join(said));result='note'
         if (mail_session and not old_mail_pending and getattr(mail_session,"pending",None)) or old_send is None and pending_send is not None:CONFIRM_CHOICE="yes"
     finally:
         _HANDLE_DEPTH -= 1
