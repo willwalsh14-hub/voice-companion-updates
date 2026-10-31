@@ -37,6 +37,11 @@ class SignInNeeded(Exception):
 UNSUPPORTED = 'Unsupported mail request.'
 NEEDS_NEWER_ADDON = ('Attachments need the newer Voice Companion connection in Thunderbird. '
                      'Voice Companion updates it by itself in a moment. Thunderbird restarts once. If you are writing a message in Thunderbird, finish it first. Then try again.')
+MARK_SERVER_STATES = ('confirmed', 'sent', 'local', 'offline', 'failed')
+OLD_ADDON_IMPORTANT = ('Marking messages important needs the newer Voice Companion connection in Thunderbird. '
+                       'Close Thunderbird, then open your email again.')
+# Said after "Sent." when Gmail's own Sent copy could not be marked important.
+SENT_NOT_IMPORTANT = (' It went with high importance, but Gmail did not mark its copy in Sent Mail as important.')
 OLD_ADDON_MARK = ('Marking messages needs the newer Voice Companion connection in Thunderbird. '
                   'Voice Companion updates it by itself in a moment. Thunderbird restarts once. If you are writing a message in Thunderbird, finish it first. Then try again.')
 # Thunderbird's importance names, highest first (the add-on passes them as they are).
@@ -219,6 +224,9 @@ class ThunderbirdMailbox:
                          'junk': item.get('junk') is True, 'replied': item.get('replied') is True,
                          'forwarded': item.get('forwarded') is True,
                          'priority': item.get('priority') if item.get('priority') in PRIORITIES else ''})
+            # Gmail's Important marker (add-on 1.9.0): only Gmail messages have it.
+            if isinstance(item.get('important'), bool):
+                rows[-1]['important'] = item['important']
         following = page.get('next')
         return rows, (str(following) if following is not None else None)
 
@@ -244,9 +252,30 @@ class ThunderbirdMailbox:
         # None: an older add-on, or Thunderbird could not list them.
         found = parts.get('attachments')
         body.attachments = self._attachment_rows(found) if isinstance(found, list) else None
-        # Thunderbird marks a message read when it is opened (add-on 1.8.0 and newer).
+        # Thunderbird marks a message read when it is opened (add-on 1.8.0 and newer), and in
+        # Gmail its whole conversation (add-on 1.9.0): those are marked read in the list too.
         body.marked_read = parts.get('read') is True
+        body.read_not_confirmed = parts.get('readNotConfirmed') is True
+        body.conversation_ids = [item for item in parts.get('conversationIds') or [] if isinstance(item, int)]
+        # 'ask': the sender asked for a read receipt and Thunderbird's settings say to ask.
+        body.receipt = parts.get('receipt') if parts.get('receipt') in ('ask', 'handled') else ''
         return body
+
+    def receipt_answer(self, message_id, send):
+        """Send, or do not send, the read receipt a message asked for. True when Thunderbird took the answer."""
+        result = call('receiptAnswer', messageId=self._message(message_id), send=bool(send))
+        return isinstance(result, dict) and result.get('done') is True
+
+    def important(self, message_id, on):
+        """Gmail's Important marker on or off: {'done', 'already'}. MailboxError says why not."""
+        try:
+            result = call('important', messageId=self._message(message_id), on=bool(on))
+        except MailboxError as exc:
+            if 'Unsupported mail request' in str(exc):
+                raise MailboxError(OLD_ADDON_IMPORTANT) from None
+            raise
+        result = result if isinstance(result, dict) else {}
+        return {'done': result.get('done') is True, 'already': result.get('already') is True}
 
     def mark(self, ids, read=None, flagged=None):
         """Mark messages read or unread, flagged or not: {changed, missing}."""
@@ -262,8 +291,11 @@ class ThunderbirdMailbox:
                 raise MailboxError(OLD_ADDON_MARK) from None
             raise
         result = result if isinstance(result, dict) else {}
+        # server (add-on 1.9.0): confirmed, sent, local, offline or failed. Older add-ons: ''.
+        server = result.get('server') if result.get('server') in MARK_SERVER_STATES else ''
         return {'changed': int(result.get('changed') or 0), 'missing': int(result.get('missing') or 0),
-                'this_computer_only': result.get('thisComputerOnly') is True}
+                'this_computer_only': result.get('thisComputerOnly') is True, 'server': server,
+                'conversation_ids': [item for item in result.get('conversationIds') or [] if isinstance(item, int)]}
 
     @staticmethod
     def _attachment_rows(items):
@@ -473,7 +505,11 @@ def submit(draft, account):
         # remember the one that works, so the next message goes there at once.
         try: REMEMBER_IDENTITY(account, used, result.get('accountId') or account.get('account_id', ''))
         except Exception: pass
-    return result.get('headerMessageId') or 'accepted by Thunderbird'
+    from email_delivery import Accepted
+    accepted = Accepted(result.get('headerMessageId') or 'accepted by Thunderbird')
+    if result.get('sentImportant') == 'failed':
+        accepted.note += SENT_NOT_IMPORTANT
+    return accepted
 
 
 def upload_files(bridge, files, say=None):

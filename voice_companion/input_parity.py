@@ -25,6 +25,8 @@ SCREEN_KEYS = {
                 # Read or unread, and flagged (Will, October 30, 2026). M and S, Thunderbird's own
                 # keys, already move and say the selection here.
                 'Q': 'mark as read or unread', 'X': 'flag or unflag',
+                # Gmail's Important marker (Will, October 31, 2026). I already says the message details.
+                'H': 'mark important or not important',
                 'Next': 'next messages', 'Prior': 'previous messages',
                 'F1': 'help with email', 'F7': 'list links', 'F8': 'list buttons'},
     'file_reader': {'Ctrl+F': 'find {value}', 'Ctrl+R': 'read document', 'F1': 'help with document reader'},

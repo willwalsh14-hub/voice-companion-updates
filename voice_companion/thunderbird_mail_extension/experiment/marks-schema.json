@@ -1,0 +1,78 @@
+[
+  {
+    "namespace": "voiceCompanionMarks",
+    "description": "Read, unread, flags and Gmail's Important marker that reach the mail server and say whether they did, and read receipts through Thunderbird's own receipt sender.",
+    "functions": [
+      {
+        "name": "mark",
+        "type": "function",
+        "async": true,
+        "description": "Mark messages read or unread, flagged or not, and wait for the IMAP server to confirm. wholeConversation: for Gmail, marking read takes in the conversation's other unread messages in the same folder. Resolves to {changed, missing, conversation, server}.",
+        "parameters": [
+          {"name": "ids", "type": "array", "items": {"type": "integer"}},
+          {"name": "read", "type": "any", "optional": true},
+          {"name": "flagged", "type": "any", "optional": true},
+          {"name": "wholeConversation", "type": "boolean", "optional": true}
+        ]
+      },
+      {
+        "name": "important",
+        "type": "function",
+        "async": true,
+        "description": "Add or remove Gmail's Important marker on one message. Resolves to {done, already, reason}.",
+        "parameters": [
+          {"name": "id", "type": "integer"},
+          {"name": "on", "type": "boolean"}
+        ]
+      },
+      {
+        "name": "isImportant",
+        "type": "function",
+        "async": true,
+        "description": "Whether each Gmail message has Gmail's Important marker, from Thunderbird's copy of the Important folder. Resolves to {id: true or false}; other accounts are left out. Changes nothing.",
+        "parameters": [
+          {"name": "ids", "type": "array", "items": {"type": "integer"}}
+        ]
+      },
+      {
+        "name": "sentImportant",
+        "type": "function",
+        "async": true,
+        "description": "After sending with high importance from a Gmail account, add Gmail's Important marker to the copy in Sent Mail. Resolves to {done, already, reason}.",
+        "parameters": [
+          {"name": "accountId", "type": "string"},
+          {"name": "headerMessageId", "type": "string"}
+        ]
+      },
+      {
+        "name": "needsReceipt",
+        "type": "function",
+        "async": true,
+        "description": "Whether a read receipt may be due: yes (the header asked), maybe (only the full header can say), or an empty string. Changes nothing.",
+        "parameters": [
+          {"name": "id", "type": "integer"}
+        ]
+      },
+      {
+        "name": "receipt",
+        "type": "function",
+        "async": true,
+        "description": "Handle a message's read receipt by Thunderbird's receipt settings. Resolves to {state}: none, handled, or ask (then call receiptAnswer).",
+        "parameters": [
+          {"name": "id", "type": "integer"},
+          {"name": "headersText", "type": "string"}
+        ]
+      },
+      {
+        "name": "receiptAnswer",
+        "type": "function",
+        "async": true,
+        "description": "Send, or do not send, a read receipt Thunderbird asked about. Resolves to {done}.",
+        "parameters": [
+          {"name": "id", "type": "integer"},
+          {"name": "send", "type": "boolean"}
+        ]
+      }
+    ]
+  }
+]
