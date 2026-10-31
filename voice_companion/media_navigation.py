@@ -28,6 +28,26 @@ CONTROLS={'podcast':(('Play or pause','toggle audio'),('Back 30 seconds','back 3
                    ("What's playing",NOW_PLAYING),('Stop','stop audio'))}
 CONTROL_WORDS=('player controls','playback controls','audio controls','show player controls','open player controls')
 
+# Said for a disk or network error, which has no message written for people.
+MEDIA_PROBLEM=('Companion could not use the internet or save to the disk. '
+               'Check the internet connection and that the disk has room, then try again.')
+
+
+def spoken_error(exc):
+    """A media error in plain words. A message written for people (a ValueError, or an
+    OSError raised with only a message) is said as it is. A system error never reads
+    out an error number, a file path or Python's own words."""
+    import errno
+    text=str(exc).strip()
+    if isinstance(exc,ValueError) and text:return text
+    if isinstance(exc,OSError) and text and exc.errno is None and exc.filename is None and not text.startswith('<'):return text
+    if isinstance(exc,FileNotFoundError):return 'That file was not found. Check its name and folder, then try again.'
+    if isinstance(exc,OSError) and exc.errno==errno.ENOSPC:return 'The disk is full. Make some room, then try again.'
+    if isinstance(exc,(PermissionError,FileExistsError,IsADirectoryError,NotADirectoryError)):
+        return 'Companion could not use that file or folder. It may be open in another program. Close it, then try again.'
+    return MEDIA_PROBLEM
+
+
 class MediaNavigation:
     def __init__(self,hub,section='radio'):
         self.hub=hub;self.section=section;self.focus='actions';self.index=0;self.view='stations' if section=='radio' else 'shows';self.item_index=0;self.form=None;self.field_index=0;self.pending=None;self.confirm_choice='no';self.revision=0;self.audio_paused=False;self.keyboard_mode=False;self.full_radio_actions=False;self.controls_return=None
@@ -263,7 +283,7 @@ class MediaNavigation:
                     else:return 'Select a subscribed podcast first.'
                     if not any(x['feed']==h.shows[h.show_index].get('feed') for x in h.saved_subscriptions()):return 'Subscribe to this podcast first.'
                 result=self.run(command)
-        except (OSError,ValueError,IndexError) as exc:return 'Could not complete this request. '+str(exc)
+        except (OSError,ValueError,IndexError) as exc:return 'Could not complete this request. '+spoken_error(exc)
         self.form=None;self.revision+=1;return result
     def run(self,text):
         if not text:return ''
