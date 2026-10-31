@@ -42,8 +42,9 @@ asked.
   3. Update the user guide (`START HERE - Veteran.txt` and `.html`, same
      wording in both) if any command or behaviour a user relies on changed.
   4. If files in `regular_browser_extension/` changed, bump the version in its
-     `manifest.json`, and tell Will that testers must choose Reload on the
-     extension card.
+     `manifest.json`. The release sends it to the Chrome Web Store for review,
+     and store copies update by themselves. Mention Reload on the extension
+     card only for copies a helper loaded by hand.
 - Files outside `voice_companion/` (this file, `tools/`, `.github/ISSUE_TEMPLATE/`,
   `LAUNCH-CHECKLIST.md`) do not trigger a release.
 - **Never merge to `main` without Will's go-ahead for that release**, and never
