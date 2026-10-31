@@ -1,0 +1,103 @@
+"""Email when something goes wrong (sweep, October 31, 2026: error handling).
+
+A full disk, a draft file held by another program, a mail service that stops
+halfway, a mailbox that says more than Voice Companion read. Each test here
+failed before its fix: the app stopped, said the wrong thing, or said nothing."""
+import unittest
+from unittest.mock import patch
+
+import companion
+from mail_voice import MailSession
+from mailbox_access import MailboxError
+from test_email_new_veteran import CompanionCase
+from test_email_expert_sweep import Mailbox
+
+
+class DraftCannotBeSavedTests(CompanionCase):
+    """The Email Drafts folder is full or locked. Before: the app stopped (the error went
+    past every handler) or said "Open and read a message first."""
+    def setUp(self):
+        super().setUp()
+        companion.mail_session = MailSession('thunderbird', self.folder, Mailbox)
+        p = patch('companion.account_token', return_value=('me@example.com', 'token'), create=True)
+        p.start(); self.addCleanup(p.stop)
+        companion.mail_session.process('list messages')
+
+    def failing_save(self):
+        return patch('email_draft.VoiceEmail.save', side_effect=PermissionError('locked'))
+
+    def test_a_reply_that_cannot_be_saved_says_so_and_stays_on_the_message(self):
+        companion.mail_session.process('open message')
+        with self.failing_save():
+            self.assertEqual(companion.handle('reply', 'mailbox'), 'mailbox')
+        self.assertNotIn('Open and read a message first', self.last())
+        self.assertIn('could not be saved', self.last())
+        self.assertIsNone(companion.email_draft)
+
+    def test_a_new_email_that_cannot_be_saved_says_so(self):
+        with self.failing_save():
+            self.assertEqual(companion.handle('new email', 'mailbox'), 'mailbox')
+        self.assertIn('could not be saved', self.last())
+        self.assertIsNone(companion.email_draft)
+
+    def start_draft(self):
+        self.assertEqual(companion.handle('new email', 'mailbox'), 'email_draft')
+        companion.handle('bob@example.com', 'email_draft')
+        companion.handle('Lunch', 'email_draft')
+        companion.handle('See you at noon.', 'email_draft')
+        return companion.email_draft
+
+    def test_send_it_when_the_draft_cannot_be_saved_does_not_stop_the_app(self):
+        draft = self.start_draft()
+        with self.failing_save():
+            self.assertEqual(companion.handle('send it', 'email_draft'), 'email_draft')
+        self.assertIn('could not be saved', self.last())
+        self.assertIn('not sent', self.last())
+        self.assertIs(companion.email_draft, draft)
+        self.assertIsNone(companion.pending_send)
+
+    def test_leaving_a_draft_that_cannot_be_saved_keeps_it_open(self):
+        for command in ('go to sleep', 'file manager', 'new email'):
+            draft = self.start_draft()
+            with self.subTest(command=command), self.failing_save():
+                self.assertEqual(companion.handle(command, 'email_draft'), 'email_draft')
+                self.assertEqual(self.last(), companion.UNSAVED_DRAFT)
+                self.assertIs(companion.email_draft, draft)
+                self.assertIn('See you at noon.', ' '.join(p.text for p in draft.paragraphs))
+            companion.handle('cancel', 'email_draft')
+
+    def test_choosing_another_account_for_a_draft_that_cannot_be_saved(self):
+        from unittest.mock import Mock
+        draft = self.start_draft()
+        store = Mock(); store.return_value.select.return_value = ('yahoo', 'me@yahoo.com')
+        with patch.object(companion, 'ProtectedStore', store), self.failing_save():
+            self.assertEqual(companion.switch_mail_account('yahoo', 'me@yahoo.com', 'email_draft'), 'email_draft')
+        self.assertEqual(self.last(), companion.UNSAVED_DRAFT)
+        self.assertIs(companion.email_draft, draft)
+
+
+class HalfFinishedMoveTests(CompanionCase):
+    """The mail service stopped while messages were moving. Before: the open message stayed
+    "open" with no list under it, so Reply said "Open and read a message first" and Down said
+    "That number is not on this page."""
+    def test_after_an_uncertain_move_every_key_says_to_list_messages(self):
+        class Stops(Mailbox):
+            def trash(self, ids, source_id=None):
+                raise MailboxError('Thunderbird stopped answering.')
+        mail = MailSession('thunderbird', self.folder, Stops)
+        companion.mail_session = mail
+        p = patch('companion.account_token', return_value=('me@example.com', 'token'), create=True)
+        p.start(); self.addCleanup(p.stop)
+        mail.process('list messages'); mail.process('next message'); mail.process('open message')
+        mail.process('delete')
+        said = mail.process('yes')
+        self.assertIn('Say list messages', said)
+        self.assertEqual((mail.view, mail.current, mail.rows), ('folder', None, []))
+        for command in ('reply', 'next message', 'message status', 'delete'):
+            with self.subTest(command=command):
+                companion.handle(command, 'mailbox')
+                self.assertEqual(self.last(), mail._empty_list())
+
+
+if __name__ == '__main__':
+    unittest.main()

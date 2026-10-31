@@ -86,6 +86,9 @@ IMPORTANCE_WORDS = {'highest': 'highest importance', 'high': 'high importance', 
                     'lowest': 'lowest importance'}
 
 
+UNCERTAIN_CHANGE = ('Some messages may have moved. Say list messages to check the folder before you try again.')
+
+
 def status_words(row, full=False):
     """'Unread, flagged, replied, high importance' for a message row; '' when there is nothing to say.
     full: also says Read, so a question about the message always has an answer."""
@@ -1162,11 +1165,9 @@ class MailSession:
                     if isinstance(exc, AccountError) or exc.unchanged:
                         # The mail service refused before anything moved; say why.
                         return str(exc) + ('' if 'Nothing was' in str(exc) else ' Nothing was changed.')
-                    self.rows = []
-                    return 'Some messages may have moved. Refresh the folder and check before trying again.'
+                    return self._uncertain_change()
                 except Exception:
-                    self.rows = []
-                    return 'Some messages may have moved. Refresh the folder and check before trying again.'
+                    return self._uncertain_change()
                 count = str(len(ids)) + (' message ' if len(ids) == 1 else ' messages ')
                 result = count + ('moved.' if action == 'move' else 'moved to Trash or Deleted Items.')
                 try:
@@ -1212,6 +1213,13 @@ class MailSession:
             except OSError:
                 pass
             return 'Email could not complete that request. Ask your helper to check Email-Error.txt in the Voice Companion settings folder. If you were moving or deleting messages, check the mailbox before trying again.'
+
+    def _uncertain_change(self):
+        """The mail service stopped partway: no list or open message is kept that may be wrong."""
+        self.rows, self.current, self.view = [], None, 'folder'
+        self.body_text, self.body_offset = '', 0
+        self.reading.set_text('', reset=True)
+        return UNCERTAIN_CHANGE
 
     def _empty_list(self):
         return ('Empty list. No messages on this page of ' + self.folder_name +
