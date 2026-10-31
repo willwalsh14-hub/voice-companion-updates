@@ -101,3 +101,16 @@ class GuideFileTests(unittest.TestCase):
                 self.assertEqual(companion.main(),0)
                 publish.assert_called_once_with(Path(folder),expected_version=companion.APP_VERSION)
                 speech.assert_not_called()
+
+
+class GuideCopyErrorNoteTests(unittest.TestCase):
+    def test_a_blocked_data_folder_does_not_stop_the_guide_refresh(self):
+        """When the guides cannot be copied, a note is kept for a helper. If the data
+        folder cannot be written either (a full disk), the refresh still ends with its
+        own failure code, and startup goes on."""
+        import sys
+        with tempfile.TemporaryDirectory() as folder:
+            blocked = Path(folder) / 'not-a-folder'; blocked.write_text('x')
+            with patch.object(companion, 'APP', blocked), patch.object(sys, 'argv', ['VoiceCompanion', '--refresh-guides']), \
+                 patch('guide_files.publish_guides', side_effect=OSError('The disk is full.')):
+                self.assertEqual(companion.main(), 3)

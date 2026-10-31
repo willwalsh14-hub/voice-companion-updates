@@ -5769,6 +5769,16 @@ def update_running_elsewhere():
     return update_running(APP)
 
 
+def record_guide_error(exc):
+    """Keep why the user guides could not be copied, for a helper. The same full disk or
+    blocked folder can stop this note too; that must never stop Voice Companion."""
+    try:
+        APP.mkdir(parents=True, exist_ok=True)
+        (APP/'user-guide-update-error.txt').write_text(str(exc), encoding='utf-8')
+    except OSError:
+        pass
+
+
 def main():
     global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE, MICROPHONE_ANNOUNCED, MICROPHONE_OFF, STARTUP_NOTICES, MICROPHONE_FAILED
     if '--check-browser-bookmarks' in sys.argv:
@@ -5784,8 +5794,7 @@ def main():
             print('Documentation copied and verified for Voice Companion '+APP_VERSION+': '+str(target),flush=True)
             return 0
         except (OSError, ValueError) as exc:
-            APP.mkdir(parents=True,exist_ok=True)
-            (APP/'user-guide-update-error.txt').write_text(str(exc),encoding='utf-8')
+            record_guide_error(exc)
             print('Documentation refresh failed: '+str(exc),file=sys.stderr,flush=True)
             return 3
     if '--version' in sys.argv:
@@ -5916,8 +5925,7 @@ def main():
         from guide_files import publish_guides
         publish_guides(documents_folder(), expected_version=APP_VERSION)
     except (OSError, ValueError) as exc:
-        APP.mkdir(parents=True, exist_ok=True)
-        (APP/'user-guide-update-error.txt').write_text(str(exc), encoding='utf-8')
+        record_guide_error(exc)
         startup_notice('The user guide files could not be copied to Documents. Onboard help is still available. Ask your helper to check the installation.')
 
     import sounddevice as sd
