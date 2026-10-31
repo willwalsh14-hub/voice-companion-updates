@@ -85,5 +85,47 @@ class DraftFlushTests(unittest.TestCase):
             self.assertEqual(sorted(p.name for p in Path(folder).iterdir() if '.writing' in p.name), [])
 
 
+
+class GeneralAnswerTests(CompanionCase):
+    def test_pause_with_nothing_playing_stops_speech(self):
+        with patch('companion.control_speech') as control:
+            self.assertEqual(companion.handle('Pause.', 'awake'), 'awake')
+        control.assert_called_once_with('pause')
+        self.assertNotIn('did not understand', self.last() or '')
+
+    def test_pause_in_a_document_is_still_text(self):
+        from document_editor import VoiceDocument
+        companion.document = VoiceDocument(self.folder / 'Documents')
+        self.addCleanup(setattr, companion, 'document', None)
+        with patch('companion.control_speech') as control:
+            companion.handle('pause', 'document')
+        control.assert_not_called()
+
+    def test_f1_in_a_yes_or_no_question_says_it_again(self):
+        self.assertEqual(companion.handle('exit companion', 'awake'), 'exit_confirm')
+        question = self.last()
+        self.assertIn('Yes or no', question)
+        companion.navigation_key('Down', 'exit_confirm')
+        self.assertIn(self.last(), ('No.', 'End of list.'))
+        self.assertIsNone(companion.navigation_key('F1', 'exit_confirm'))
+        self.assertEqual(self.last(), question)
+        companion.handle('no', 'exit_confirm')
+
+    def test_text_size_out_of_range_says_the_sizes(self):
+        before = dict(companion.PREFERENCES)
+        companion.handle('Text size 1000.', 'awake')
+        self.assertIn('100 to 400 percent', self.last())
+        self.assertEqual(companion.PREFERENCES.get('display_text_size'), before.get('display_text_size'))
+
+    def test_main_menu_understands_everyday_help_and_go_back(self):
+        for phrase in ('Help me.', 'What can I say?'):
+            with self.subTest(phrase):
+                self.assertEqual(companion.handle(phrase, 'awake'), 'help')
+                self.assertIn('User guide', self.last())
+                companion.handle('main menu', 'help')
+        self.assertEqual(companion.handle('Go back.', 'awake'), 'awake')
+        self.assertIn('first screen', self.last())
+
+
 if __name__ == '__main__':
     unittest.main()

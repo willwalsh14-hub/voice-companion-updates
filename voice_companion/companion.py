@@ -143,6 +143,7 @@ INPUT_MODE = 'mixed'
 VOICE_PICK_INDEX = None
 VOICE_PICK_ORIGINAL = None
 VOICE_PICK_CONFIRM = False
+LAST_YES_NO = ''   # the last yes or no question said; F1 repeats it while it is open
 SILENCE = ('be quiet', 'quiet', 'stop talking', 'stop speaking', 'stop reading',
            'shut up', 'shut the fuck up', 'shut the f up', 'shut the hell up',
            'hush', 'hush up', 'silence', 'stop')
@@ -695,6 +696,9 @@ def process_keyboard_batch(mode):
     return mode
 
 SLEEP_RETURN_MODE = 'awake'
+MAIN_MENU_HELP = ('help me', 'what can i say', 'what can i do', 'what do i say', 'i need help', 'please help',
+                  'help me please', 'what are my choices', 'what are my options')
+MAIN_MENU_FIRST = 'You are on the main menu. It is the first screen, so there is nothing to go back to. Say a choice, or say help.'
 MAIN_MENU_NOT_UNDERSTOOD = 'I did not understand that. You are on the main menu. Press F1 for help.'
 MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.'
 
@@ -894,7 +898,7 @@ def change_display(request,mode):
     """Change the text size, colors or full screen, save it, say it, and show it at once."""
     import display_options
     values,words=display_options.apply_request(PREFERENCES,request)
-    if request[0]!='status':
+    if request[0] not in ('status','size_invalid'):
         PREFERENCES.update(values)
         try:__import__('app_settings').save_preferences(sys.modules[__name__])
         except OSError:words+=NOT_SAVED
@@ -1037,9 +1041,17 @@ def navigation_key(key,mode):
     try:return _navigation_key(key,mode)
     finally:KEYBOARD_NAVIGATION=previous
 
+def yes_no_open(mode):
+    """True while a yes or no question waits for its answer on this screen."""
+    return bool(THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or mode=='browser_menu' and web_session is not None and web_session.menu.level=='confirm' or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending)))
+
+
 def _navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
     interrupt_speech()
+    if key=='F1' and LAST_YES_NO and yes_no_open(mode):
+        # F1 in a yes or no question says the question again (Will, October 31, 2026).
+        speak(LAST_YES_NO);return None
     if key=='Ctrl+P':return 'toggle audio'
     if key=='Control':return None
     menu_key=screen_menu().keyboard(key,mode)
@@ -1097,7 +1109,7 @@ def _navigation_key(key,mode):
     if key=='Alt+F4':return 'exit companion'
     if mode=='chrome_setup' and not chrome_confirming(mode):
         return {'Escape':'cancel','F5':'status','F1':'status'}.get(key)
-    confirming=THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or mode=='browser_menu' and web_session is not None and web_session.menu.level=='confirm' or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
+    confirming=yes_no_open(mode)
     if confirming:
         if key.lower() in ('y','n','alt+y','alt+n','letter:y','letter:n'):return 'yes' if key.lower() in ('y','alt+y','letter:y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
@@ -1954,7 +1966,11 @@ def discard_feedback_events(cloud):
 
 
 def speak(text):
-    global KEYBOARD_BATCH_TEXT
+    global KEYBOARD_BATCH_TEXT, LAST_YES_NO
+    if isinstance(text,str):
+        # F1 says the open question again. Anything else said (but the choice itself) ends it.
+        if 'yes or no' in text.casefold():LAST_YES_NO=text
+        elif text not in ('Yes.','No.','Start of list.','End of list.'):LAST_YES_NO=''
     if KEYBOARD_BATCH:
         KEYBOARD_BATCH_TEXT=text;return
     TRANSCRIPT.said(text)   # off unless chosen; never raises
@@ -3970,6 +3986,11 @@ def _handle(text, mode, typed=False):
         answered = thunderbird_setup_answer(command, mode)
         if answered is not None:
             return answered
+    if mode=='awake' and not account_setup and ACCOUNT_PICKER is None and pending_website is None:
+        # Everyday words on the main menu (Will, October 31, 2026).
+        if command in MAIN_MENU_HELP:text=command='help'
+        elif command in ('go back','back','go back a screen','previous screen'):
+            speak(MAIN_MENU_FIRST);return mode
     if command=='toggle audio':
         video=__import__('youtube_screen').toggle_audio(sys.modules[__name__])  # Control+P while a YouTube video plays
         if video:speak(video);return mode
@@ -4745,6 +4766,10 @@ def _handle(text, mode, typed=False):
             (mode != 'media' and command in ('next chapter','previous chapter','next episode','previous episode',
                         'next podcast','previous podcast','next show','previous show'))):
         speak(MEDIA_HUB.command(text))
+        return mode
+    if command == 'pause' and mode not in ('web', 'mailbox', 'media') and not writing_dictation(mode, typed):
+        # Nothing is playing: Pause stops Companion's speech, as Stop does. Resume goes on (Will, October 31, 2026).
+        control_speech('pause')
         return mode
     if mode == 'media':
         if command in ('exit','main menu','back to main menu','leave radio','leave podcasts') or command in ('go back','back') and not (media().stations if MEDIA_SECTION == 'radio' else media().shows):
