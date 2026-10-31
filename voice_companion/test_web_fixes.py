@@ -203,6 +203,17 @@ class UntitledPageTests(unittest.TestCase):
         self.assertIn(' window. The site is example.com.', session.command('ask for help'))
         self.assertEqual(session.command('where am i'), 'Focused Unlabeled, edit field. Current value blank.')
 
+    def test_a_page_answer_has_one_period_and_no_empty_title(self):
+        backend = FakeBackend()
+        backend.snapshot = lambda: {'title': '', 'url': backend.url, 'controls': [],
+                                    'text': 'The clinic opens at nine in the morning. Parking is free for veterans.'}
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        session = WebSession(folder.name, backend)
+        session.open('example.com')
+        self.assertEqual(session.command('What does this page say about the clinic opening?'),
+                         'This page says: The clinic opens at nine in the morning. Source: example.com. '
+                         'This is an excerpt; check the page for the full context.')
+
 
 if __name__ == '__main__':
     unittest.main()

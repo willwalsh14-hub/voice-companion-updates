@@ -2837,8 +2837,11 @@ class WebSession:
         matches.sort(key=lambda pair: pair[0], reverse=True)
         if not matches:
             return 'I did not find that in the readable page text. Try describing it differently or ask your helper.'
-        return ('This page says: ' + ' '.join(text for _, text in matches[:2]) +
-                '. Source: ' + _plain(self.snapshot['title']) + ', ' +
+        said = ' '.join(text for _, text in matches[:2])
+        title = _plain(self.snapshot.get('title'))
+        # One period, never "opens at 9.. Source: , example.com".
+        return ('This page says: ' + said + ('' if said[-1] in '.!?' else '.') +
+                ' Source: ' + (title + ', ' if title else '') +
                 (urlsplit(self.snapshot['url']).hostname or 'unknown site') +
                 '. This is an excerpt; check the page for the full context.')
 
