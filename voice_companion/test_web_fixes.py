@@ -189,5 +189,20 @@ class PageLoadFailureTests(unittest.TestCase):
         self.assertIn('Say set up Chrome', self.session.search('weather'))
 
 
+class UntitledPageTests(unittest.TestCase):
+    """A page with no title said "You are on , at example.com" and "the window
+    titled . The site is"; a field with no name said "Focused , edit field"."""
+    def test_no_empty_names_are_spoken(self):
+        backend = FakeBackend()
+        backend.snapshot = lambda: {'title': '', 'url': backend.url, 'text': '', 'controls': []}
+        backend.focused_control = lambda: {'label': '', 'tag': 'input', 'type': 'text', 'value': ''}
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        session = WebSession(folder.name, backend)
+        session.open('example.com')
+        self.assertTrue(session.command('help').startswith('You are on example.com. '))
+        self.assertIn(' window. The site is example.com.', session.command('ask for help'))
+        self.assertEqual(session.command('where am i'), 'Focused Unlabeled, edit field. Current value blank.')
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -2854,7 +2854,9 @@ class WebSession:
             except Exception: pass
         fields = [c for c in self.snapshot['controls'] if c['role'] == 'field']
         examples = ', '.join(_label(c) for c in links[:3])
-        return ('You are on ' + _plain(self.snapshot['title']) + ', at ' +
+        # A page with no title is named by its site alone, never "You are on , at".
+        title = _plain(self.snapshot.get('title'))
+        return ('You are on ' + (title + ', at ' if title else '') +
                 (urlsplit(self.snapshot['url']).hostname or 'an unknown site') + '. ' +
                 (('I see choices such as ' + examples + '. ') if examples else 'I could not identify clickable controls on this page. ') +
                 (('I found ' + str(len(fields)) + ' form fields. ') if fields else '') +
@@ -2883,12 +2885,14 @@ class WebSession:
         # The words page reading uses, not code words such as textarea or tel.
         if item.get('tag') == 'textarea' or item.get('tag') == 'input' and kind in ('text','search','email','tel','url','number','input'):
             kind = 'edit field'
-        return 'Focused ' + _plain(item.get('label')) + ', ' + kind + '. ' + state
+        # A field with no name says "Unlabeled", as on the page line.
+        return 'Focused ' + (_plain(item.get('label')) or 'Unlabeled') + ', ' + kind + '. ' + state
 
     def handoff(self):
         if not self.snapshot: return 'No website is open. Ask your helper to open the site with you.'
         url = urlsplit(self.snapshot['url'])
-        return ('Ask your helper to look at the ' + browser_name(self.running_browser()) + ' window titled ' + _plain(self.snapshot['title']) +
+        title = _plain(self.snapshot.get('title'))
+        return ('Ask your helper to look at the ' + browser_name(self.running_browser()) + ' window' + (' titled ' + title if title else '') +
                 '. The site is ' + (url.hostname or 'unknown') + '. ' +
                 ('The form has ' + str(len(self.form_answers)) + ' answers entered by voice. ' if self.form_answers else '') +
                 'Review the site address, all form fields, and the final action together. I have not sent your answers to anyone.')
