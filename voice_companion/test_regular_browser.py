@@ -54,4 +54,25 @@ class ConnectionTests(unittest.TestCase):
                 'chrome-extension://'+identity+'/',
                 'chrome-extension://ijojiipjhcfaajafdbinnbehcenfchcc/'])
 
+class ConnectedBrowserMessageTests(unittest.TestCase):
+    """The extension linked, but the browser had no website tab. The clear reason
+    ("Open a normal website tab") was replaced by a vaguer one (October 31, 2026)."""
+    def test_no_website_tab_says_so(self):
+        import threading, tempfile
+        from unittest import mock
+        from connected_browser import ConnectedBrowserBackend
+        from web_assistant import WebError
+        relay = mock.Mock(browser='chrome', endpoint='ws://127.0.0.1:1/x', generation=1)
+        relay.connected = threading.Event(); relay.connected.set()
+        relay.client_closed = threading.Event(); relay.client_closed.set()
+        remote = mock.Mock(); remote.contexts = [mock.Mock(pages=[])]
+        driver = mock.Mock(); driver.chromium.connect_over_cdp.return_value = remote
+        with tempfile.TemporaryDirectory() as folder, mock.patch('shared_playwright.start', return_value=driver):
+            backend = ConnectedBrowserBackend(folder, 'chrome', relay)
+            with self.assertRaises(WebError) as said:
+                backend.start()
+        self.assertEqual(str(said.exception), 'Open a normal website tab in your browser. It will link automatically.')
+        remote.close.assert_called_once()
+
+
 if __name__=='__main__':unittest.main()

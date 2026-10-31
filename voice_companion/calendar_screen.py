@@ -503,6 +503,13 @@ CHOOSE_HINT = 'To choose another, press Control+L.'
 def start_choosing(m, first=None, lead=''):
     """Control+L: the list of calendars to show, on the one shown now."""
     global PENDING, CHOICE, CHOICES
+    if SOURCES is None:
+        # The calendars could not be read when Calendar opened: not "one email account".
+        try:
+            load_calendars(m)
+        except thunderbird_pim.PimError as exc:
+            m.speak(str(exc))
+            return MODE
     if not choosing():
         m.speak('You have one email account in Thunderbird, so all your calendars are shown.')
         return MODE
@@ -834,7 +841,7 @@ def read_again(m):
 def not_saved(exc, words):
     """Why saving failed, and that nothing was saved, unless the reason already says so."""
     text = str(exc)
-    return text if 'could not save' in text else text + ' ' + words
+    return text if 'could not save' in text or thunderbird_pim.unsure(exc) else text + ' ' + words
 
 
 def not_shown(calendar_id):
@@ -913,7 +920,12 @@ def answer(m, command):
         try:
             thunderbird_pim.delete_event(event.calendar_id, event.id, event.occurrence if one else '', all_of_them=every or not event.recurring)
         except thunderbird_pim.PimError as exc:
-            m.speak(str(exc) + (' ' + read_again(m) if thunderbird_pim.gone(exc) else ''))
+            text = str(exc)
+            if thunderbird_pim.gone(exc):
+                text += ' ' + read_again(m)
+            elif not thunderbird_pim.unsure(exc) and 'not delete' not in text:
+                text += ' The event was not deleted.'
+            m.speak(text)
             return MODE
         what =('Deleted all of ' + event.name + '. ') if every else ('Deleted ' + event.name + ' on this day. ') if one else ('Deleted ' + event.name + '. ')
         keep = INDEX

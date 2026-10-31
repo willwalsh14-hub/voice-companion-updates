@@ -1,5 +1,6 @@
 """Voice Word editor. Writes basic DOCX files using Python's standard library."""
 import html
+import os
 import re
 import zipfile
 import copy
@@ -554,9 +555,13 @@ class VoiceDocument:
         doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="' + XMLNS + '"><w:body>' + ''.join(parts) + '<w:sectPr/></w:body></w:document>'
         temporary = self.path.with_suffix('.writing.docx')
         try:
-            with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_DEFLATED) as z:
-                for name, value in [('[Content_Types].xml', CONTENT_TYPES), ('_rels/.rels', ROOT_RELS), ('word/document.xml', doc), ('word/styles.xml', STYLES), ('word/numbering.xml', NUMBERING), ('word/_rels/document.xml.rels', DOC_RELS)]:
-                    z.writestr(name, value)
+            with open(temporary, 'wb') as file:
+                with zipfile.ZipFile(file, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+                    for name, value in [('[Content_Types].xml', CONTENT_TYPES), ('_rels/.rels', ROOT_RELS), ('word/document.xml', doc), ('word/styles.xml', STYLES), ('word/numbering.xml', NUMBERING), ('word/_rels/document.xml.rels', DOC_RELS)]:
+                        z.writestr(name, value)
+                # On the disk before it replaces the old file: a power cut must not leave an empty document.
+                file.flush()
+                os.fsync(file.fileno())
             keep_previous(self.path)
             temporary.replace(self.path)
         except BaseException:
@@ -655,10 +660,19 @@ class VoiceDocument:
             if changed is not None:
                 step.cursor = changed
         now = self._snapshot(step.label)
-        if not self._restore_step(step):
-            return 'I cannot ' + ('redo' if redo else 'undo') + ' the rename because another document has that name.'
+        # Move the step first: if only the save fails (Word has the file), the words are
+        # already changed, and Redo or Undo must still be able to bring them back.
         source.pop()
         target.append(now)
+        try:
+            restored = self._restore_step(step)
+        except BaseException:
+            self.last_change_type = 'edit'
+            raise
+        if not restored:
+            target.pop()
+            source.append(step)
+            return 'I cannot ' + ('redo' if redo else 'undo') + ' the rename because another document has that name.'
         self.last_change_type = 'edit'
         done = ('Redid ' if redo else 'Undid ') + step.label + '. '
         if not self.paragraphs:

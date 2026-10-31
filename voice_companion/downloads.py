@@ -279,17 +279,28 @@ class DownloadManager:
 
     # Saved history ------------------------------------------------------------
     def load(self):
+        self.unread = False
         try:
             data = json.loads(self.path.read_text(encoding='utf-8'))
         except FileNotFoundError:
             return
-        except (OSError, ValueError):
+        except ValueError:
             # Keep a damaged file for a helper; start a fresh list.
             try:
                 os.replace(self.path, self.path.with_name(self.path.name + '.damaged'))
             except OSError:
                 pass
             return
+        except OSError:
+            # Windows can hold the file for a moment (an antivirus scan or OneDrive).
+            # It is not damaged: read it again before it is ever written over.
+            self.unread = True
+            return
+        self.restore(data)
+
+    def restore(self, data):
+        """Add saved records after the ones already listed (newest first)."""
+        taken = {r.id for r in self.items}
         for value in data if isinstance(data, list) else []:
             record = Download.restore(value)
             if record is None:
@@ -301,6 +312,11 @@ class DownloadManager:
             else:
                 record.live = False
             record.requested = None
+            if record.id in taken:
+                # Read late: this session already used the number.
+                self.serial += 1
+                record.id = 'd' + str(self.serial)
+            taken.add(record.id)
             self.items.append(record)
             number = re.fullmatch(r'd(\d+)', record.id)
             if number:
@@ -309,6 +325,18 @@ class DownloadManager:
 
     def save(self):
         from storage import write_text_atomic
+        if self.unread:
+            # The saved list could not be read at start. Read it now, so it is
+            # never replaced by only this session's downloads.
+            current = [r for r in self.items]
+            self.items = []
+            self.load()
+            if self.unread:
+                self.items = current
+                print('Could not read download history; it was not saved this time.', file=sys.stderr)
+                return
+            saved, self.items = self.items, current
+            self.restore([r.saved() for r in saved])
         try:
             write_text_atomic(self.path, json.dumps([r.saved() for r in self.items[:HISTORY_LIMIT]], ensure_ascii=False, indent=1))
         except OSError as exc:

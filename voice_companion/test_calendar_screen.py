@@ -190,6 +190,41 @@ class CalendarScreenTests(CalendarHarness):
                 app.handle('yes', mode)
             self.assertEqual(self.said(), 'That calendar cannot be changed. Choose another calendar. The event was not saved.')
 
+    def test_thunderbirds_general_failure_says_nothing_changed_and_what_to_do(self):
+        import thunderbird_mailbox
+        from mailbox_access import MailboxError
+        real = thunderbird_mailbox.call
+
+        def failing(method, **params):
+            if method in ('addEvent', 'modifyEvent', 'deleteEvent'):
+                raise MailboxError('Thunderbird could not complete that request.')
+            return real(method, **params)
+        mode = self.open()
+        with mock.patch.object(thunderbird_mailbox, 'call', failing):
+            app.handle('delete event', mode)
+            app.handle('yes', mode)
+            self.assertEqual(self.said(), 'Thunderbird could not complete that request. Close Thunderbird, then try again. '
+                                          'The event was not deleted.')
+            app.handle('add event tomorrow at 3 PM called Lunch', mode)
+            app.handle('yes', mode)
+            self.assertEqual(self.said(), 'Thunderbird could not complete that request. Close Thunderbird, then try again. '
+                                          'The event was not saved.')
+
+    def test_damaged_answers_from_thunderbird_never_stop_the_screen(self):
+        import thunderbird_mailbox
+        real = thunderbird_mailbox.call
+
+        def damaged(method, **params):
+            answer = real(method, **params)
+            if method == 'events':
+                answer['failed'] = None
+            return answer
+        with mock.patch.object(thunderbird_mailbox, 'call', damaged):
+            mode = self.open()
+            self.assertTrue(self.said().startswith('Calendar. Today, Monday, October 26. 1 event.'), self.said())
+            app.handle("What's on my calendar tomorrow?", 'awake')
+        self.assertTrue(self.said().startswith('Tomorrow, Tuesday, October 27. 1 event.'), self.said())
+
     def test_an_event_removed_in_thunderbird_meanwhile_leaves_the_list(self):
         # Deleted on the phone or in Thunderbird while Calendar was open: the day is read again,
         # so Down and F2 never reach an event that is gone.
@@ -766,3 +801,48 @@ class SpokenEventTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def slow_thunderbird(*methods):
+    """Thunderbird gets these requests and does them, but its answer comes after Voice Companion
+    stopped waiting (a large calendar, a slow server): the real request's wait runs out at once."""
+    import thunderbird_bridge
+    real = thunderbird_bridge.MailRelay.request
+
+    def request(relay, method, params=None, **options):
+        if method in methods:
+            with mock.patch('user_stop.wait', return_value=False):
+                return real(relay, method, params, **options)
+        return real(relay, method, params, **options)
+    return mock.patch.object(thunderbird_bridge.MailRelay, 'request', request)
+
+
+class SlowThunderbirdTests(CalendarHarness):
+    """Thunderbird is connected but slow. Before, this said "Thunderbird is not connected. Say add
+    account", and after a change that Thunderbird still made, "The event was not saved."."""
+
+    def test_a_slow_answer_says_so_and_never_asks_to_add_the_account_again(self):
+        mode = self.open()
+        with slow_thunderbird('events'):
+            self.press('Right', mode)
+        self.assertIn('Thunderbird did not answer in time. Wait a minute, then try again.', self.said())
+        self.assertNotIn('not connected', self.said())
+        with slow_thunderbird('events'):
+            app.handle("What's on my calendar today?", 'awake')
+        self.assertEqual(self.said(), 'Thunderbird did not answer in time. Wait a minute, then try again.')
+
+    def test_a_change_without_an_answer_is_never_called_not_saved(self):
+        mode = self.open()
+        app.handle('add event tomorrow at 3 PM called Lunch', mode)
+        with slow_thunderbird('addEvent'):
+            app.handle('yes', mode)
+        self.assertEqual(self.said(), thunderbird_pim.UNSURE)
+        self.assertNotIn('not saved', self.said())
+        # Thunderbird did save it, so "not saved" would have led to a second Lunch.
+        self.press('Right', mode)
+        self.press('Down', mode)
+        self.assertIn('Three PM to four PM, Lunch', self.said())
+        with slow_thunderbird('modifyEvent'):
+            app.handle('rename event to Dentist', mode)
+            app.handle('yes', mode)
+        self.assertEqual(self.said(), thunderbird_pim.UNSURE)

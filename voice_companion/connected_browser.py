@@ -31,6 +31,10 @@ class ConnectedBrowserBackend(BrowserBackend):
             self.page.set_default_timeout(10000)
             self.root_session=self.remote_browser.new_browser_cdp_session()
             self.sync_active_tab()
+        except WebError:
+            # Its own reason ("Open a normal website tab") says what to do.
+            self.close()
+            raise
         except Exception as exc:
             self.close()
             raise WebError('The browser link is not ready. Open a website tab and keep Companion open, then return to the Web browser menu.') from exc

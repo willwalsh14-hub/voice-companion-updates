@@ -148,5 +148,166 @@ class LiveSnapshotTests(unittest.TestCase):
         WebSession(tempfile.mkdtemp(), backend)._refresh(read=False)
 
 
+class AddressBracketTests(unittest.TestCase):
+    def test_a_stray_bracket_is_said_plainly(self):
+        # Python's own words, "Invalid IPv6 URL", were spoken.
+        for typed in ('[example.com', 'example.com]', 'http://[::1'):
+            with self.subTest(typed=typed):
+                with self.assertRaises(ValueError) as said:
+                    prepare_address(typed)
+                self.assertEqual(str(said.exception), 'I could not understand that website address.')
+
+
+class PageLoadFailureTests(unittest.TestCase):
+    """No internet, a wrong address and a slow site all said "The page did not open.
+    Check the address and internet connection." Search said only that Google could
+    not open, even when the guided browser itself could not start (October 31, 2026)."""
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.session = WebSession(self.folder.name, FakeBackend())
+        self.session.open('example.com')
+
+    def failing(self, error):
+        def goto(url): raise error
+        self.session.backend.goto = goto
+        self.session.backend.page = type('Page', (), {'url': 'https://example.com/', 'reload': lambda page, **_: goto('')})()
+
+    def test_the_browser_reason_is_said_for_open_search_and_reload(self):
+        from playwright.sync_api import Error, TimeoutError
+        cases = (
+            (Error('Page.goto: net::ERR_INTERNET_DISCONNECTED at https://va.gov/'), 'not be connected to the internet'),
+            (Error('Page.goto: net::ERR_NAME_NOT_RESOLVED at https://va.gov/'), 'No website was found at that address'),
+            (TimeoutError('Page.goto: Timeout 30000ms exceeded.'), 'took too long to open'),
+            (Error('Page.goto: net::ERR_CONNECTION_REFUSED at https://va.gov/'), 'The website did not answer'),
+            (Error('Page.goto: net::ERR_CERT_DATE_INVALID at https://va.gov/'), 'failed a security check'))
+        for error, said in cases:
+            with self.subTest(error=str(error)):
+                self.failing(error)
+                for result in (self.session.open('va.gov'), self.session.search('weather'), self.session.keyboard('Refresh')):
+                    self.assertIn(said, result)
+                    self.assertNotIn('net::', result)
+
+    def test_an_unknown_failure_keeps_the_plain_message(self):
+        self.failing(RuntimeError('Target closed'))
+        self.assertEqual(self.session.open('va.gov'), 'The page did not open. Check the address and internet connection.')
+        self.assertIn('Google could not open.', self.session.search('weather'))
+
+    def test_search_says_why_the_guided_browser_could_not_start(self):
+        from web_assistant import WebError
+        self.failing(WebError('Embedded Edge could not start, and Chrome is not installed. Say set up Chrome to install Chrome.'))
+        self.assertIn('Say set up Chrome', self.session.search('weather'))
+
+
+class UntitledPageTests(unittest.TestCase):
+    """A page with no title said "You are on , at example.com" and "the window
+    titled . The site is"; a field with no name said "Focused , edit field"."""
+    def test_no_empty_names_are_spoken(self):
+        backend = FakeBackend()
+        backend.snapshot = lambda: {'title': '', 'url': backend.url, 'text': '', 'controls': []}
+        backend.focused_control = lambda: {'label': '', 'tag': 'input', 'type': 'text', 'value': ''}
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        session = WebSession(folder.name, backend)
+        session.open('example.com')
+        self.assertTrue(session.command('help').startswith('You are on example.com. '))
+        self.assertIn(' window. The site is example.com.', session.command('ask for help'))
+        self.assertEqual(session.command('where am i'), 'Focused Unlabeled, edit field. Current value blank.')
+
+    def test_page_loaded_names_no_empty_title_and_one_period(self):
+        for title, said in (('', 'Page loaded. Site: example.com.'), ('Welcome!', 'Page loaded: Welcome! Site: example.com.'),
+                            ('News.', 'Page loaded: News. Site: example.com.')):
+            with self.subTest(title=title):
+                backend = FakeBackend()
+                backend.snapshot = lambda: {'title': title, 'url': backend.url, 'controls': [], 'text': 'Some words.'}
+                folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+                session = WebSession(folder.name, backend); session.auto_read = False
+                self.assertEqual(session.open('example.com'), said)
+
+    def test_a_page_answer_has_one_period_and_no_empty_title(self):
+        backend = FakeBackend()
+        backend.snapshot = lambda: {'title': '', 'url': backend.url, 'controls': [],
+                                    'text': 'The clinic opens at nine in the morning. Parking is free for veterans.'}
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        session = WebSession(folder.name, backend)
+        session.open('example.com')
+        self.assertEqual(session.command('What does this page say about the clinic opening?'),
+                         'This page says: The clinic opens at nine in the morning. Source: example.com. '
+                         'This is an excerpt; check the page for the full context.')
+
+
+class FormReviewFailureTests(unittest.TestCase):
+    """"Change Address" during form review called the browser with no guard: when the
+    browser was busy or gone, the whole app stopped. An answer ending in a period was
+    read with two ("Address: Main St.. ")."""
+    def setUp(self):
+        self.backend = FakeBackend()
+        self.backend.controls = [
+            {'key':'1','role':'field','label':'Address','tag':'input','type':'text','value':'12 Main St.'},
+            {'key':'2','role':'field','label':'City','tag':'input','type':'text','value':'Salem'},
+            {'key':'3','role':'button','label':'Submit application','tag':'button','type':'submit','in_form':True}]
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        self.session = WebSession(folder.name, self.backend)
+        self.session.open('example.com')
+
+    def test_review_reads_one_period_after_each_answer(self):
+        self.assertIn('Form review, fields 1 through 1 of 2: Address: 12 Main St. Say change',
+                      self.session.command('review and submit form'))
+        self.assertIn('City: Salem. The button is', self.session.command('continue review'))
+
+    def test_change_a_field_when_the_browser_is_gone_says_so(self):
+        self.session.command('review and submit form')
+        def gone(): raise RuntimeError('Target page, context or browser has been closed')
+        self.backend.snapshot = gone
+        self.assertEqual(self.session.command('change Address'),
+                         'I could not read the form just now. Say read page, then try again.')
+
+    def test_a_changed_field_that_cannot_be_read_again_says_nothing_was_submitted(self):
+        self.session.command('review and submit form')
+        self.assertIn('Changing Address', self.session.command('change Address'))
+        original = self.backend.snapshot; calls = []
+        def later():
+            calls.append(1)
+            if len(calls) > 1: raise RuntimeError('Target closed')
+            return original()
+        self.backend.snapshot = later
+        said = self.session.command('14 Oak Road')
+        self.assertIn('Nothing was submitted', said)
+        self.assertEqual(self.backend.activated, [])
+
+
+class WebCommandSafetyTests(unittest.TestCase):
+    """Any unexpected error in a spoken web command stopped Voice Companion: nothing
+    above WebSession.command caught it (October 31, 2026)."""
+    def test_an_unexpected_error_is_said_and_kept_for_a_helper(self):
+        from pathlib import Path
+        from unittest.mock import patch
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        session = WebSession(folder.name, FakeBackend())
+        session.open('example.com')
+        with patch.object(WebSession, 'list_links', side_effect=KeyError('my secret answer')):
+            self.assertEqual(session.command('list links'), WebSession.COMMAND_FAILED)
+        kept = (Path(folder.name) / 'web-command-error.txt').read_text(encoding='utf-8')
+        self.assertIn('KeyError', kept)
+        self.assertNotIn('my secret answer', kept)
+        self.assertIn('Links list', session.command('list links'))
+
+
+class BrowserLinkReasonTests(unittest.TestCase):
+    """When the regular browser had no website tab, every key and command said "Keep
+    Voice Companion open; it will reconnect automatically." Waiting never helped."""
+    def test_the_link_reason_is_said_by_key_and_by_voice(self):
+        from unittest.mock import patch
+        from web_assistant import WebError
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        session = WebSession(folder.name, FakeBackend())
+        session.open('example.com')
+        reason = 'Open a normal website tab in your browser. It will link automatically.'
+        with patch.object(WebSession, '_sync_browser_tab', side_effect=WebError(reason)):
+            self.assertEqual(session.command('list links'), reason)
+            self.assertEqual(session.keyboard('Quick:h'), reason)
+        with patch.object(WebSession, '_sync_browser_tab', side_effect=OSError('pipe closed')):
+            self.assertIn('reconnect automatically', session.command('list links'))
+
+
 if __name__ == '__main__':
     unittest.main()

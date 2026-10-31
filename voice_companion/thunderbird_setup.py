@@ -531,12 +531,14 @@ def version_tuple(text):
 
 
 def refresh_addon(profile, package):
-    """Replace an older copy of the add-on. Only while Thunderbird is closed: it locks the file."""
+    """Replace an older copy of the add-on. Only while Thunderbird is closed: it locks the file.
+    True when the profile now has this copy."""
     try:
         if addon_file(profile).read_bytes() != Path(package).read_bytes():
             write_atomic(addon_file(profile), Path(package).read_bytes(), profile)
+        return True
     except OSError:
-        pass
+        return False
 
 
 # ---- Starting Thunderbird when a Thunderbird account is used ----------------
@@ -578,8 +580,14 @@ def settle(system, handles, note=None):
 # restarted once, the normal way, and never while a message is being written.
 ADDON_UPDATING = 'Updating the Voice Companion connection in Thunderbird. Thunderbird restarts for a moment.'
 ADDON_UPDATED = 'The Voice Companion connection in Thunderbird is updated.'
+ADDON_NOT_REPLACED = ('The Voice Companion connection in Thunderbird could not be updated. Another program may be '
+                      'using its file. Email works as before. Voice Companion tries again the next time you open it.')
 ADDON_UPDATE_SLOW = ('Thunderbird has not started again yet. Your email is safe. '
                      'Say check email, and Voice Companion starts it.')
+ADDON_NOT_CLOSED = ('Thunderbird did not close, so its Voice Companion connection was not updated. Nothing changed. '
+                    'Voice Companion tries again the next time Thunderbird starts.')
+ADDON_NOT_UPDATED = ('The Voice Companion connection in Thunderbird could not be updated. '
+                     'Voice Companion tries again the next time you open it.')
 DISCONNECT_SECONDS = 15
 
 
@@ -597,7 +605,8 @@ def refresh_running_addon(system, package, relay, progress=None, background=True
 
     Returns 'current' (nothing to do or nothing possible), 'composing' (a message is being
     written: try later), 'not closed' (Thunderbird did not close; nothing changed),
-    'not started', or 'updated'."""
+    'not replaced' (the add-on file could not be written, or Thunderbird came back with the
+    old add-on), 'not started', or 'updated'."""
     if not addon_behind(relay, package):
         return 'current'
     def log(text):
@@ -635,14 +644,22 @@ def refresh_running_addon(system, package, relay, progress=None, background=True
             log('add-on update stopped: Thunderbird did not close')
             return 'not closed'
         wait(lambda: not relay.connected.is_set(), DISCONNECT_SECONDS)
-        refresh_addon(profile, package)
+        replaced = refresh_addon(profile, package)
+        if not replaced:
+            log('add-on update: the add-on file could not be replaced; Thunderbird starts with the old one')
         start_addons_promptly(profile)
         try:
             (system.launch_background if background else system.launch)(program)
         except OSError:
             log('add-on update: Thunderbird did not start again')
             return 'not started'
+    if not replaced:
+        wait(relay.connected.is_set, WAIT_SECONDS)
+        return 'not replaced'
     if not wait(lambda: relay.connected.is_set() and not addon_behind(relay, package), WAIT_SECONDS):
+        if relay.connected.is_set():
+            log('add-on update: Thunderbird came back with the old add-on')
+            return 'not replaced'
         log('add-on update: no connection after the restart')
         return 'not started'
     log('add-on updated to %s' % getattr(relay, 'version', ''))

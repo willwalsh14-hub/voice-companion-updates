@@ -14,6 +14,27 @@ def read_text(path,default):
     try:return Path(path).read_text(encoding='utf-8').strip()
     except OSError:return default
 
+def read_as(path,default):
+    """Like read, but a damaged file of the wrong shape reads as the default."""
+    value=read(path,default)
+    return value if isinstance(value,type(default)) else default
+
+def podcast_subscriptions(folder):
+    """Saved podcasts with a name and a feed. A damaged entry stays in the file for a
+    helper (as in media_hub.saved_subscriptions) but is never listed or changed."""
+    return [s for s in read_as(Path(folder)/'podcast-subscriptions.json',[]) if isinstance(s,dict)
+            and isinstance(s.get('name'),str) and s['name'].strip() and isinstance(s.get('feed'),str) and s['feed'].strip()]
+
+def ai_account(folder):
+    """The saved AI voice account. One Windows cannot unlock (damaged, or copied from
+    another computer) counts as none, so Options still opens and saves."""
+    from ai_voice_settings import load
+    try:
+        account=load(folder)
+        return account if isinstance(account,dict) else {}
+    except Exception:
+        return {}
+
 def save_preferences(m):
     m.APP.mkdir(parents=True,exist_ok=True)
     target=m.APP/'preferences.json';temp=target.with_suffix('.writing')
@@ -24,7 +45,7 @@ def snapshot(m):
     voices=[] if m.TEXT_MODE else m.voice_choices()
     store=m.ProtectedStore(m.APP)
     accounts=store.accounts();selected=store.selected()
-    subs=read(m.APP/'podcast-subscriptions.json',[])
+    subs=podcast_subscriptions(m.APP)
     podcast_names={str(i+1)+'. '+s['name']:s['feed'] for i,s in enumerate(subs)}
     podcast_limits={str(i+1)+'. '+s['name']:s.get('download_limit','manual') for i,s in enumerate(subs)}
     engine='ai' if m.AI_SPEECH and m.AI_SPEECH.enabled else 'espeak' if m.ESPEAK_SPEECH and m.ESPEAK_SPEECH.enabled else 'windows'
@@ -32,7 +53,7 @@ def snapshot(m):
              # Fonts installed on this computer, found by the window; None lists every screen font.
              'display_fonts':getattr(m.APP_WINDOW,'font_families',None)}
     from windows_actions import startup_enabled
-    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':__import__('settings_model').input_mode_label(m.INPUT_MODE),'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',__import__('ai_voice_settings').load(m.APP).get('consent',False)),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':__import__('web_assistant').browser_setting(m.APP),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
+    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':__import__('settings_model').input_mode_label(m.INPUT_MODE),'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',ai_account(m.APP).get('consent',False)),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':__import__('web_assistant').browser_setting(m.APP),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read_as(m.APP/'radio-preferences.json',{}).get('source','all'),read_as(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
     return values,context
 
 def open_settings(m,mode):
@@ -80,7 +101,7 @@ def preview_settings(m,values,text):
     m.SETTINGS_PREVIEW_SPEECH.speak(text,rate,volume)
 
 def apply_settings(m,values):
-    from ai_voice_settings import load,save,remove
+    from ai_voice_settings import save,remove
     values=DEFAULTS | dict(values)
     if str(values.get('engine','')).lower()=='sapi':values['engine']='windows'
     rate=int(values['rate']);volume=int(values['volume']);pitch=int(values.get('pitch',0))
@@ -88,7 +109,7 @@ def apply_settings(m,values):
     if not -10<=rate<=10 or not 0<=volume<=100:raise ValueError('Speech rate or volume is out of range.')
     choices=[] if m.TEXT_MODE else m.voice_choices()
     if values['engine']=='espeak' and m.ESPEAK_SPEECH is None:raise ValueError('eSpeak is unavailable.')
-    ai=load(m.APP);key=values.get('api_key','').strip() or ai.get('key','')
+    ai=ai_account(m.APP);key=values.get('api_key','').strip() or ai.get('key','')
     if values.get('remove_ai') and values['engine']=='ai':raise ValueError('Choose another synthesizer before removing the AI key.')
     if values['engine']=='ai' and not key:raise ValueError('Enter an AI key and enable permission to send narration to OpenAI.')
     if (values.get('api_key') or values['engine']=='ai') and not values.get('ai_consent'):raise ValueError('Confirm permission to send narration text to OpenAI.')
@@ -153,15 +174,16 @@ def apply_settings(m,values):
     feed=session.context['podcast_feeds'].get(values.get('podcast_feed'))
     if feed or limits:
         subs=read(m.APP/'podcast-subscriptions.json',[]);changed=False
+        if not isinstance(subs,list):subs=[]
         for name,feed_url in session.context['podcast_feeds'].items():
             limit=str(limits.get(name,session.context['podcast_limits'].get(name,'manual')))
             if name==values.get('podcast_feed'):limit=values['podcast_limit']
             limit=int(limit) if limit.isdigit() else limit
             for show in subs:
-                if show.get('feed')==feed_url and show.get('download_limit','manual')!=limit:show['download_limit']=limit;changed=True
+                if isinstance(show,dict) and show.get('feed')==feed_url and show.get('download_limit','manual')!=limit:show['download_limit']=limit;changed=True
         if changed:
             m.media()._save('podcast-subscriptions.json',subs)
-            if any(show.get('download_limit','manual')!='manual' for show in subs):m.media().start_podcast_refresh()
+            if any(isinstance(show,dict) and show.get('download_limit','manual')!='manual' for show in subs):m.media().start_podcast_refresh()
     return True
 
 def apply_document_defaults(m,document):

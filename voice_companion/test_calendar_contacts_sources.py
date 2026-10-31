@@ -18,6 +18,7 @@ import companion as app
 import contacts_screen
 import display_screen
 import pim_sources
+import thunderbird_pim
 from pim_sources import Sources
 from screen_menus import MENUS
 from test_calendar_screen import CalendarHarness
@@ -448,6 +449,52 @@ class ContactsSourceTests(ContactsSourceHarness):
                                       'are shown. 6 contacts. Ann Brown, ann@example.com, 1 of 6.')
         app.handle('where am i', 'contacts')
         self.assertTrue(self.said().startswith('Contacts. Showing all address books. 6 contacts.'))
+
+
+class ThunderbirdNotAnsweringSourceTests(ContactsSourceHarness):
+    """Thunderbird could not be read for a moment. Before, the address book a person chose was
+    forgotten for good, and Control+L said there was only one email account."""
+    FAILURE = 'Thunderbird did not answer in time. Wait a minute, then try again.'
+
+    def failing(self):
+        return mock.patch('thunderbird_pim.contacts', side_effect=thunderbird_pim.PimError(self.FAILURE))
+
+    def test_a_failed_read_keeps_the_address_book_you_chose(self):
+        mode = self.open()
+        app.handle('show Outlook contacts', mode)
+        chosen = pim_sources.saved(self.root, 'contacts')['choice']
+        self.assertTrue(chosen.startswith('source:'), chosen)
+        with self.failing():
+            app.handle('refresh contacts', mode)
+            self.assertIn(self.FAILURE, self.said())
+            self.assertNotIn('no longer in Thunderbird', self.said())
+            self.press('Ctrl+L', mode)
+            self.assertTrue(self.said().startswith('Choose the address books to show. Contacts, Outlook'), self.said())
+            self.press('Escape', mode)
+        self.assertEqual(pim_sources.saved(self.root, 'contacts')['choice'], chosen)
+        app.handle('close contacts', mode)
+        self.open()
+        self.assertTrue(self.said().startswith('Contacts. Showing Contacts, Outlook, vet@outlook.com. 2 contacts.'), self.said())
+
+    def test_control_l_says_why_when_the_address_books_could_not_be_read(self):
+        with self.failing():
+            mode = self.open()
+            self.press('Ctrl+L', mode)
+        self.assertEqual(self.said(), self.FAILURE)
+
+
+class CalendarNotAnsweringSourceTests(CalendarHarness):
+    thunderbird_env = TWO
+
+    def test_control_l_says_why_when_the_calendars_could_not_be_read(self):
+        failure = 'Thunderbird did not answer in time. Wait a minute, then try again.'
+        with mock.patch('thunderbird_pim.calendars', side_effect=thunderbird_pim.PimError(failure)):
+            mode = self.open()
+            self.press('Ctrl+L', mode)
+        self.assertEqual(self.said(), failure)
+        # Once Thunderbird answers, Control+L reads the calendars and offers the list.
+        self.press('Ctrl+L', mode)
+        self.assertTrue(self.said().startswith('Choose the calendars to show. All calendars, 1 of'), self.said())
 
 
 class ContactsFailingTests(ContactsSourceHarness):

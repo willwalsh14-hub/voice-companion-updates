@@ -174,6 +174,66 @@ class ConfiguredReleaseFeedTests(unittest.TestCase):
                 fetch.assert_called_once_with(expected,'1.2.2-test')
 
 
+class DamagedUpdateFilesTests(unittest.TestCase):
+    def test_damaged_settings_in_the_data_folder_use_the_bundled_feed(self):
+        bundled='https://github.com/willwalsh14-hub/voice-companion-updates/releases/latest/download/voice-companion-update.json'
+        for text in ('[]','null','"feed"','{"manifest_url":','{"manifest_url":["x"]}'):
+            with self.subTest(text=text),tempfile.TemporaryDirectory() as folder:
+                (Path(folder)/'update-settings.json').write_text(text)
+                self.assertEqual(AppUpdates(folder,'1.2.2-test').manifest_url,bundled)
+
+    def test_a_blank_feed_in_the_data_folder_still_turns_checks_off(self):
+        with tempfile.TemporaryDirectory() as folder:
+            (Path(folder)/'update-settings.json').write_text('{"manifest_url":""}')
+            self.assertEqual(AppUpdates(folder,'1.2.2-test').manifest_url,'')
+
+    def test_a_ready_file_read_while_the_helper_writes_it_is_read_again(self):
+        """Set-Content creates update-ready.json before it writes it. Reading it empty
+        said "The update could not start" while the helper went on to install."""
+        import types
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);app=root/'Programs'/'Voice Companion'/'VoiceCompanion.exe';app.parent.mkdir(parents=True);app.write_bytes(b'MZapp')
+            download=root/'download';download.mkdir();setup=download/'Setup.exe';setup.write_bytes(b'MZinstaller')
+            service=AppUpdates(root,'1.2.2-test')
+            resources=root/'resources';(resources/'update-voice-runtime').mkdir(parents=True)
+            (resources/'apply-update.ps1').write_text('helper');(resources/'close-companion.ps1').write_text('close step')
+            service.resources=resources
+            release={**UpdateTests.release(self),'sha256':hashlib.sha256(b'MZinstaller').hexdigest()}
+            fake_os=types.SimpleNamespace(name='nt',environ={'LOCALAPPDATA':str(root)},getpid=lambda:123)
+            fake_sys=types.SimpleNamespace(frozen=True,executable=str(app))
+            writer=[]
+            def acknowledge(*args,**kwargs):
+                ready=download/'update-ready.json';ready.write_text('')
+                writer.append(threading.Timer(0.3,lambda:ready.write_text('{"ready":true}')));writer[0].start()
+                process=Mock();process.poll.return_value=None
+                return process
+            try:
+                with patch('app_updates.os',fake_os),patch('app_updates.sys',fake_sys),patch('app_updates.launch_update_process',side_effect=acknowledge):
+                    service.launch(setup,release)
+            finally:
+                for timer in writer:timer.join()
+            self.assertEqual(service.phase,'installing')
+
+
+class UpdateKeepsUnsavedNoteTests(unittest.TestCase):
+    def test_a_note_that_cannot_be_saved_holds_the_update(self):
+        """Yes to the update from a note that cannot be saved: before, the update
+        downloaded, closed the app and the note was lost."""
+        service=Mock();service.can_install.return_value=True
+        said=[]
+        with tempfile.TemporaryDirectory() as folder,patch.object(companion,'APP',Path(folder)),patch.object(companion,'UPDATES',service),\
+             patch.object(companion,'UPDATE_RETURN_MODE','note'),patch.object(companion,'STARTUP_UPDATE_PENDING',False),\
+             patch.object(companion,'document',None),patch.object(companion,'email_draft',None),\
+             patch.object(companion,'note_buffer',['Call the VA']),patch.object(companion,'OPEN_NOTE',None),\
+             patch.object(companion,'speak',side_effect=lambda text,*a,**k:said.append(str(text))),patch.object(companion,'sync_app_context'),\
+             patch('notepad.add',side_effect=PermissionError(13,'Access is denied')):
+            self.assertEqual(companion.handle('yes','update_offer',typed=True),'note')
+            service.download.assert_not_called()
+            self.assertEqual(companion.note_buffer,['Call the VA'])
+        self.assertEqual(len(said),1,said)
+        self.assertIn('I could not save your work. The update will wait.',said[0])
+
+
 
 class ExternalUpdaterEnvironmentTests(unittest.TestCase):
     def test_external_launch_cleans_environment_and_restores_dll_directory(self):

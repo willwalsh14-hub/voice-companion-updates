@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib import request, parse
+from http.client import HTTPException
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from media_player import MediaPlayer, StreamWatch, seek_message, spoken_time as playback_time, _number
@@ -60,8 +61,14 @@ def _safe(name):
 
 
 def _http(url, limit=4_000_000):
-    with request.urlopen(request.Request(url, headers={'User-Agent':'VoiceCompanion/0.2'}), timeout=20) as response:
-        data = response.read(limit+1)
+    try:
+        with request.urlopen(request.Request(url, headers={'User-Agent':'VoiceCompanion/0.2'}), timeout=20) as response:
+            data = response.read(limit+1)
+    except HTTPException as exc:
+        # A reply cut off, or a server that does not speak HTTP (an old SHOUTcast
+        # station says "ICY 200 OK"). Python does not count these as OSError, so
+        # every caller's "the internet is down" handling missed them and the app stopped.
+        raise OSError('The connection was cut off or the reply was broken.') from exc
     if len(data)>limit: raise ValueError('The directory response is too large.')
     return data
 
@@ -247,6 +254,12 @@ def _shows(results):
             shows.append({'name': name, 'feed': r['feedUrl'], 'genre': str(r.get('primaryGenreName') or ''),
                           'apple_id': str(r.get('collectionId') or '')})
     return shows
+
+
+def _saved_episodes(value):
+    """The usable episodes of a saved subscription. A damaged list or entry is left out."""
+    return [e for e in (value if isinstance(value, list) else []) if isinstance(e, dict)
+            and isinstance(e.get('title'), str) and isinstance(e.get('url'), str) and _http_url(e['url'])]
 
 
 def _sentence(text):
@@ -449,7 +462,10 @@ class MediaHub:
         errors=[]
         for root in RADIO_ROOTS:
             try:
-                return self.fetch_json(root+'/json/stations/search?'+parse.urlencode(query))
+                found=self.fetch_json(root+'/json/stations/search?'+parse.urlencode(query))
+                # A busy mirror can answer with an error object instead of a station list.
+                if not isinstance(found,list): raise ValueError('The station directory reply was not a station list.')
+                return found
             except (OSError,ValueError,TimeoutError) as exc:
                 errors.append(str(exc))
         raise OSError('Radio Browser mirrors are unavailable.')
@@ -478,13 +494,18 @@ class MediaHub:
         if not isinstance(catalog,dict) or not isinstance(catalog.get('stations'),list):
             raise ValueError('The IPRD catalog format was not recognized.')
         normalized=[]
+        def text(value): return str(value).strip() if isinstance(value,(str,int,float)) and not isinstance(value,bool) else ''
         for item in catalog['stations']:
             if not isinstance(item,dict): continue
-            for stream in item.get('streams',[]):
-                if not isinstance(stream,dict) or not _http_url(stream.get('url','')): continue
-                normalized.append({'name':item.get('name',''),'url':stream['url'],
-                    'country':item.get('country',''),'tags':', '.join(item.get('genres',[])),
-                    'codec':stream.get('format',''),'source':'IPRD'})
+            streams=item.get('streams')
+            genres=item.get('genres')
+            for stream in streams if isinstance(streams,list) else []:
+                if not isinstance(stream,dict) or not isinstance(stream.get('url'),str) or not _http_url(stream['url']): continue
+                if not text(item.get('name')): break
+                normalized.append({'name':text(item.get('name')),'url':stream['url'],
+                    'country':text(item.get('country')),
+                    'tags':', '.join(text(genre) for genre in genres if text(genre)) if isinstance(genres,list) else '',
+                    'codec':text(stream.get('format')),'source':'IPRD'})
                 break
         if not normalized: raise ValueError('The IPRD catalog contained no usable streams.')
         self._save('radio-iprd-stations.json',normalized[:100000])
@@ -559,15 +580,19 @@ class MediaHub:
         self.stations = []
         self.station_index = None
         self.station_choices = []
+        def text(value): return value if isinstance(value,str) else ''
         for entry in list(online or []) + local:
-            stream = entry.get('url_resolved') or entry.get('url','')
-            identity = (entry.get('name','').casefold(),stream.rstrip('/').casefold())
-            if not entry.get('name') or not _http_url(stream) or identity in seen or not self._usable({**entry,'url':stream}): continue
+            # A damaged entry (not a station, or a name that is not text) is skipped.
+            if not isinstance(entry,dict): continue
+            stream = text(entry.get('url_resolved')) or text(entry.get('url'))
+            name = text(entry.get('name')).strip()
+            identity = (name.casefold(),stream.rstrip('/').casefold())
+            if not name or not _http_url(stream) or identity in seen or not self._usable({**entry,'url':stream}): continue
             seen.add(identity)
-            self.stations.append({'name':entry['name'], 'url':stream, 'country':entry.get('country',''),
-                                  'state':entry.get('state',''), 'tags':entry.get('tags',''),
-                                  'codec':entry.get('codec',''), 'hls':bool(entry.get('hls')),
-                                  'uuid':entry.get('stationuuid',''), 'source':entry.get('source','Radio Browser')})
+            self.stations.append({'name':name, 'url':stream, 'country':text(entry.get('country')),
+                                  'state':text(entry.get('state')), 'tags':text(entry.get('tags')),
+                                  'codec':text(entry.get('codec')), 'hls':bool(entry.get('hls')),
+                                  'uuid':text(entry.get('stationuuid')), 'source':text(entry.get('source')) or 'Radio Browser'})
             if len(self.stations)>=30: break
         if not self.stations: return online_error + 'No matching stations. Try another name or genre.'
         self.station_index = 0
@@ -710,28 +735,44 @@ class MediaHub:
         codec = str(station.get('codec','')).lower()
         ext = '.aac' if 'aac' in codec else '.ogg' if 'ogg' in codec else '.mp3'
         folder = self._path('Radio Recordings')
-        folder.mkdir(parents=True, exist_ok=True)
         target = folder / (_safe(station['name']) + ' ' + self.clock().strftime('%Y-%m-%d %H-%M-%S') + ext)
         deadline = time.monotonic()+minutes*60
         size = 0
+        # A problem with the file (the folder cannot be made, the disk is full) is not the
+        # station's fault: it is said as a saving problem, and the station is not hidden.
+        disk = False
         try:
-            with request.urlopen(request.Request(url, headers={'User-Agent':'VoiceCompanion/0.2','Icy-MetaData':'0'}),timeout=20) as stream, target.open('wb') as output:
+            try: folder.mkdir(parents=True, exist_ok=True)
+            except OSError: disk = True; raise
+            with request.urlopen(request.Request(url, headers={'User-Agent':'VoiceCompanion/0.2','Icy-MetaData':'0'}),timeout=20) as stream:
                 content_type = stream.headers.get('Content-Type','').lower()
                 if not any(t in content_type for t in ('audio/','application/octet-stream')):
                     raise ValueError('The station did not provide a direct audio stream.')
-                while not stop.is_set() and time.monotonic()<deadline and size<MAX_DOWNLOAD:
-                    chunk = stream.read(16384)
-                    if not chunk: break
-                    output.write(chunk); size += len(chunk)
+                try: output = target.open('wb')
+                except OSError: disk = True; raise
+                with output:
+                    while not stop.is_set() and time.monotonic()<deadline and size<MAX_DOWNLOAD:
+                        chunk = stream.read(16384)
+                        if not chunk: break
+                        try: output.write(chunk)
+                        except OSError: disk = True; raise
+                        size += len(chunk)
             if size:
                 self.notify('Saved radio recording ' + target.name + '.')
             else:
                 target.unlink(missing_ok=True)
                 self.notify('The recording had no audio. Nothing was saved.')
-        except (OSError, ValueError, TimeoutError):
-            if not size: target.unlink(missing_ok=True)
-            self._mark_bad(station)
-            self.notify('Radio recording stopped because the stream failed. Check saved recordings before retrying.')
+        except (OSError, ValueError, TimeoutError, HTTPException):
+            try:
+                if not size: target.unlink(missing_ok=True)
+                if not disk: self._mark_bad(station)
+            except OSError: pass
+            if disk:
+                self.notify('The radio recording could not be saved. ' +
+                            ('The part recorded so far is in Radio Recordings. ' if size else '') +
+                            'Check that the disk has room, then try again.')
+            else:
+                self.notify('Radio recording stopped because the stream failed. Check saved recordings before retrying.')
         finally:
             with self._lock:
                 if self.recording is threading.current_thread(): self.recording = None
@@ -799,6 +840,8 @@ class MediaHub:
                     due=datetime.fromisoformat(job['when'])
                     due<=now
                     if not isinstance(job['station'],dict) or not isinstance(job['station'].get('name'),str): raise TypeError
+                    # Without a web address the recorder could only stop without a word.
+                    if not isinstance(job['station'].get('url'),str) or not _http_url(job['station']['url']): raise ValueError
                     int(job['minutes'])
                 except (TypeError,KeyError,ValueError,AttributeError,OverflowError):
                     # Kept in the file for a helper to inspect, but never retried as an error.
@@ -965,7 +1008,7 @@ class MediaHub:
         if feed is None: self.show_index=index
         try: episodes=self._feed_episodes(show)
         except (OSError,ValueError,ET.ParseError,TimeoutError):
-            cached=next((s.get('episodes',[]) for s in self.saved_subscriptions()
+            cached=next((_saved_episodes(s.get('episodes')) for s in self.saved_subscriptions()
                          if s['feed']==show['feed']),[])
             if not cached: return 'The podcast feed is unavailable. Try again later.'
             episodes=cached
@@ -1065,15 +1108,16 @@ class MediaHub:
                 current=self._load('podcast-subscriptions.json',[])
                 entry=next((s for s in (current if isinstance(current,list) else []) if isinstance(s,dict) and s.get('feed')==show['feed']),None)
                 if entry is None: continue
-                old={e.get('url') for e in entry.get('episodes',[])}
+                old={e['url'] for e in _saved_episodes(entry.get('episodes'))}
                 new=sum(e['url'] not in old for e in episodes) if old else 0
                 entry['episodes']=episodes
                 entry['last_checked']=time.time()
                 policy=entry.get('download_limit','manual')
                 self._save('podcast-subscriptions.json',current)
-            if new: self.notify(f'{new} new episodes in {show["name"]}.')
+            if new: self.notify(_counted(new,'new episode')+' in '+show['name']+'.')
             if policy!='manual': pending.append((show,episodes,policy))
-        if failures: self.notify(f'{failures} subscribed podcast feeds could not refresh. Their saved lists remain available.')
+        if failures: self.notify(_counted(failures,'subscribed podcast feed')+' could not refresh. '+
+                                 ('Its saved list is still there.' if failures==1 else 'Their saved lists are still there.'))
         for show,episodes,policy in pending: self._auto_download(show,episodes,policy)
         return f'Checked {len(saved)-failures} of {len(saved)} subscribed podcast feeds.'
 
@@ -1113,9 +1157,9 @@ class MediaHub:
             if not success and first_error is None:
                 with self._lock: first_error=self.download_errors.pop(url,None)
         if failed:
-            self.notify(f'{failed} episodes from {show["name"]} could not download. '+
+            self.notify(_counted(failed,'episode')+' from '+show['name']+' could not download. '+
                         (first_error+' ' if first_error else '')+'Companion will try again later.')
-        if completed: self.notify(f'{completed} episodes from {show["name"]} downloaded for offline listening.')
+        if completed: self.notify(_counted(completed,'episode')+' from '+show['name']+' downloaded for offline listening.')
         if not failed: self._prune_auto(feed,{e['url'] for e in desired})
 
     def _prune_auto(self, feed, desired):
@@ -1186,14 +1230,18 @@ class MediaHub:
 
     def chapter(self, direction):
         if not self.chapters: return 'This episode does not provide supported chapter markers.'
-        current=self.player.control('position')
-        if current is None: return 'Play the episode first.'
-        if direction=='next':
-            item=next((c for c in self.chapters if c['time']>current+1),None)
-        else:
-            item=next((c for c in reversed(self.chapters) if c['time']<current-2),None)
-        if not item: return 'There is no '+direction+' chapter.'
-        if self.player.control('seek',position=item['time']) is None: return 'This audio cannot seek.'
+        try:
+            current=self.player.control('position')
+            if current is None: return 'Play the episode first.'
+            if direction=='next':
+                item=next((c for c in self.chapters if c['time']>current+1),None)
+            else:
+                item=next((c for c in reversed(self.chapters) if c['time']<current-2),None)
+            if not item: return 'There is no '+direction+' chapter.'
+            if self.player.control('seek',position=item['time']) is None: return 'This audio cannot seek.'
+        except Exception:
+            # The player's browser closed or stopped answering, as Pause and Play say.
+            return 'The audio player could not respond. Try opening that audio again.'
         return item['title']+'.'
 
     def audio_command(self, cmd):
@@ -1334,10 +1382,11 @@ class MediaHub:
             with self._lock: self.download_errors.pop(episode['url'],None)
             if announce: self.notify('Downloaded '+episode['title']+'. It is available offline in Podcast Downloads.')
             return True
-        except (OSError,ValueError,TimeoutError) as exc:
+        except (OSError,ValueError,TimeoutError,HTTPException) as exc:
             temp.unlink(missing_ok=True)
             reason=('Podcast host refused the download with HTTP '+str(exc.code)+'.' if isinstance(exc,HTTPError)
                     else 'Podcast host could not be reached.' if isinstance(exc,URLError)
+                    else 'The connection to the podcast host was cut off.' if isinstance(exc,HTTPException)
                     else str(exc) if isinstance(exc,ValueError) else 'The network or disk interrupted the download.')
             with self._lock: self.download_errors[episode['url']]=reason
             print('Podcast download failed:',repr(exc),file=sys.stderr)

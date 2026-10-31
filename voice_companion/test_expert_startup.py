@@ -101,6 +101,33 @@ class SleepWithTheMicrophoneOffTests(KeyTestCase):
         self.assertEqual(self.said[-1], 'Going to sleep. The microphone could not start, so press Control+F12 to wake up.')
 
 
+
+class SleepWithUnsavedWorkTests(CompanionTestCase):
+    """Going to sleep saves the draft or note. When that fails (a full disk, a held file),
+    Companion still goes to sleep with the words kept, and says so in the same message.
+    Before, a draft stopped the whole app, and the note's failure was cut off by
+    "Going to sleep"."""
+    def setUp(self):
+        super().setUp()
+        for name, value in dict(MICROPHONE_OFF=False, MICROPHONE_FAILED=False, note_buffer=['Pick up the meds'],
+                                OPEN_NOTE=None).items():
+            p = patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+
+    def test_a_draft_that_cannot_be_saved_still_sleeps_and_says_so(self):
+        draft = self.draft()
+        with patch.object(draft, 'save', side_effect=PermissionError(13, 'Access is denied')):
+            self.assertEqual(companion.handle('go to sleep', 'email_draft'), 'sleep')
+        self.assertEqual(companion.SLEEP_RETURN_MODE, 'email_draft')
+        self.assertEqual(self.said, [companion.UNSAVED_DRAFT + ' Going to sleep. Say wake up when you need me.'])
+
+    def test_a_note_that_cannot_be_saved_is_heard_before_sleep(self):
+        with patch('notepad.add', side_effect=OSError('The disk is full.')):
+            self.assertEqual(companion.handle('go to sleep', 'note'), 'sleep')
+        self.assertEqual(companion.note_buffer, ['Pick up the meds'])
+        self.assertEqual(len(self.said), 1, self.said)
+        self.assertTrue(self.said[0].startswith('Your note could not be saved.'), self.said)
+        self.assertTrue(self.said[0].endswith('Going to sleep. Say wake up when you need me.'), self.said)
+
 class TutorialListWordsTests(KeyTestCase):
     """In the tutorial's lists, Down and Up said "File manager. 12 of 12. Press Enter or say
     that one to open. " (the hint every time, and a space at the end), while Home and End said

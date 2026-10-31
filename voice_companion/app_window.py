@@ -12,6 +12,21 @@ from key_state import alt_held  # Tk state bit 0x8 is Num Lock on Windows, not A
 from keyboard_text import caret_feedback,typing_feedback,phonetic,character as spoken_character
 
 
+# The window's update loop runs every 15 ms. An error it survives is kept for
+# debug_state and failed tests, but one that repeats on every update must not
+# fill memory or the error log.
+WINDOW_ERROR_LIMIT=50
+
+
+def keep_window_error(errors,text):
+    """Keep one window error. The first error (usually the cause) and the latest
+    ones are kept; the same error again in a row is not. True when it is new."""
+    if errors and errors[-1]==text:return False
+    errors.append(text)
+    if len(errors)>WINDOW_ERROR_LIMIT:del errors[1]
+    return True
+
+
 def foreground_window(root,control=None):
     """Return keyboard ownership after an explicit application navigation."""
     import sys
@@ -287,8 +302,8 @@ class CompanionWindow:
                 # thread ("Tcl_AsyncDelete"). Keep the text only.
                 import sys,traceback
                 text=''.join(traceback.format_exception(kind,error,trace))[-3000:]
-                self.ui_errors.append(text)
-                print('Voice Companion window error:\n'+text,file=sys.stderr,flush=True)
+                if keep_window_error(self.ui_errors,text):
+                    print('Voice Companion window error:\n'+text,file=sys.stderr,flush=True)
             root.report_callback_exception=callback_error
             from media_shortcut import MediaShortcut
             self.media_shortcut=MediaShortcut(lambda:self.commands.put(('keyboard','Ctrl+P')))
@@ -1376,8 +1391,9 @@ class CompanionWindow:
                 try:poll_once()
                 except Exception as exc:
                     import sys,traceback
-                    self.ui_errors.append(''.join(traceback.format_exception(type(exc),exc,exc.__traceback__))[-3000:])
-                    print('Voice Companion window error:\n'+self.ui_errors[-1],file=sys.stderr,flush=True)
+                    text=''.join(traceback.format_exception(type(exc),exc,exc.__traceback__))[-3000:]
+                    if keep_window_error(self.ui_errors,text):
+                        print('Voice Companion window error:\n'+text,file=sys.stderr,flush=True)
                 finally:
                     if not self.closed.is_set(): root.after(15, poll)
 

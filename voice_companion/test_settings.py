@@ -180,3 +180,110 @@ class CapitalPreferenceTests(unittest.TestCase):
                 self.assertEqual(companion.handle('capital letters '+value,mode),mode)
                 self.assertEqual(worker.capital_letters,value)
                 self.assertEqual(json.loads((Path(folder)/'preferences.json').read_text())['capital_letters'],value)
+
+
+class DamagedFilesOptionsTests(unittest.TestCase):
+    """Options (Alt+O) opens and saves even when a saved file is damaged. Before, a
+    podcast entry without a name, a radio file of the wrong shape, or an AI voice
+    file Windows could not unlock stopped the whole app."""
+    def snapshot(self,folder,load=None):
+        import app_settings
+        with patch.object(companion,'APP',Path(folder)),patch.object(companion,'TEXT_MODE',True),\
+             patch('ai_voice_settings.load',side_effect=load) if load else patch.object(companion,'TEXT_MODE',True):
+            return app_settings.snapshot(companion)
+
+    def test_damaged_podcast_entries_are_left_out_of_options(self):
+        with tempfile.TemporaryDirectory() as folder:
+            good={'name':'Good Show','feed':'https://example.com/good.xml','download_limit':3}
+            (Path(folder)/'podcast-subscriptions.json').write_text(json.dumps([{'feed':'https://example.com/x.xml'},'junk',good]))
+            values,context=self.snapshot(folder)
+            self.assertEqual(list(context['podcast_feeds']),['1. Good Show'])
+            self.assertEqual(context['podcast_limits'],{'1. Good Show':3})
+            self.assertEqual(values['podcast_feed'],'1. Good Show')
+
+    def test_podcast_file_of_the_wrong_shape_opens_options(self):
+        with tempfile.TemporaryDirectory() as folder:
+            (Path(folder)/'podcast-subscriptions.json').write_text(json.dumps({'name':'x'}))
+            values,context=self.snapshot(folder)
+            self.assertEqual(context['podcast_feeds'],{})
+
+    def test_radio_file_of_the_wrong_shape_reads_as_all_stations(self):
+        with tempfile.TemporaryDirectory() as folder:
+            (Path(folder)/'radio-preferences.json').write_text(json.dumps(['radio-browser']))
+            values,_=self.snapshot(folder)
+            self.assertEqual(values['radio_source'],'all')
+
+    def test_ai_voice_file_that_cannot_be_read_opens_options(self):
+        with tempfile.TemporaryDirectory() as folder:
+            values,_=self.snapshot(folder,load=RuntimeError('The data is invalid.'))
+            self.assertFalse(values['ai_consent'])
+
+    def test_damaged_podcast_entry_does_not_stop_saving_a_download_limit(self):
+        import app_settings
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'podcast-subscriptions.json'
+            good={'name':'Good Show','feed':'https://example.com/good.xml','download_limit':'manual'}
+            path.write_text(json.dumps(['junk',good]))
+            media=Mock()
+            media._save.side_effect=lambda name,data:path.write_text(json.dumps(data))
+            with patch.object(companion,'APP',Path(folder)),patch.object(companion,'TEXT_MODE',True),\
+                 patch.object(companion,'PREFERENCES',dict(DEFAULTS)),patch.object(companion,'media',return_value=media),\
+                 patch.object(companion,'mail_session',None),patch.object(companion,'web_session',None),\
+                 patch.object(companion,'save_speech_settings'),patch.object(companion,'apply_transcript'):
+                values,_=app_settings.snapshot(companion)
+                values['podcast_limit']='5'
+                app_settings.apply_settings(companion,values)
+            self.assertEqual(json.loads(path.read_text()),['junk',{**good,'download_limit':5}])
+
+
+
+from test_core_email_fixes import CompanionTestCase
+
+REAL_SAVE_SPEECH_SETTINGS = companion.save_speech_settings
+
+
+class SettingNotSavedTests(CompanionTestCase):
+    """A spoken setting change works at once even when it cannot be saved (a full disk,
+    or a settings file another program holds). Before, "Faster", "Verbosity low",
+    "Commands only" and others stopped the whole app; now the change is made and the
+    user hears that it lasts until Companion closes."""
+    def setUp(self):
+        super().setUp()
+        for name, value in dict(PREFERENCES=dict(DEFAULTS), VERBOSITY='high', SPEECH_RATE=0, SPEECH_PITCH=0,
+                                SPEECH_VOLUME=100, PUNCTUATION_LEVEL='some', KEYBOARD_SPEECH=None, web_session=None,
+                                MICROPHONE_OFF=False, MICROPHONE_FAILED=False, MICROPHONE_ANNOUNCED=False,
+                                TRANSCRIPT=__import__('speech_transcript').Transcript(),
+                                save_speech_settings=REAL_SAVE_SPEECH_SETTINGS).items():
+            p = patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+        for target in ('storage.write_text_atomic', 'app_settings.save_preferences'):
+            p = patch(target, side_effect=PermissionError(13, 'Access is denied')); p.start(); self.addCleanup(p.stop)
+
+    def test_each_change_is_made_and_says_it_is_not_saved(self):
+        checks = (('faster', lambda: companion.SPEECH_RATE == 1, 'Voice rate 1.'),
+                  ('verbosity low', lambda: companion.VERBOSITY == 'low', 'Verbosity low.'),
+                  ('punctuation all', lambda: companion.PUNCTUATION_LEVEL == 'all', 'Punctuation all.'),
+                  ('commands only', lambda: companion.INPUT_MODE == 'commands', 'Commands only.'),
+                  ('keep audio playing in the background on', lambda: companion.PREFERENCES['keep_audio_playing'], 'Keep audio playing in the background on.'),
+                  ('capital letters raise pitch', lambda: companion.PREFERENCES['capital_letters'] == 'raise pitch', 'raise pitch'),
+                  ('start transcript', lambda: companion.PREFERENCES['speech_transcript'], 'Transcript on.'),
+                  ('turn off the microphone', lambda: companion.MICROPHONE_OFF, 'Microphone off.'))
+        for command, changed, words in checks:
+            with self.subTest(command=command):
+                self.said.clear()
+                self.assertEqual(companion.handle(command, 'awake', typed=True), 'awake')
+                self.assertTrue(changed())
+                self.assertEqual(len(self.said), 1, self.said)
+                self.assertIn(words, self.said[0])
+                self.assertTrue(self.said[0].endswith(companion.NOT_SAVED), self.said)
+
+
+class OptionsSaveFailureWordsTests(unittest.TestCase):
+    def test_file_and_program_errors_are_said_in_plain_words(self):
+        """Before: "Settings were not saved: [Errno 13] Permission denied: 'C:\\Users\\...\\preferences.writing'"."""
+        say = companion.options_save_failure
+        self.assertEqual(say(ValueError('Voice pitch must be from minus ten to ten.')),
+                         'Settings were not saved: Voice pitch must be from minus ten to ten.')
+        message = say(PermissionError(13, 'Permission denied', r'C:\Users\will\AppData\preferences.writing'))
+        self.assertEqual(message, 'Settings were not saved, because a settings file could not be written. Check that the disk has space, then save again.')
+        for problem in (KeyError('name'), AttributeError("'list' object has no attribute 'get'"), ValueError('')):
+            self.assertEqual(say(problem), 'Settings were not saved because of a problem. Save again, or ask your helper to check Voice Companion.')

@@ -40,7 +40,7 @@ class StartupAnnouncementTests(CompanionTestCase):
         for name, value in dict(MICROPHONE_OFF=False, MICROPHONE_FAILED=False, STARTUP_UPDATE_PENDING=False,
                                 STARTUP_QUESTION=None, STARTUP_NOTICES=[], MAIN_MENU_LEAD='',
                                 UPDATE_RETURN_MODE='awake', PREFERENCES={'check_updates': True},
-                                UPDATES=FakeUpdates()).items():
+                                UPDATES=FakeUpdates(), PREFERENCES_DAMAGED=False).items():
             p = mock.patch.object(companion, name, value, create=True); p.start(); self.addCleanup(p.stop)
         p = mock.patch.object(companion.sys, 'argv', ['companion']); p.start(); self.addCleanup(p.stop)
 
@@ -124,6 +124,35 @@ class StartupAnnouncementTests(CompanionTestCase):
         # After startup, a notice is spoken at once.
         companion.startup_notice('Later notice.')
         self.assertEqual(self.said[-1], 'Later notice.')
+
+    def test_damaged_options_are_kept_for_a_helper_and_said_once(self):
+        """A damaged preferences.json used to reset every option without a word, and the
+        next change wrote over it. Now the old file is kept and the user is told."""
+        path = self.folder / 'preferences.json'
+        for damaged in ('{"verbosity": "lo', '[1, 2]', ''):
+            with self.subTest(damaged=damaged):
+                self.said.clear(); companion.STARTUP_NOTICES = []
+                path.write_text(damaged, encoding='utf-8')
+                preferences, problem = companion.load_preferences(self.folder)
+                self.assertEqual(preferences, dict(companion.DEFAULTS))
+                self.assertTrue(problem)
+                companion.PREFERENCES_DAMAGED = problem
+                self.start()
+                self.assertEqual(len(self.said), 1, self.said)
+                self.assert_in_order(self.said[0], 'is ready.', companion.PREFERENCES_DAMAGED_NOTICE, 'The microphone is on.')
+                self.assertEqual((self.folder / 'preferences-damaged.json').read_text(encoding='utf-8'), damaged)
+                self.assertFalse(companion.PREFERENCES_DAMAGED)
+                self.said.clear(); companion.STARTUP_NOTICES = []
+                self.start()
+                self.assertNotIn(companion.PREFERENCES_DAMAGED_NOTICE, self.said[0])
+
+    def test_missing_or_good_options_say_nothing(self):
+        path = self.folder / 'preferences.json'
+        path.unlink(missing_ok=True)
+        self.assertEqual(companion.load_preferences(self.folder), (dict(companion.DEFAULTS), False))
+        path.write_text('{"verbosity": "low"}', encoding='utf-8')
+        preferences, problem = companion.load_preferences(self.folder)
+        self.assertEqual((preferences['verbosity'], problem), ('low', False))
 
     # An update offered at startup.
 

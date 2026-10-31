@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.188-test'
+APP_VERSION = '0.2.189-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -70,12 +70,19 @@ def documents_folder():
             pass
     target = folder / 'Voice Companion'
     legacy = APP / 'Documents'
-    if legacy.exists() and legacy.resolve() != target.resolve():
-        target.mkdir(parents=True, exist_ok=True)
-        for old in legacy.glob('*.docx'):
-            destination = target / old.name
-            if not destination.exists():
-                shutil.copy2(old, destination)
+    # Documents from before October 19, 2026 are copied once, when the new folder is made.
+    # Copying on every call brought back documents the person had deleted or renamed.
+    # They are copied to a side folder first, so a failed copy leaves no half-filled folder
+    # and is tried again next time. The old copies are never removed.
+    if legacy.exists() and not target.exists() and legacy.resolve() != target.resolve():
+        moving = folder / 'Voice Companion.moving'
+        try:
+            moving.mkdir(parents=True, exist_ok=True)
+            for old in legacy.glob('*.docx'):
+                shutil.copy2(old, moving / old.name)
+            os.replace(moving, target)
+        except OSError as error:
+            print('Old documents could not be copied yet:', error, file=sys.stderr)
     return target
 
 def document_format_command(command):
@@ -118,9 +125,17 @@ PUNCTUATION_LEVEL = 'some'
 VERBOSITY = 'high'
 SETTINGS_PANEL = None
 SETTINGS_RETURN_MODE = 'awake'
-try:
-    PREFERENCES = DEFAULTS | json.loads((APP/'preferences.json').read_text(encoding='utf-8'))
-except (OSError,ValueError,TypeError): PREFERENCES = dict(DEFAULTS)
+def load_preferences(folder):
+    """The saved options, and True when preferences.json is there but damaged.
+    A missing file (the first start) is not damaged."""
+    try:
+        return DEFAULTS | json.loads((Path(folder)/'preferences.json').read_text(encoding='utf-8')), False
+    except OSError:
+        return dict(DEFAULTS), False
+    except (ValueError,TypeError):
+        return dict(DEFAULTS), True
+PREFERENCES, PREFERENCES_DAMAGED = load_preferences(APP)
+PREFERENCES_DAMAGED_NOTICE = 'Your saved options could not be read, so Voice Companion is using the usual options. To set them again, press Alt+O.'
 VERBOSITY = PREFERENCES.get('verbosity','high')
 # Options, Web browser, "Guided Chrome window" (see web_assistant.CHROME_IN_BACKGROUND).
 __import__('web_assistant').CHROME_IN_BACKGROUND = PREFERENCES.get('browser_window') == 'Run the browser in the background'
@@ -547,7 +562,12 @@ def apply_keyboard_edit(payload,mode):
     else:
         logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
         editor=document if logical=='document' else email_draft
-        replace_keyboard_text(editor,payload['before'],payload['after'],payload['caret'],payload.get('selection'))
+        try:replace_keyboard_text(editor,payload['before'],payload['after'],payload['caret'],payload.get('selection'))
+        except ValueError:
+            # Refused (it would join table cells): the window gets the unchanged text back.
+            EDIT_ACK[payload['source']]=max(EDIT_ACK.get(payload['source'],0),payload['seq'])
+            sync_app_context(mode,True)
+            raise
         if payload['before']!=payload['after']:KEYBOARD_DIRTY[id(editor)]=(editor,time.monotonic())
     EDIT_ACK[payload['source']]=payload['seq']
     sync_app_context(mode)
@@ -877,7 +897,7 @@ def change_display(request,mode):
     if request[0]!='status':
         PREFERENCES.update(values)
         try:__import__('app_settings').save_preferences(sys.modules[__name__])
-        except OSError:words+=' This change could not be saved. It lasts until Companion closes.'
+        except OSError:words+=NOT_SAVED
     speak(words)
     sync_app_context(mode)
 
@@ -1091,7 +1111,10 @@ def _navigation_key(key,mode):
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
     if mode in ('media','podcast') and MEDIA_HUB:
-        result=media_navigation().keyboard(key)
+        from media_navigation import spoken_error
+        # As by voice: a key whose action fails says so, and the app keeps going.
+        try:result=media_navigation().keyboard(key)
+        except (OSError,ValueError,IndexError,ET.ParseError) as exc:result='I could not complete that media request. '+spoken_error(exc)
         if result=='__main__':return 'media menu'
         if result:speak(result)
         sync_app_context(mode,True)
@@ -1256,6 +1279,17 @@ def save_options(values,mode):
     sync_app_context(mode,True)
     speak('Options saved. '+take_window_option_notice()+options_return_notice(mode))
     return mode
+
+def options_save_failure(exc):
+    """What Options says when saving failed. A setting's own reason ("Voice pitch must be
+    from minus ten to ten.") is said as it is; a file or program error is said in plain
+    words, never as an error number and a file path."""
+    if isinstance(exc, ValueError) and str(exc).strip():
+        return 'Settings were not saved: ' + str(exc).strip()
+    if isinstance(exc, OSError):
+        return 'Settings were not saved, because a settings file could not be written. Check that the disk has space, then save again.'
+    return 'Settings were not saved because of a problem. Save again, or ask your helper to check Voice Companion.'
+
 
 def apply_document_defaults(document):
     from app_settings import apply_document_defaults as apply
@@ -1632,6 +1666,20 @@ def update_audio_ducking(active=None):
         print('Audio ducking unavailable:', exc, file=sys.stderr)
 
 
+NOT_SAVED = ' This change could not be saved. It lasts until Companion closes.'
+
+
+def remembered(*savers):
+    """Save a changed setting. '' when saved; otherwise the words that say the change
+    still works now but lasts only until Companion closes (a full disk, or a settings
+    file another program holds). A setting that cannot be saved must never stop the app."""
+    try:
+        for save in savers:save()
+    except OSError:
+        return NOT_SAVED
+    return ''
+
+
 def save_speech_settings():
     from storage import write_text_atomic
     write_text_atomic(APP / 'speech-settings.json',
@@ -1664,14 +1712,14 @@ def change_speech_setting(command, writing=False):
     else:
         SPEECH_VOLUME = value
         if not TEXT_MODE: voice.Volume = value
-    save_speech_settings()
+    unsaved=remembered(save_speech_settings)
     if KEYBOARD_SPEECH and not TEXT_MODE:KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'))
     # Asked to go past a limit: say so, as "Bigger text." says "Largest text size."
     limit=''
     if operation=='delta' and value==current and amount:
         limit={('volume',1):'Loudest volume. ',('volume',-1):'Quietest volume. ',('rate',1):'Fastest rate. ',('rate',-1):'Slowest rate. ',
                ('pitch',1):'Highest pitch. ',('pitch',-1):'Lowest pitch. '}.get((kind,1 if amount>0 else -1),'')
-    speak(limit+('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.'))
+    speak(limit+('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.')+unsaved)
     return True
 
 def voice_choices(engine=None):
@@ -1717,8 +1765,7 @@ def keep_voice():
     name = choose_voice(voice_choices(VOICE_PICK_ENGINE)[VOICE_PICK_INDEX])
     VOICE_PICK_INDEX = VOICE_PICK_ORIGINAL = VOICE_PICK_ENGINE = None
     VOICE_PICK_CONFIRM = False
-    save_speech_settings()
-    speak('Using ' + name + '.')
+    speak('Using ' + name + '.' + remembered(save_speech_settings))
 
 
 VOICE_LIST_COMMANDS = frozenset(('list voices', 'voice list', 'voices list', 'list voice',
@@ -1747,8 +1794,7 @@ def use_synthesizer(text):
     if choices:
         choose_voice(choices[0])
         SYNTH_PICK_INDEX = VOICE_PICK_INDEX = VOICE_PICK_ORIGINAL = VOICE_PICK_ENGINE = None
-        save_speech_settings()
-        speak('Using ' + choices[0][1] + '.')
+        speak('Using ' + choices[0][1] + '.' + remembered(save_speech_settings))
     else:
         speak('That synthesizer is not configured. Ask your trainer to check setup.')
     return True
@@ -2096,8 +2142,10 @@ def handle_browser_menu(text):
             speak('No browser page is open. Use Web history to open an earlier page.');return 'browser_menu'
         revision=web_session.page_revision
         try:result=web_session.open(action[1]) if isinstance(action,tuple) else web_session.resume() if action=='resume' else web_session.command('go '+action)
+        except __import__('web_assistant').WebError as exc:
+            speak(str(exc));return 'browser_menu'   # the browser's own reason, such as reconnecting
         except Exception:
-            speak('The page could not open. Your favorites are still saved. Try the favorite again.');return 'browser_menu'
+            speak('The page could not open. Your favorites are still saved. Try the favorite again.' if isinstance(action,tuple) else 'The page could not open. Try again in a moment.');return 'browser_menu'
         if isinstance(action,tuple) and not getattr(web_session,'navigation_succeeded',False):
             speak(result)
             return 'browser_menu'
@@ -2283,6 +2331,16 @@ def save_document_before_leaving():
 
 UNSAVED_DRAFT = ('Your change is in the draft, but the draft could not be saved. Check that the disk has space, '
                  'then say save draft.')
+NEW_DRAFT_UNSAVED = 'The new email could not be saved, so it was not started. Check that the disk has space, then try again.'
+
+
+def editor_process(editor, text, **options):
+    """A change in a document or draft. If only the save fails (the file is open in Word,
+    or the disk is full), the change stays, the person hears why, and the app keeps running."""
+    try:
+        return editor.process(text, **options)
+    except OSError:
+        return UNSAVED_DRAFT if isinstance(editor, VoiceEmail) else UNSAVED_DOCUMENT
 
 
 def finish_exit(mode):
@@ -2540,11 +2598,10 @@ def apply_transcript():
 
 def set_transcript(on, mode):
     PREFERENCES['speech_transcript'] = bool(on)
-    try:save_preferences()
-    except OSError:pass   # it still works now; it is only not remembered
+    unsaved = remembered(save_preferences)   # it still works now; it is only not remembered
     apply_transcript()
-    speak('Transcript on. I will write everything I say, and every key you press, to a file named speech-transcript in the Voice Companion data folder. Say stop transcript to turn it off.'
-          if on else 'Transcript off.')
+    speak(('Transcript on. I will write everything I say, and every key you press, to a file named speech-transcript in the Voice Companion data folder. Say stop transcript to turn it off.'
+           if on else 'Transcript off.') + unsaved)
     return mode
 
 
@@ -2588,17 +2645,16 @@ def set_microphone(on, mode):
     # Not when it still cannot open: "The microphone is on." is said once it really works.
     MICROPHONE_ANNOUNCED = on and not MICROPHONE_FAILED
     PREFERENCES['microphone_off'] = not on
-    try:save_preferences()
-    except OSError:pass   # The switch still works now; it is only not remembered.
+    unsaved = remembered(save_preferences)   # The switch still works now; it is only not remembered.
     if on:
         if MICROPHONE_FAILED:
             # Never "Voice commands are on" when the microphone could not open.
-            speak('Microphone on. It could not start yet, so use the keys. Voice commands start by themselves when it works.')
+            speak('Microphone on. It could not start yet, so use the keys. Voice commands start by themselves when it works.' + unsaved)
         else:
             speak('Microphone on. ' + ('Say wake up, or press Control+F12, to give voice commands.' if mode == 'sleep'
-                                       else 'Voice commands are on.'))
+                                       else 'Voice commands are on.') + unsaved)
     else:
-        speak('Microphone off. Voice Companion is not listening at all. Press F9 to turn it back on.')
+        speak('Microphone off. Voice Companion is not listening at all. Press F9 to turn it back on.' + unsaved)
     return mode
 
 
@@ -3110,7 +3166,7 @@ def poll_thunderbird_accounts():
 
 # An older Voice Companion connection in Thunderbird is replaced by itself (Will, October 30, 2026):
 # Thunderbird restarts once, when nothing is waiting on it and no message is being written.
-ADDON_REFRESH = __import__('types').SimpleNamespace(connection=None, retry_at=0.0, thread=None, results=queue.Queue())
+ADDON_REFRESH = __import__('types').SimpleNamespace(connection=None, retry_at=0.0, thread=None, results=queue.Queue(), stopped=False)
 ADDON_RETRY_SECONDS = 60
 
 
@@ -3125,9 +3181,18 @@ def poll_thunderbird_addon(system=None):
         speak_status(thunderbird_setup.ADDON_UPDATED)
     elif result == 'not started':
         speak_status(thunderbird_setup.ADDON_UPDATE_SLOW)
+    elif result == 'not closed':
+        speak_status(thunderbird_setup.ADDON_NOT_CLOSED)
+    elif result == 'not replaced':
+        speak_status(thunderbird_setup.ADDON_NOT_REPLACED)
+    elif result == 'failed':
+        speak_status(thunderbird_setup.ADDON_NOT_UPDATED)
     elif result == 'composing':
         ADDON_REFRESH.connection = None; ADDON_REFRESH.retry_at = time.monotonic() + ADDON_RETRY_SECONDS
-    if ADDON_REFRESH.thread is not None and ADDON_REFRESH.thread.is_alive():
+    if result in ('not started', 'not replaced', 'failed'):
+        # Thunderbird restarts once: a new connection with the old add-on must not restart it again and again.
+        ADDON_REFRESH.stopped = True
+    if getattr(ADDON_REFRESH, 'stopped', False) or ADDON_REFRESH.thread is not None and ADDON_REFRESH.thread.is_alive():
         return
     try:
         import thunderbird_bridge
@@ -3295,6 +3360,11 @@ def handle_mailbox_screen(text, command, mode, typed):
         except (MailboxError, AccountError) as exc:
             # Say what went wrong (for example an expired app password), not a guess.
             speak(str(exc))
+            return mode
+        except OSError:
+            # A full disk or a locked Email Drafts folder: no draft was made.
+            email_draft = None
+            speak(NEW_DRAFT_UNSAVED)
             return mode
         except Exception:
             speak('Open and read a message first. If the account cannot read it, ask your helper to reconnect mail.')
@@ -3694,7 +3764,8 @@ def switch_mail_account(provider, address, mode):
             email_draft.move_to_account(provider)
         else:
             email_draft.provider = provider
-            email_draft.save()
+            try: email_draft.save()
+            except OSError: speak(UNSAVED_DRAFT); return mode
     from account_picker import label
     if mode == 'mailbox':
         mail_session = MailSession(provider, APP, progress=mail_progress)
@@ -3943,7 +4014,7 @@ def _handle(text, mode, typed=False):
     if station:
         hub=media()
         try:result=hub.play_by_name(station)
-        except (OSError,ValueError) as exc:result='I could not complete that radio request. '+str(exc)
+        except (OSError,ValueError) as exc:result='I could not complete that radio request. '+__import__('media_navigation').spoken_error(exc)
         if hub.station_choices:
             MEDIA_SECTION='radio';media_navigation().show_choices()
             speak(result);return 'media'
@@ -3979,8 +4050,8 @@ def _handle(text, mode, typed=False):
     if mode=='browser_menu' and web_session.menu.level=='name':return handle_browser_menu(text)
     background_request=re.fullmatch(r'(?:set )?keep audio playing in (?:the )?background (on|off)',command)
     if background_request and mode!='settings':
-        PREFERENCES['keep_audio_playing']=background_request[1]=='on';save_preferences()
-        speak('Keep audio playing in the background '+background_request[1]+'.');return mode
+        PREFERENCES['keep_audio_playing']=background_request[1]=='on'
+        speak('Keep audio playing in the background '+background_request[1]+'.'+remembered(save_preferences));return mode
 
     if mode=='web' and command in ('web browser menu','browser menu','leave website'):
         web_session.leave(PREFERENCES.get('web_keep_open',False))
@@ -4053,14 +4124,23 @@ def _handle(text, mode, typed=False):
         if command in ('no','no thanks','cancel','main menu','back'):
             POWER_ACTION=None;return canceled_to(POWER_RETURN_MODE)
         if command in ('yes','yes please','okay','ok','confirm','confirm that','that one'):
+            # Never lose work: as Exit does, stay open when the draft or the note cannot be saved.
+            not_done='The computer was not restarted.' if POWER_ACTION=='restart' else 'The computer was not shut down.'
+            if email_draft is not None:
+                try:email_draft.save()
+                except OSError:
+                    speak('Your email draft could not be saved. '+not_done+' Close any program using your drafts folder, then try again.')
+                    POWER_ACTION=None;return POWER_RETURN_MODE
+            said=[]
+            if flush_note(POWER_RETURN_MODE,said.append) is False:
+                speak(' '.join(said).replace('Your note could not be saved.','Your note could not be saved. '+not_done,1))
+                POWER_ACTION=None;return POWER_RETURN_MODE
             try:
-                if email_draft is not None:email_draft.save()
-                flush_note(POWER_RETURN_MODE)
                 from windows_actions import request_power
                 request_power(POWER_ACTION)
             except (OSError,ValueError,__import__('subprocess').SubprocessError) as exc:
-                speak('The computer could not '+str(POWER_ACTION)+'. Your app is still open.');POWER_ACTION=None;return POWER_RETURN_MODE
-            speak('Restarting the computer.' if POWER_ACTION=='restart' else 'Shutting down the computer.')
+                speak(' '.join(said+['The computer could not restart.' if POWER_ACTION=='restart' else 'The computer could not shut down.','Your app is still open.']));POWER_ACTION=None;return POWER_RETURN_MODE
+            speak(' '.join(said+['Restarting the computer.' if POWER_ACTION=='restart' else 'Shutting down the computer.']))
             POWER_ACTION=None;return 'exit'
         speak('Restart the computer? Yes or no.' if POWER_ACTION=='restart' else 'Shut down the computer? Yes or no.');return mode
     if mode == 'draft_leave' and not spoken_control(command):
@@ -4137,9 +4217,9 @@ def _handle(text, mode, typed=False):
     search_engine_request=re.fullmatch(r'(?:(?:set|choose|use) )?(?:default )?search engine(?: to)? (google|bing|brave(?: search)?|duck duck go|duckduckgo)',command)
     if search_engine_request:
         engine='brave' if search_engine_request[1].startswith('brave') else 'duckduckgo' if search_engine_request[1].startswith('duck') else search_engine_request[1]
-        PREFERENCES['web_search_engine']=engine;save_preferences()
+        PREFERENCES['web_search_engine']=engine
         if web_session:web_session.search_engine=engine
-        speak('Default search engine '+{'google':'Google','bing':'Bing','brave':'Brave Search','duckduckgo':'DuckDuckGo'}[engine]+'.');return mode
+        speak('Default search engine '+{'google':'Google','bing':'Bing','brave':'Brave Search','duckduckgo':'DuckDuckGo'}[engine]+'.'+remembered(save_preferences));return mode
     ducking_request=audio_ducking_request(command)
     if ducking_request:
         key,value=ducking_request
@@ -4157,23 +4237,23 @@ def _handle(text, mode, typed=False):
             return mode
     keep_open_request=re.fullmatch(r'(?:(?:set|turn) )?keep browser window open(?: to)? (on|off)',command)
     if keep_open_request:
-        PREFERENCES['web_keep_open']=keep_open_request[1]=='on';save_preferences()
-        speak('Keep browser window open '+keep_open_request[1]+'.');return mode
+        PREFERENCES['web_keep_open']=keep_open_request[1]=='on'
+        speak('Keep browser window open '+keep_open_request[1]+'.'+remembered(save_preferences));return mode
     auto_read_request=re.fullmatch(r'(?:(?:set|turn) )?(?:automatic page reading|automatically read (?:web )?pages|read pages automatically)(?: to)? (on|off)',command)
     toggle_read=re.fullmatch(r'(?:turn|switch) (on|off) automatic page reading',command)
     enable_read=re.fullmatch(r'(enable|disable) automatic page reading',command)
     if auto_read_request or toggle_read or enable_read:
         enabled=enable_read[1]=='enable' if enable_read else (auto_read_request or toggle_read)[1]=='on'
-        PREFERENCES['web_auto_read']=enabled;save_preferences()
+        PREFERENCES['web_auto_read']=enabled
         if web_session:web_session.auto_read=enabled
-        speak('Automatic page reading '+('on.' if enabled else 'off.'));return mode
+        speak('Automatic page reading '+('on.' if enabled else 'off.')+remembered(save_preferences));return mode
     startup_command=re.fullmatch(r'(?:set )?(?:start with windows|start voice companion with windows|start automatically with windows|windows startup)(?: to)? (on|off)',command)
     if startup_command:
         try:
             from windows_actions import set_startup
             enabled=startup_command[1]=='on';set_startup(enabled)
-            PREFERENCES['start_with_windows']=enabled;save_preferences()
-            speak('Start with Windows '+startup_command[1]+'.')
+            PREFERENCES['start_with_windows']=enabled
+            speak('Start with Windows '+startup_command[1]+'.'+remembered(save_preferences))
         except (OSError,ValueError) as exc:speak(str(exc))
         return mode
     if mode=='mailbox' and re.fullmatch(r'go to (?:the )?(main menu|options|settings)',command):
@@ -4186,8 +4266,7 @@ def _handle(text, mode, typed=False):
     if verbosity_request:
         VERBOSITY = verbosity_request[1]
         PREFERENCES['verbosity'] = VERBOSITY
-        save_preferences(); save_speech_settings()
-        speak('Verbosity '+VERBOSITY+'.')
+        speak('Verbosity '+VERBOSITY+'.'+remembered(save_preferences, save_speech_settings))
         return mode
     update_command = normalized_command(text)
     if re.match(r'^(?:set )?(?:echo dictated text|typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|when encountering capital letters|capital letters)\b.+',update_command):
@@ -4197,9 +4276,8 @@ def _handle(text, mode, typed=False):
             try:
                 message=session.set(*request)
                 PREFERENCES[request[0]]=session.values[request[0]]
-                save_preferences()
                 if request[0]=='capital_letters' and KEYBOARD_SPEECH:KEYBOARD_SPEECH.capital_letters=session.values['capital_letters']
-                speak(message+'.')
+                speak(message+'.'+remembered(save_preferences))
             except (ValueError,OSError) as exc:
                 if not (isinstance(exc,ValueError) and writing_dictation(mode,typed)):speak(str(exc));return mode
             else:return mode
@@ -4245,15 +4323,17 @@ def _handle(text, mode, typed=False):
         if update_command in ('yes', 'yes please', 'install it', 'install update', 'okay', 'ok'):
             if not UPDATES.can_install():
                 return return_from_update('Automatic installation works in the installed app. Quick Test can check for updates but cannot replace an installation.')
+            said = []
             try:
                 if document is not None: document.save()
                 if email_draft is not None: email_draft.save()
-                flush_note(UPDATE_RETURN_MODE)
+                # flush_note keeps the words and returns False when the note cannot be saved.
+                if flush_note(UPDATE_RETURN_MODE, said.append) is False: raise OSError('The note could not be saved.')
             except (OSError, ValueError):
                 return return_from_update('I could not save your work. The update will wait.')
             UPDATE_LAST_PERCENT = 0
             if UPDATES.download():
-                speak('Downloading the update. Say cancel update to stop.')
+                speak(' '.join(said + ['Downloading the update. Say cancel update to stop.']))
                 return 'update_download'
             return return_from_update('The updater is busy. Please try again shortly.')
         if spoken_control(update_command) != 'exit':
@@ -4320,9 +4400,14 @@ def _handle(text, mode, typed=False):
         if mode not in ('awake', 'help'):
             speak('Say main menu first, then start tutorial. This protects what you are working on.')
             return mode
+        try:tutorial = PracticeTutorial(GUIDE)
+        except (OSError, ValueError):
+            # The tutorial is built from the bundled user guide (missing or damaged).
+            speak('The tutorial could not open. Ask your helper to reinstall Voice Companion.')
+            return mode
         help_session = None
         MAIN_MENU_INDEX=None
-        tutorial_session = PracticeTutorial(GUIDE)
+        tutorial_session = tutorial
         speak(tutorial_session.start())
         return 'tutorial'
     power_commands=POWER_COMMANDS
@@ -4399,15 +4484,13 @@ def _handle(text, mode, typed=False):
                 chosen = choose_voice(matches[0])
                 SYNTH_PICK_INDEX = VOICE_PICK_ENGINE = VOICE_PICK_INDEX = VOICE_PICK_ORIGINAL = None
                 VOICE_PICK_CONFIRM = False
-                save_speech_settings()
-                speak('Using ' + chosen + '.')
+                speak('Using ' + chosen + '.' + remembered(save_speech_settings))
             else: speak_prompt('Voice name was not unique. Say list voices and try the full name.')
         return mode
     punctuation = re.fullmatch(r'(?:punctuation|set punctuation to) (none|some|most|all)', command)
     if punctuation:
         PUNCTUATION_LEVEL = punctuation[1]
-        save_speech_settings()
-        speak('Punctuation ' + PUNCTUATION_LEVEL + '.')
+        speak('Punctuation ' + PUNCTUATION_LEVEL + '.' + remembered(save_speech_settings))
         return mode
     # "Version." alone in a document, email or note is text, like "Time."; a question is a command.
     if command in VERSION_QUESTIONS or \
@@ -4428,20 +4511,27 @@ def _handle(text, mode, typed=False):
     if spoken_control(command) == 'sleep':
         if mode != 'sleep': SLEEP_RETURN_MODE = mode
         pending_send = None
-        if mode == 'email_draft' and email_draft is not None: email_draft.save()
+        # A draft or note that cannot be saved stays open behind sleep; say so with the sleep words.
+        unsaved = ''
+        if mode == 'email_draft' and email_draft is not None:
+            try: email_draft.save()
+            except OSError: unsaved = UNSAVED_DRAFT + ' '
         if mode == 'document' and document is not None and not save_document_before_leaving(): return 'document'
-        if mode == 'note': flush_note(mode)
+        said = []
+        if mode == 'note' and flush_note(mode, said.append) is False: unsaved = ' '.join(said) + ' '
         pending_website = None
         if MEDIA_HUB is not None and MEDIA_HUB.player.kind:
             try: MEDIA_HUB.player.control('pause')
             except Exception: pass
-        speak(sleep_message())
+        speak(unsaved + sleep_message())
         return 'sleep'
     global FILE_MANAGER,FILE_READER
     if command in ('file manager','open file manager','manage files','browse files'):
         if mode=='document' and document is not None:
             if not save_document_before_leaving():return 'document'
-        elif mode=='email_draft' and email_draft is not None:email_draft.save()
+        elif mode=='email_draft' and email_draft is not None:
+            try:email_draft.save()
+            except OSError:speak(UNSAVED_DRAFT);return mode
         else:flush_note(mode)
         pending_send=None
         if FILE_MANAGER is None:FILE_MANAGER=FileManager()
@@ -4571,7 +4661,7 @@ def _handle(text, mode, typed=False):
     requested_mode = INPUT_MODE_COMMANDS.get(command)
     if requested_mode:
         INPUT_MODE = requested_mode
-        save_speech_settings()
+        unsaved = remembered(save_speech_settings)
         if document is not None: document.dictating = requested_mode != 'commands'
         if email_draft is not None:
             email_draft.dictating = requested_mode != 'commands'
@@ -4579,7 +4669,7 @@ def _handle(text, mode, typed=False):
         if web_session is not None: web_session.input_mode = requested_mode
         speak({'mixed':'Normal mode. Commands and ordinary dictation are available.',
                'commands':'Commands only. Ordinary speech will not be added as text.',
-               'dictation':'Dictation only. Speech goes into the current document, email, or focused web text field.'}[requested_mode])
+               'dictation':'Dictation only. Speech goes into the current document, email, or focused web text field.'}[requested_mode] + unsaved)
         return mode
     if command in MODE_QUESTIONS:
         # The names the guide and the mode commands use, never the stored word ("mixed").
@@ -4670,7 +4760,7 @@ def _handle(text, mode, typed=False):
         try:
             speak(media_navigation().command(text));sync_app_context('media',True)
         except (OSError,ValueError,IndexError,ET.ParseError) as exc:
-            speak('I could not complete that media request. ' + str(exc))
+            speak('I could not complete that media request. ' + __import__('media_navigation').spoken_error(exc))
         return 'media'
     literal = re.fullmatch(r'(?:type|dictate) literally\s+(.+)', text, re.I | re.S)
     if command == 'type new line': literal_text = 'new line'
@@ -4720,7 +4810,7 @@ def _handle(text, mode, typed=False):
         # "Save as My Letter Copy": the name is heard; the folder question comes next.
         return start_save_as(save_as_named[1])
     if mode == 'document' and document is not None and document_control_request(text):
-        result=document.process(text)
+        result=editor_process(document,text)
         if result.startswith(('Document named ','Saved document as ','Saved the Word document as ')):checkpoint_document()
         speak(result)
         return mode
@@ -4734,10 +4824,10 @@ def _handle(text, mode, typed=False):
                     email_draft.apply_field_selection_edit(*edit)
                 speak(result)
             else:
-                dictation_feedback(email_draft.process(text))
+                dictation_feedback(editor_process(email_draft,text))
             return mode
         if mode == 'document' and document is not None:
-            speak(document.process(text))
+            speak(editor_process(document,text))
             return mode
         if mode == 'note':
             speak(note_selection.select(' '.join(note_buffer), text)[0])
@@ -4750,7 +4840,7 @@ def _handle(text, mode, typed=False):
         editor = document if mode == 'document' else email_draft
         body_active = mode == 'document' or (email_draft.compose_step or 'body') == 'body'
         if body_active and ((((isinstance(editor.replacement_candidates, list) and editor.replacement_candidates) or (isinstance(editor.selection_candidates, list) and editor.selection_candidates)) and command not in ('main menu', 'back to main menu', 'leave document', 'close document', 'go back', 'back', 'exit', 'exit document', 'leave email', 'close email', 'exit email')) or re.fullmatch(r'(?:replace|change) .+ (?:with|to) .+', command) or re.fullmatch(r'insert (?:before|after) .+', command) or re.fullmatch(r'(?:select|find|highlight|bold|underline|italicize|copy|cut|delete) .+', command)):
-            speak(editor.process(text))
+            speak(editor_process(editor,text))
             return mode
     # While a send review is waiting, "yes" or "no" answers it; it is not message text.
     answering_send = mode == 'email_draft' and pending_send is not None and command in SEND_REVIEW_ANSWERS
@@ -4977,19 +5067,25 @@ def _handle(text, mode, typed=False):
         if mode == 'document' and document is not None:
             if not save_document_before_leaving(): return 'document'
         elif mode == 'email_draft' and email_draft is not None:
-            email_draft.save()
+            try: email_draft.save()
+            except OSError: speak(UNSAVED_DRAFT); return mode
         else:
             flush_note(mode)
         pending_website = None
         if email_request:
             selected = store.selected()
+            previous_draft = email_draft
             email_draft = VoiceEmail(APP / 'Email Drafts')
             email_draft.compose_step = 'subject' if sender_recipient else 'recipient'
             if sender_recipient:email_draft.recipient=sender_recipient
             email_draft.dictating = INPUT_MODE != 'commands'
             email_draft.automatic_dictation = INPUT_MODE != 'commands'
             if selected: email_draft.provider = selected[0]
-            email_draft.save()
+            try: email_draft.save()
+            except OSError:
+                email_draft = previous_draft   # the draft you were writing, if any, stays open
+                speak(NEW_DRAFT_UNSAVED)
+                return mode
             if typed or KEYBOARD_NAVIGATION:
                 speak('New email. '+('Subject field.' if sender_recipient else 'To field.'))
             else:
@@ -5065,7 +5161,10 @@ def _handle(text, mode, typed=False):
                        'send it', 'send that', 'send this', 'please send it', 'please send that', 'send'):
             pending_send = None
             email_draft.dictating = False
-            email_draft.save()
+            try: email_draft.save()
+            except OSError:
+                speak('The draft could not be saved, so the email was not sent. Check that the disk has space and try again.')
+                return mode
             try:
                 recipient, subject, body = message_parts(email_draft)
                 if email_draft.send_hash() in (email_draft.last_accepted_hash, email_draft.last_attempt_hash):
@@ -5364,8 +5463,16 @@ def _handle(text, mode, typed=False):
     if command.startswith('open email draft '):
         try:
             email_draft = VoiceEmail.open_existing(APP / 'Email Drafts', text[len('open email draft '):])
-        except (FileNotFoundError, ValueError, OSError, KeyError, TypeError):
+        except FileNotFoundError:
             speak_prompt('I could not open that draft. Say list email drafts to hear the names.')
+            return mode
+        except OSError:
+            speak_prompt('I could not open that draft. It may be open in another program. Close it, then try again.')
+            return mode
+        except (ValueError, KeyError, TypeError):
+            # The name was right; its saved file is damaged (never "say the names" again).
+            speak_prompt('I could not open that draft. Its saved file is damaged. Your other drafts are safe. '
+                         'Ask your helper to check the Email Drafts folder.')
             return mode
         email_draft.dictating = INPUT_MODE != 'commands'
         email_draft.automatic_dictation = INPUT_MODE != 'commands'
@@ -5468,7 +5575,7 @@ def _handle(text, mode, typed=False):
         MEDIA_SECTION = 'podcast' if any(word in command for word in ('podcast','subscription','episode','download')) else 'radio'
         try: speak(media_navigation().command(text))
         except (OSError,ValueError,IndexError,ET.ParseError) as exc:
-            speak('I could not complete that media request. ' + str(exc))
+            speak('I could not complete that media request. ' + __import__('media_navigation').spoken_error(exc))
         return 'media'
     if command=='open first podcast':
         try: speak(media().open_podcast(1))
@@ -5612,7 +5719,7 @@ def announce_startup():
 
     Every startup path comes here: normal, microphone off or broken, after an update,
     an update offered, Chrome setup asked for by the installer. Returns the first mode."""
-    global SLEEP_RETURN_MODE, STARTUP_NOTICES, STARTUP_QUESTION
+    global SLEEP_RETURN_MODE, STARTUP_NOTICES, STARTUP_QUESTION, PREFERENCES_DAMAGED
     import startup_speech
     if STARTUP_NOTICES is None:STARTUP_NOTICES = []
     mode = startup_update_mode()
@@ -5636,6 +5743,12 @@ def announce_startup():
         except (OSError, ValueError):update_result = None
         try:result_file.unlink(missing_ok=True)
         except OSError:pass
+    if PREFERENCES_DAMAGED:
+        # Kept for a helper: the next change of any option writes a new preferences.json.
+        PREFERENCES_DAMAGED = False
+        try:shutil.copyfile(APP/'preferences.json', APP/'preferences-damaged.json')
+        except OSError:pass
+        STARTUP_NOTICES.append(PREFERENCES_DAMAGED_NOTICE)
     # Gmail and Microsoft accounts connected directly by older versions are removed, said once.
     retire_old_mail_accounts()
     apply_transcript()
@@ -5764,6 +5877,16 @@ def update_running_elsewhere():
     return update_running(APP)
 
 
+def record_guide_error(exc):
+    """Keep why the user guides could not be copied, for a helper. The same full disk or
+    blocked folder can stop this note too; that must never stop Voice Companion."""
+    try:
+        APP.mkdir(parents=True, exist_ok=True)
+        (APP/'user-guide-update-error.txt').write_text(str(exc), encoding='utf-8')
+    except OSError:
+        pass
+
+
 def main():
     global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE, MICROPHONE_ANNOUNCED, MICROPHONE_OFF, STARTUP_NOTICES, MICROPHONE_FAILED
     if '--check-browser-bookmarks' in sys.argv:
@@ -5779,8 +5902,7 @@ def main():
             print('Documentation copied and verified for Voice Companion '+APP_VERSION+': '+str(target),flush=True)
             return 0
         except (OSError, ValueError) as exc:
-            APP.mkdir(parents=True,exist_ok=True)
-            (APP/'user-guide-update-error.txt').write_text(str(exc),encoding='utf-8')
+            record_guide_error(exc)
             print('Documentation refresh failed: '+str(exc),file=sys.stderr,flush=True)
             return 3
     if '--version' in sys.argv:
@@ -5911,8 +6033,7 @@ def main():
         from guide_files import publish_guides
         publish_guides(documents_folder(), expected_version=APP_VERSION)
     except (OSError, ValueError) as exc:
-        APP.mkdir(parents=True, exist_ok=True)
-        (APP/'user-guide-update-error.txt').write_text(str(exc), encoding='utf-8')
+        record_guide_error(exc)
         startup_notice('The user guide files could not be copied to Documents. Onboard help is still available. Ask your helper to check the installation.')
 
     import sounddevice as sd
@@ -6014,7 +6135,7 @@ def main():
                         try:
                             mode=save_options(values,mode)
                         except Exception as exc:
-                            SETTINGS_PANEL.failed('Settings were not saved: '+str(exc))
+                            SETTINGS_PANEL.failed(options_save_failure(exc))
                     elif kind=='action':
                         mode=settings_action(values,SETTINGS_RETURN_MODE)
                     elif kind=='preview':

@@ -172,6 +172,28 @@ class CompanionPollTests(StaleCase):
             self.poll(system, relay)
         self.assertEqual(relay.version, '1.8.0')
 
+    def test_an_add_on_that_cannot_be_replaced_restarts_thunderbird_only_once(self):
+        # The add-on file could not be written (locked, or no permission). Thunderbird came back with
+        # the old add-on on a new connection. Before, that new connection started the update again:
+        # Thunderbird restarted every minute, and the person heard it had not started yet.
+        system, relay, _ = self.make()
+        with mock.patch.object(thunderbird_setup, 'write_atomic', side_effect=PermissionError('locked')), \
+                mock.patch.object(self.app, 'quiet_thunderbird'):
+            self.poll(system, relay)
+            self.assertEqual(relay.version, '1.7.1')
+            self.assertTrue(relay.connected.is_set())
+            self.poll(system, relay)
+            self.poll(system, relay)
+        self.assertEqual(relay.asked.count('quit'), 1)
+        self.assertEqual(self.said, [thunderbird_setup.ADDON_UPDATING, thunderbird_setup.ADDON_NOT_REPLACED])
+
+    def test_a_thunderbird_that_will_not_close_says_nothing_changed(self):
+        # After "Thunderbird restarts for a moment", silence left the person waiting.
+        system, relay, _ = self.make(quits=False)
+        self.poll(system, relay)
+        self.assertEqual(self.said, [thunderbird_setup.ADDON_UPDATING, thunderbird_setup.ADDON_NOT_CLOSED])
+        self.assertTrue(system.is_running)
+
     def test_a_message_being_written_is_tried_again_later(self):
         system, relay, _ = self.make(composing=1)
         self.poll(system, relay)

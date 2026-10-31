@@ -140,6 +140,20 @@ class BrowserMenuTests(unittest.TestCase):
                     self.assertEqual(app.handle('resume','browser_menu'),'web')
                     self.assertEqual(self.session.reading.position,4)
 
+    def test_resume_says_why_the_browser_is_not_ready(self):
+        """Resume while the regular browser reconnects said "Your favorites are still
+        saved. Try the favorite again." No favorite was chosen."""
+        from web_assistant import WebError
+        self.session.open('example.com')
+        said=[]
+        with patch.object(app,'web_session',self.session),patch.object(app,'PREFERENCES',{'web_keep_open':True}),patch.object(app,'speak',side_effect=said.append),patch.object(app,'APP_WINDOW',None):
+            self.session.backend.refocus=Mock(side_effect=WebError('The browser is reconnecting. Keep Companion open.'))
+            self.assertEqual(app.handle('resume','browser_menu'),'browser_menu')
+            self.assertEqual(said[-1],'The browser is reconnecting. Keep Companion open.')
+            self.session.backend.refocus=Mock(side_effect=RuntimeError('Target closed'))
+            app.handle('resume','browser_menu')
+            self.assertEqual(said[-1],'The page could not open. Try again in a moment.')
+
     def test_search_cancel_name_literal_and_keyboard_routes(self):
         self.session.open('example.com')
         with patch.object(app,'web_session',self.session),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',None):
@@ -169,6 +183,57 @@ class BrowserMenuTests(unittest.TestCase):
         self.session.backend.scroll_to.assert_not_called()
         self.session.flush_scroll();self.session.backend.scroll_to.assert_called_once()
 
+
+class FavoriteWriteFailureTests(unittest.TestCase):
+    """Windows can refuse to replace a file for a moment (an antivirus scan or OneDrive).
+    "Save favorite as News" then stopped the whole app with PermissionError, and the
+    menu read out the raw error ("[Errno 13] ... web-favorites.json")."""
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.session = WebSession(self.folder.name, FakeBackend())
+        self.session.open('example.com')
+        self.session.favorites.add('Old', 'https://example.com/old')
+
+    def refused(self):
+        return patch('storage.os.replace', side_effect=PermissionError(13, 'The process cannot access the file', 'web-favorites.json'))
+
+    def check(self, said):
+        self.assertIn('could not be saved', said)
+        self.assertIn('try again', said.lower())
+        self.assertNotIn('Errno', said)
+        self.assertNotIn('.json', said)
+
+    def test_saving_by_voice_on_the_page_says_it_was_not_saved(self):
+        with self.refused():
+            self.check(self.session.command('Save favorite as News.'))
+            self.check(self.session.command('save favorite'))
+        self.assertIsNone(self.session.favorites.get('News'))
+
+    def test_the_web_browser_menu_says_it_plainly_for_new_rename_and_delete(self):
+        menu = self.session.menu
+        with self.refused():
+            menu.process('new favorite', self.session, True)
+            self.check(menu.process('News', self.session, True)[0])
+            menu.start(); menu.process('rename favorite', self.session, True); menu.process('enter', self.session, True)
+            self.check(menu.process('Older', self.session, True)[0])
+            menu.start(); menu.process('delete favorite', self.session, True); menu.process('enter', self.session, True)
+            self.check(menu.answer_delete('yes', self.session)[0])
+        self.assertEqual(list(self.session.favorites.all()), ['old'])
+
+
+    def test_a_rename_that_fails_part_way_never_leaves_both_names(self):
+        import storage
+        real = storage.os.replace; calls = []
+        def second_refused(*args):
+            calls.append(args)
+            if len(calls) > 1: raise PermissionError(13, 'in use')
+            return real(*args)
+        with patch('storage.os.replace', side_effect=second_refused):
+            try: self.session.favorites.rename('Old', 'Older')
+            except Exception as exc: self.check(str(exc))
+        self.assertEqual(len(self.session.favorites.all()), 1)
+        self.assertEqual(list(self.session.favorites.all().values())[0]['url'], 'https://example.com/old')
 
 class SavedListsKeptTests(unittest.TestCase):
     """Favorites and web history must never be wiped because their file could not be
@@ -216,6 +281,33 @@ class SavedListsKeptTests(unittest.TestCase):
                 write()
                 kept = self.root / name.replace('.json', '.damaged.json')
                 self.assertEqual(kept.read_text(encoding='utf-8'), damaged)
+
+    def test_a_file_with_bytes_that_are_not_text_is_damaged_not_an_error(self):
+        # A disk error or another program left bytes that are not UTF-8. Opening the web
+        # browser stopped with UnicodeDecodeError, and favorites could not be listed.
+        from browser_menu import BrowserMenu
+        from web_assistant import Favorites
+        for name in ('web-favorites.json', 'web-history.json'):
+            garbled = (self.root / name).read_bytes()[:30] + b'\xff\xfe broken'
+            (self.root / name).write_bytes(garbled)
+        self.assertEqual(Favorites(self.root).all(), {})
+        menu = BrowserMenu(self.root)
+        self.assertEqual(menu.history(), [])
+        self.favorites.add('New one', 'https://new.example/')
+        menu.record({'url': 'https://new.example/', 'title': 'New'})
+        for name in ('web-favorites.json', 'web-history.json'):
+            with self.subTest(name=name):
+                # The damaged bytes are kept exactly, and the new list is good text.
+                self.assertTrue((self.root / name.replace('.json', '.damaged.json')).read_bytes().endswith(b'\xff\xfe broken'))
+                (self.root / name).read_text(encoding='utf-8')
+        self.assertEqual([x['name'] for x in self.favorites.all().values()], ['New one'])
+
+    def test_a_file_saved_by_notepad_with_a_byte_order_mark_still_lists_everything(self):
+        for name in ('web-favorites.json', 'web-history.json'):
+            path = self.root / name
+            path.write_bytes(b'\xef\xbb\xbf' + path.read_bytes())
+        self.assertEqual(len(self.favorites.all()), 5)
+        self.assertEqual(len(self.menu.history()), 5)
 
     def test_cleaning_that_cannot_be_written_still_lists_every_favorite(self):
         import json

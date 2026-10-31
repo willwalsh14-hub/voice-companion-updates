@@ -191,6 +191,29 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(fresh.items, [])
         self.assertTrue((self.folder / 'download-history.json.damaged').is_file())
 
+    def test_a_history_file_held_by_windows_at_start_is_never_replaced(self):
+        # An antivirus scan or OneDrive held the file when Companion started. It was
+        # renamed away or, if that failed too, written over with only the new download.
+        for n in range(3):
+            self.send(edge('old' + str(n), new=True)); self.send(edge('old' + str(n), 'Completed')); self.clock.now += 1
+        path = self.folder / 'download-history.json'
+        real = Path.read_text; held = [True]
+        def read_text(self_, *args, **kwargs):
+            if self_ == path and held[0]: raise PermissionError(13, 'The process cannot access the file because it is being used by another process')
+            return real(self_, *args, **kwargs)
+        with patch.object(Path, 'read_text', read_text):
+            later = DownloadManager(self.folder, clock=self.clock, background=False)
+            edge_now = Controls(); later.attach('edge', edge_now)
+            later.report('edge', 'new', **edge_report(edge('new', new=True)))
+            self.assertEqual(len(json.loads(real(path, encoding='utf-8'))), 3)   # not written over
+            self.assertFalse((self.folder / 'download-history.json.damaged').exists())
+            held[0] = False
+            later.report('edge', 'new', **edge_report(edge('new', 'Completed')))
+        data = json.loads(path.read_text(encoding='utf-8'))
+        self.assertEqual([d['ref'] for d in data], ['new', 'old2', 'old1', 'old0'])
+        self.assertEqual(len({d['id'] for d in data}), 4)
+        self.assertEqual(later.find('edge', 'new').state, 'finished')
+
     def test_chrome_names_the_file_later_and_keeps_going_while_companion_is_closed(self):
         item = {'id': 7, 'filename': '', 'url': 'https://files.test/get?id=7', 'state': 'in_progress', 'paused': False,
                 'canResume': True, 'received': 0, 'total': 0, 'danger': 'safe', 'new': True}
