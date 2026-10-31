@@ -377,7 +377,7 @@ class ScreenTests(LiveYouTube):
         self.say('YouTube', 'awake'); self.say('Home.')
         self.press('Enter')
         self.assertEqual(self.last(), 'YouTube says: Something went wrong. Refresh or try again later. '
-                                      'Press Enter to try again, or choose another video.')
+                                      'Press Enter to try again, or choose another video. ' + self.ys.OWN_CHROME_NEEDED)
         self.press('Enter')   # Enter again tries again; it does not just open the player
         self.assertTrue(self.last().startswith('YouTube says: Something went wrong.'), self.last())
 

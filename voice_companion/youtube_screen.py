@@ -118,7 +118,7 @@ OWN_CHROME_NOT_LINKED = 'Your own Chrome opened, but the Voice Companion extensi
 OWN_CHROME_FAILED = 'The video could not move to your own Chrome.'
 OWN_CHROME_SECONDS = 20
 OWN_CHROME_START = 'Opening YouTube in your own Chrome.'
-OWN_CHROME_NEEDED = ('YouTube stops videos and shows ads in Voice Companion\'s Chrome, because it is not signed in. '
+OWN_CHROME_NEEDED = ('YouTube often stops videos in Voice Companion\'s Chrome. '
                      'To play videos in your own Chrome, signed in to your account, say set up Chrome.')
 # "What's playing?" and F3 on this screen when nothing at all plays; not the radio hint.
 NOTHING_PLAYING = 'Nothing is playing. Choose a video and press Enter to play it.'
