@@ -262,7 +262,8 @@ class ThunderbirdMailbox:
                 raise MailboxError(OLD_ADDON_MARK) from None
             raise
         result = result if isinstance(result, dict) else {}
-        return {'changed': int(result.get('changed') or 0), 'missing': int(result.get('missing') or 0)}
+        return {'changed': int(result.get('changed') or 0), 'missing': int(result.get('missing') or 0),
+                'this_computer_only': result.get('thisComputerOnly') is True}
 
     @staticmethod
     def _attachment_rows(items):

@@ -1,44 +1,19 @@
 {
-  "version": "0.2.190-test",
+  "version": "0.2.191-test",
   "status": "Testing build",
   "date": "October 31, 2026",
-  "baseline": "0.2.189-test",
-  "scope": "Your answers to the sweep questions, a safety net on every screen, and safer email.",
+  "baseline": "0.2.190-test",
+  "scope": "Read, unread and flags match on every device.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "A safety net on every screen",
+          "title": "Marks in Yahoo Mail",
           "details": [
-            "If a command or key fails because of a problem in Voice Companion, you hear that it did not work.",
-            "The app keeps running, and you stay where you were. Try again, or press F1 for help."
-          ]
-        },
-        {
-          "title": "Undo in notes",
-          "details": [
-            "In a note, say Undo, or press Control+Z. Say Redo, or press Control+Y.",
-            "Say Scratch that to remove the words you said last. You hear the words it removed."
-          ]
-        },
-        {
-          "title": "Open an earlier copy",
-          "details": [
-            "If a document is damaged, you hear what to do next.",
-            "When Voice Companion kept a copy from before your last save, say Open earlier copy to use it. The damaged file is kept too."
-          ]
-        },
-        {
-          "title": "Easier words",
-          "details": [
-            "On the main menu, say Help me or What can I say to open Help.",
-            "In a Yes or No question, press F1 to hear the question again.",
-            "When nothing is playing, Pause stops Companion's speech.",
-            "In email, say Send my email or Send now to start the review. Only the whole sentence counts.",
-            "In the inbox, Open email opens the message you are on.",
-            "The calendar understands half past two, quarter past nine and quarter to three.",
-            "On YouTube, Skip skips an ad when one is playing."
+            "A Yahoo account can now mark mail read or unread, and flag it. Press Q or X, as in Thunderbird.",
+            "A flag shows as a star in Yahoo Mail.",
+            "Opening a Yahoo message marks it read, as Yahoo Mail does."
           ]
         }
       ]
@@ -47,49 +22,17 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Email",
+          "title": "The same on every device",
           "details": [
-            "A subject such as High priority stays the subject. It no longer changes the importance.",
-            "In the message, Subject is followed by words is part of your message. Say Go to Subject to change the subject.",
-            "Error messages no longer blame your account when the account is not the cause.",
-            "Drafts are written all the way to the disk before they replace the saved copy.",
-            "A message already in Trash is never deleted for good. Thunderbird restarts once to get this change."
+            "Read, unread and flags are kept on your mail server. Your phone and the web show the same marks.",
+            "A POP account keeps mail only on this computer. Companion tells you once that its marks stay here.",
+            "Importance is part of each message, so every device shows the same importance."
           ]
         },
         {
-          "title": "Calendar and Contacts",
+          "title": "Thunderbird",
           "details": [
-            "Next Tuesday means Tuesday of next week. Tuesday and This Tuesday mean the nearest one.",
-            "When a day cannot be read, you hear only why. You no longer hear No events first.",
-            "If a new event cannot be saved, its name and time are kept. Say Yes to try again.",
-            "A change is never sent twice when Thunderbird closes. You hear to check it first, so you do not get two copies."
-          ]
-        },
-        {
-          "title": "Files and documents",
-          "details": [
-            "A name you say for a file keeps its old type. Budget stays a Word file.",
-            "You can change only the capitals of a document name, such as budget to Budget.",
-            "Recent documents drop files that are gone, and you hear how many."
-          ]
-        },
-        {
-          "title": "Web",
-          "details": [
-            "After Escape in a text box, what you say is not typed into the page. Press Enter to type there again.",
-            "One word must be a whole link name. If several links have that word, you choose from a short list.",
-            "Site names with letters such as ü work, such as münchen.de.",
-            "At the end of a list, you hear just No next heading.",
-            "Tab on an empty page says one thing, not two."
-          ]
-        },
-        {
-          "title": "Other changes",
-          "details": [
-            "A note is saved when a command takes you to another screen, such as Media menu. Before, its words could be lost.",
-            "Text size with a number that is not a size tells you the sizes, and changes nothing.",
-            "On the main menu, Go back tells you it is the first screen.",
-            "In radio results, Go back leaves the results, as Escape does."
+            "Thunderbird closes and opens again one time to get this change."
           ]
         }
       ]

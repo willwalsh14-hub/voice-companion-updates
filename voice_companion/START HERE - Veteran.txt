@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.190-test.
+Guide version: 0.2.191-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -1060,13 +1060,15 @@ To open a folder by name, say "Go to folder", "Open folder", or "Go to", followe
 - In Trash, Delete changes nothing. Companion says the message is already there.
 - To pick a folder to move them to, say "Move", or press M. To name the folder, say "Move to", followed by its name, such as "Move to Saved".
 "Delete message" and "Move message" act on the current message, even if other messages are marked.
-Read, unread, and flags work for accounts in Thunderbird:
+Read, unread, and flags work for Thunderbird and Yahoo accounts:
 - To mark a message read or unread, say "Mark as read or unread", "Mark as read", or "Mark as unread". Or press Q. Each press of Q changes it.
 - To flag a message, say "Flag or unflag", or "Flag". Or press X. To take the flag off, say "Remove flag", or press X again.
 - To hear the status, say "Message status".
 - If messages are marked, these change every marked message.
 - Opening a message marks it read, as in Thunderbird.
-You hear importance, but you cannot change it on a message you got. The person who sent it chose it.
+- These marks are kept on your mail server. Your phone and the web show them too. A flag shows as a star in Gmail and Yahoo Mail.
+- A POP account keeps mail only on this computer. Its marks stay here. Companion tells you once.
+You hear importance, but you cannot change it on a message you got. The person who sent it chose it. It is part of the message, so every device shows the same importance.
 Listen to the action and the names, then answer Yes or No. If a result is uncertain, check the folder before you try again.
 Inside an open message, Control+A selects text to copy. It does not mark other messages.
 

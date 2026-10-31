@@ -216,7 +216,22 @@ class MailBridge {
     }
     this.keepMarks(done, changes);
     if (!done.length) throw MailBridge.fail('mark', 'Thunderbird could not change that message. It may have been moved or deleted. Say list messages to refresh.');
-    return {changed: done.length, missing: ids.length - done.length};
+    const answer = {changed: done.length, missing: ids.length - done.length};
+    // Thunderbird sends these marks to the mail server (IMAP and Exchange), so phones and the
+    // web show them too. A POP or Local Folders account has no server copy to mark: say so.
+    if (await this.onlyOnThisComputer(done[0])) answer.thisComputerOnly = true;
+    return answer;
+  }
+
+  async onlyOnThisComputer(messageId) {
+    try {
+      const header = await this.api.messages.get(messageId);
+      const accountId = header && header.folder && header.folder.accountId;
+      const account = accountId && await this.api.accounts.get(accountId, false);
+      return Boolean(account && MailBridge.LOCAL_ACCOUNT_TYPES.includes(account.type));
+    } catch (error) {
+      return false;
+    }
   }
 
   keepMarks(ids, changes) {
@@ -787,6 +802,8 @@ MailBridge.LIST_KEEP_MS = 120000;   // how long a folder's list is reused for it
 MailBridge.CHUNK = 1024 * 1024;              // largest piece of an attachment sent to Voice Companion
 MailBridge.MAX_UPLOAD = 60 * 1024 * 1024;    // largest file Voice Companion may attach
 MailBridge.UPLOAD_KEEP_MS = 10 * 60 * 1000;  // an unfinished file to send is dropped after this long
+// Account types whose mail is not kept on a server that other devices read.
+MailBridge.LOCAL_ACCOUNT_TYPES = ['pop3', 'none', 'rss'];
 MailBridge.PRIORITIES = ['highest', 'high', 'normal', 'low', 'lowest'];
 MailBridge.ALREADY_IN_TRASH = 'This is already in Trash. Deleting it there would remove it for good, so nothing was changed.';
 MailBridge.READ_ONLY = ['about', 'accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn', 'background',
