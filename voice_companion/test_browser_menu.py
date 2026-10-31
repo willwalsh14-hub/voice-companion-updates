@@ -170,6 +170,57 @@ class BrowserMenuTests(unittest.TestCase):
         self.session.flush_scroll();self.session.backend.scroll_to.assert_called_once()
 
 
+class FavoriteWriteFailureTests(unittest.TestCase):
+    """Windows can refuse to replace a file for a moment (an antivirus scan or OneDrive).
+    "Save favorite as News" then stopped the whole app with PermissionError, and the
+    menu read out the raw error ("[Errno 13] ... web-favorites.json")."""
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.session = WebSession(self.folder.name, FakeBackend())
+        self.session.open('example.com')
+        self.session.favorites.add('Old', 'https://example.com/old')
+
+    def refused(self):
+        return patch('storage.os.replace', side_effect=PermissionError(13, 'The process cannot access the file', 'web-favorites.json'))
+
+    def check(self, said):
+        self.assertIn('could not be saved', said)
+        self.assertIn('try again', said.lower())
+        self.assertNotIn('Errno', said)
+        self.assertNotIn('.json', said)
+
+    def test_saving_by_voice_on_the_page_says_it_was_not_saved(self):
+        with self.refused():
+            self.check(self.session.command('Save favorite as News.'))
+            self.check(self.session.command('save favorite'))
+        self.assertIsNone(self.session.favorites.get('News'))
+
+    def test_the_web_browser_menu_says_it_plainly_for_new_rename_and_delete(self):
+        menu = self.session.menu
+        with self.refused():
+            menu.process('new favorite', self.session, True)
+            self.check(menu.process('News', self.session, True)[0])
+            menu.start(); menu.process('rename favorite', self.session, True); menu.process('enter', self.session, True)
+            self.check(menu.process('Older', self.session, True)[0])
+            menu.start(); menu.process('delete favorite', self.session, True); menu.process('enter', self.session, True)
+            self.check(menu.answer_delete('yes', self.session)[0])
+        self.assertEqual(list(self.session.favorites.all()), ['old'])
+
+
+    def test_a_rename_that_fails_part_way_never_leaves_both_names(self):
+        import storage
+        real = storage.os.replace; calls = []
+        def second_refused(*args):
+            calls.append(args)
+            if len(calls) > 1: raise PermissionError(13, 'in use')
+            return real(*args)
+        with patch('storage.os.replace', side_effect=second_refused):
+            try: self.session.favorites.rename('Old', 'Older')
+            except Exception as exc: self.check(str(exc))
+        self.assertEqual(len(self.session.favorites.all()), 1)
+        self.assertEqual(list(self.session.favorites.all().values())[0]['url'], 'https://example.com/old')
+
 class SavedListsKeptTests(unittest.TestCase):
     """Favorites and web history must never be wiped because their file could not be
     read for a moment (Windows: an antivirus scan or OneDrive holds it) or is damaged."""

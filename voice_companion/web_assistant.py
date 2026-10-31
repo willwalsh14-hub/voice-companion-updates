@@ -128,6 +128,7 @@ def match_choices(items, request):
 
 class Favorites:
     UNREADABLE = 'Your favorites could not be opened just now. Try again in a moment.'
+    UNSAVED = 'Your favorites could not be saved just now. Nothing changed. Try again in a moment.'
 
     def __init__(self, folder):
         self.path = Path(folder) / 'web-favorites.json'
@@ -154,15 +155,25 @@ class Favorites:
         try:return self._read()[0]
         except OSError:return {}
 
-    def _write(self, data, damaged):
+    def _write(self, data, damaged, error=None):
+        """Save the list. Windows can refuse the file for a moment (an antivirus scan
+        or OneDrive): that is said plainly, never as a raw error that stops the app."""
         from storage import keep_damaged
-        if damaged is not None:keep_damaged(self.path,damaged)
-        write_text_atomic(self.path,json.dumps(data,ensure_ascii=False,indent=2))
+        try:
+            if damaged is not None:keep_damaged(self.path,damaged)
+            write_text_atomic(self.path,json.dumps(data,ensure_ascii=False,indent=2))
+        except OSError as exc:
+            raise (error or WebError)(self.UNSAVED) from exc
 
-    def add(self, name, url):
+    @staticmethod
+    def _check_name(name):
         name = _plain(name)
         if not name or len(name) > 60 or any(c in name for c in '\r\n'):
             raise WebError('Use a short name for the favorite.')
+        return name
+
+    def add(self, name, url):
+        name = self._check_name(name)
         parsed = urlsplit(url)
         if parsed.scheme not in ('http','https') or not parsed.hostname:
             raise WebError('Only HTTP and HTTPS pages can be saved.')
@@ -184,7 +195,7 @@ class Favorites:
         except OSError as exc:raise ValueError(self.UNREADABLE) from exc
         if data.pop(_plain(name).casefold(), None) is None:
             raise ValueError('That favorite no longer exists.')
-        self._write(data,damaged)
+        self._write(data,damaged,ValueError)
 
     def rename(self, name, replacement):
         item = self.get(name)
@@ -192,9 +203,17 @@ class Favorites:
             raise ValueError('That favorite no longer exists.')
         if self.get(replacement) and replacement.casefold() != name.casefold():
             raise ValueError('That favorite name already exists. Choose another name.')
-        self.add(replacement, item['url'])
-        if replacement.casefold() != name.casefold():
-            self.delete(name)
+        if replacement.casefold() == name.casefold():
+            self.add(replacement, item['url']);return
+        # One write, so a failure never leaves both names, or neither.
+        self._check_name(replacement)
+        try:data,damaged = self._read()
+        except OSError as exc:raise WebError(self.UNREADABLE) from exc
+        old=next((key for key,value in data.items() if value is item or value==item),None)
+        if old is None:raise ValueError('That favorite no longer exists.')
+        del data[old]
+        data[_plain(replacement).casefold()] = {'name': _plain(replacement), 'url': item['url']}
+        self._write(data,damaged)
 
 
 def navigation_interrupted(error):
