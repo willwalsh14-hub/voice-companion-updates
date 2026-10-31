@@ -93,5 +93,22 @@ class UndoWhileTheFileIsLocked(DocumentFlowCase):
         self.assertEqual([p.text for p in app.document.paragraphs if p.text], ['One.', 'Two.', 'Three.'])
 
 
+class SavedWordsReachTheDisk(DocumentFlowCase):
+    """A power cut or a laptop battery that dies just after a save must not leave an empty file."""
+    def test_the_new_copy_is_on_the_disk_before_it_replaces_the_old_file(self):
+        import os
+        events = []
+        real_fsync, real_replace = os.fsync, Path.replace
+        def fsync(fd):
+            events.append('fsync'); return real_fsync(fd)
+        def replace(path, target):
+            events.append('replace ' + Path(path).name); return real_replace(path, target)
+        made = VoiceDocument(self.default, title='Letter'); made.append_text('Dear Bob.')
+        with patch('os.fsync', side_effect=fsync), patch.object(Path, 'replace', replace):
+            made.save()
+        self.assertIn('replace Letter.writing.docx', events)
+        self.assertEqual(events[events.index('replace Letter.writing.docx') - 1], 'fsync')
+
+
 if __name__ == '__main__':
     unittest.main()
