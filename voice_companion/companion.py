@@ -4320,9 +4320,14 @@ def _handle(text, mode, typed=False):
         if mode not in ('awake', 'help'):
             speak('Say main menu first, then start tutorial. This protects what you are working on.')
             return mode
+        try:tutorial = PracticeTutorial(GUIDE)
+        except (OSError, ValueError):
+            # The tutorial is built from the bundled user guide (missing or damaged).
+            speak('The tutorial could not open. Ask your helper to reinstall Voice Companion.')
+            return mode
         help_session = None
         MAIN_MENU_INDEX=None
-        tutorial_session = PracticeTutorial(GUIDE)
+        tutorial_session = tutorial
         speak(tutorial_session.start())
         return 'tutorial'
     power_commands=POWER_COMMANDS

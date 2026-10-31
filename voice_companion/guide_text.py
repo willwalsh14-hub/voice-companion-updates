@@ -9,6 +9,8 @@ STEP = re.compile(r'^(\d+)\. (.+)$')
 
 def read_guide(path):
     lines = Path(path).read_text(encoding='utf-8-sig').splitlines()
+    if not lines:
+        raise ValueError('The user guide is empty.')
     title = lines[0].strip()
     front = []
     chapters = []

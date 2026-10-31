@@ -90,4 +90,30 @@ class PracticeTutorialTests(unittest.TestCase):
                 self.assertEqual([p.name for p in root.iterdir()],['keep.txt'])
                 self.assertEqual(app.handle('main menu',mode),'awake');self.assertIsNone(app.tutorial_session)
 
+
+class MissingGuideTests(unittest.TestCase):
+    """The tutorial and Help use the bundled user guide. When it is missing, empty or
+    damaged, both say so and you stay where you were. Before, the tutorial stopped the
+    whole app, and an empty guide stopped Help too."""
+    def run_command(self, guide, command):
+        import companion
+        with patch.object(companion, 'GUIDE', guide), patch.object(companion, 'speak') as speech, \
+             patch.object(companion, 'tutorial_session', None), patch.object(companion, 'help_session', None), \
+             patch.object(companion, 'sync_app_context'), patch.object(companion, 'interrupt_speech'):
+            mode = companion.handle(command, 'awake', typed=True)
+        return mode, ' '.join(str(call.args[0]) for call in speech.call_args_list)
+
+    def test_tutorial_and_help_say_the_guide_could_not_open(self):
+        with tempfile.TemporaryDirectory() as folder:
+            empty = Path(folder) / 'empty.txt'; empty.write_text('')
+            unreadable = Path(folder) / 'bad.txt'; unreadable.write_bytes(b'\xff\xfe\x00bad')
+            for guide in (Path(folder) / 'missing.txt', empty, unreadable):
+                with self.subTest(guide=guide.name):
+                    mode, said = self.run_command(guide, 'start tutorial')
+                    self.assertEqual(mode, 'awake')
+                    self.assertIn('The tutorial could not open. Ask your helper to reinstall Voice Companion.', said)
+                    mode, said = self.run_command(guide, 'help')
+                    self.assertEqual(mode, 'awake')
+                    self.assertIn('The user guide could not open. Ask your helper to reinstall Voice Companion.', said)
+
 if __name__=='__main__':unittest.main()
