@@ -72,6 +72,48 @@ def decode(data):
     except UnicodeDecodeError:return data.decode('cp1252',errors='replace')
 
 DAMAGED='This file is damaged or empty, so it could not be opened.'
+DAMAGED_PATH=None   # the damaged file whose earlier copy "Open earlier copy" puts back
+
+
+def earlier_copy(path):
+    """The copy Voice Companion kept before its last save (storage.keep_previous), when it can be read."""
+    copy=Path(path).with_name(Path(path).name+'.backup1')
+    try:
+        if not copy.is_file() or copy.stat().st_size==0:return None
+        if Path(path).suffix.lower() in ('.docx','.xlsx','.pptx','.epub') and not __import__('zipfile').is_zipfile(copy):return None
+    except OSError:
+        return None
+    return copy
+
+
+def damaged_words(path,lead=DAMAGED):
+    """What to say about a damaged file, with what to do next (Will, October 31, 2026)."""
+    global DAMAGED_PATH
+    if path is not None and earlier_copy(path):
+        DAMAGED_PATH=Path(path)
+        return lead+' Voice Companion kept an earlier copy. Say open earlier copy to use it.'
+    DAMAGED_PATH=None
+    return lead+' If you have another copy, open that one. Word can sometimes repair a damaged file.'
+
+
+def restore_earlier_copy():
+    """Put the earlier copy back in place of the damaged file. The damaged file is kept beside it,
+    named with .damaged at the end. Returns the path, or raises ValueError in plain words."""
+    global DAMAGED_PATH
+    import os,shutil
+    path=DAMAGED_PATH
+    copy=earlier_copy(path) if path is not None else None
+    if copy is None:
+        raise ValueError('There is no earlier copy to open. Open a document first.')
+    try:
+        if path.exists():shutil.copy2(path,path.with_name(path.name+'.damaged'))
+        temporary=path.with_name(path.name+'.restoring')
+        shutil.copy2(copy,temporary)
+        os.replace(temporary,path)
+    except OSError as error:
+        raise ValueError('The earlier copy could not be put back. Close the file in any other program, then try again.') from error
+    DAMAGED_PATH=None
+    return path
 
 
 def unreadable(path,error):
@@ -94,14 +136,14 @@ def open_document(path):
         if error.errno is None and str(error):raise   # already in plain words (offline OCR)
         raise ValueError(unreadable(path,error)) from error
     except UnicodeError as error:
-        raise ValueError(DAMAGED) from error
+        raise ValueError(damaged_words(path)) from error
     except (ValueError,ImportError):
         raise
     except (MemoryError,RecursionError) as error:
         raise ValueError('This file is too complex for the reader.') from error
     except Exception as error:
         # A damaged ZIP, XML or PDF (BadZipFile, KeyError, ParseError, PdfReadError and others).
-        raise ValueError(DAMAGED) from error
+        raise ValueError(damaged_words(path)) from error
 
 
 def _open_document(path):

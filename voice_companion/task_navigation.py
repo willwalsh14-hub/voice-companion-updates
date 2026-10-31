@@ -242,7 +242,8 @@ class TaskNavigation:
                 opened = VoiceDocument.open_existing(path.parent, path.stem)
             except (zipfile.BadZipFile, KeyError, ET.ParseError, EOFError) as error:
                 # An empty "New Microsoft Word Document" or a damaged file must not stop the app.
-                raise ValueError('This document is empty or damaged, so it could not be opened.') from error
+                from document_reader import damaged_words
+                raise ValueError(damaged_words(path, 'This document is empty or damaged, so it could not be opened.')) from error
             except OSError as error:
                 # Open in Word, or on a network drive that dropped: say so, not "[Errno 13]".
                 from document_reader import unreadable

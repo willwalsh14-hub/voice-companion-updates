@@ -417,7 +417,8 @@ class VoiceDocument:
                 root = ET.fromstring(archive.read('word/document.xml'))
         except (zipfile.BadZipFile, KeyError, ET.ParseError, EOFError) as error:
             # An empty "New Microsoft Word Document" or a damaged file is not a crash.
-            raise ValueError('This document is empty or damaged, so it could not be opened.') from error
+            from document_reader import damaged_words
+            raise ValueError(damaged_words(path, 'This document is empty or damaged, so it could not be opened.')) from error
         ns = '{' + XMLNS + '}'
         allowed = {ns + tag for tag in ('document', 'body', 'p', 'pPr', 'pStyle', 'r', 'rPr', 'b', 'i', 'u', 'highlight',
                    'rFonts', 'sz', 't', 'sectPr', 'numPr', 'ilvl', 'numId', 'tbl', 'tblPr', 'tblGrid',

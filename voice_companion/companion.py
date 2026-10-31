@@ -4059,6 +4059,14 @@ def _handle(text, mode, typed=False):
         if command in MAIN_MENU_HELP:text=command='help'
         elif command in ('go back','back','go back a screen','previous screen'):
             speak(MAIN_MENU_FIRST);return mode
+    if command in ('open earlier copy','open the earlier copy','use earlier copy','use the earlier copy','restore earlier copy') \
+            and __import__('document_reader').DAMAGED_PATH is not None:
+        # The damaged file said an earlier copy was kept (document_reader.damaged_words).
+        try:
+            path=__import__('document_reader').restore_earlier_copy()
+            return task_navigation().open_document(path)
+        except ValueError as error:
+            speak(str(error));return mode
     if command=='toggle audio':
         video=__import__('youtube_screen').toggle_audio(sys.modules[__name__])  # Control+P while a YouTube video plays
         if video:speak(video);return mode
@@ -4088,7 +4096,8 @@ def _handle(text, mode, typed=False):
     manager=globals().get('FILE_MANAGER')
     if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):
         if manager.pending[0]=='rename' and not typed and command not in ('cancel','escape','go back','no'):
-            text=__import__('file_manager').spoken_name(text)
+            # A spoken name without a type keeps the old type (Will, October 31, 2026); typed names are used as typed.
+            text=__import__('file_manager').keep_type(manager.pending[1][0],__import__('file_manager').spoken_name(text))
         try:speak(manager.command(text))
         except (OSError,ValueError) as error:speak(str(error))
         sync_app_context(mode,True);return mode

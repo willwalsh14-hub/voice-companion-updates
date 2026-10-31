@@ -319,7 +319,7 @@ class FileManager:
                 return self.mutate('delete',paths)
             if action=='rename':
                 name=re.sub(r'^(?:rename to|name|call it)\s+','',text,flags=re.I)
-                name=keep_type(paths[0],valid_name(name));self.pending=None;return self.mutate('rename',paths,name=name)
+                valid_name(name);self.pending=None;return self.mutate('rename',paths,name=name)
             if action in ('search','search all'):
                 if not text.strip():raise ValueError('Enter part of a name, or press Escape to cancel.')
                 self.pending=None
@@ -396,7 +396,7 @@ class FileManager:
             targets=self.targets()
             if len(targets)!=1:raise ValueError('Select one item to rename.')
             if match[1]:return self.mutate('rename',[targets[0].path],name=keep_type(targets[0].path,valid_name(match[1])))
-            self.pending=('rename',[targets[0].path]);return 'Rename '+targets[0].name+'. Type or say the new name, then press Enter.'+('' if targets[0].folder else ' The file type stays the same.')
+            self.pending=('rename',[targets[0].path]);return 'Rename '+targets[0].name+'. Type or say the new name, then press Enter.'+('' if targets[0].folder else ' A name you say keeps the file type.')
         if cmd in ('status','where am i','current item','read current item'):return location_name(self.location)+'. '+self.say_current()
         if cmd in ('open','enter','okay','ok','activate','confirm','that one'):
             item=self.current()

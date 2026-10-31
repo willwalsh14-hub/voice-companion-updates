@@ -53,6 +53,10 @@ class SpokenRenameInFileManager(DocumentFlowCase):
                 self.fm.pending = ('rename', [str(self.disk / 'notes.txt')])
                 self.assertEqual(self.renamed_to(heard), name)
 
+    def test_a_spoken_name_without_a_type_keeps_the_old_type(self):
+        # Will, October 31, 2026: "Shopping" for notes.txt is Shopping.txt.
+        self.assertEqual(self.renamed_to('Shopping.'), 'Shopping.txt')
+
     def test_a_typed_name_is_used_as_typed(self):
         self.assertEqual(self.renamed_to('shopping dot txt', typed=True), 'shopping dot txt')
 
@@ -89,7 +93,21 @@ class OpenDocumentByName(DocumentFlowCase):
     def test_a_damaged_file_is_named_in_plain_words(self):
         (self.default / 'Broken.docx').write_bytes(b'PK not really')
         self.assertEqual(app.handle('open document Broken', 'word_processor'), 'word_processor')
-        self.assertEqual(self.last(), 'This document is empty or damaged, so it could not be opened.')
+        self.assertEqual(self.last(), 'This document is empty or damaged, so it could not be opened. '
+                                      'If you have another copy, open that one. Word can sometimes repair a damaged file.')
+
+    def test_a_damaged_file_with_an_earlier_copy_offers_it(self):
+        # Will, October 31, 2026: say what to do next. Voice Companion keeps the copy from before each save.
+        from document_editor import VoiceDocument
+        doc = VoiceDocument(self.default, title='Budget')
+        doc.append_text('Rent is due.')
+        doc.save(); doc.save()
+        (self.default / 'Budget.docx').write_bytes(b'PK not really')
+        app.handle('open document Budget', 'word_processor')
+        self.assertTrue(self.last().endswith('Voice Companion kept an earlier copy. Say open earlier copy to use it.'), self.last())
+        self.assertEqual(app.handle('Open earlier copy.', 'word_processor'), 'document')
+        self.assertIn('Rent is due.', ' '.join(p.text for p in app.document.paragraphs))
+        self.assertEqual((self.default / 'Budget.docx.damaged').read_bytes(), b'PK not really')
 
 
 class ListsOverAMenu(DocumentFlowCase):

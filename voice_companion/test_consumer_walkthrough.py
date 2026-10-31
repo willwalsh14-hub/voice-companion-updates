@@ -227,11 +227,7 @@ class FileActionWordsTests(unittest.TestCase):
         self.assertEqual(self.manager.command('rename'), 'Rename Photos. Type or say the new name, then press Enter.')
         self.manager.command('cancel'); self.manager.index = 1
         self.assertEqual(self.manager.command('rename'),
-                         'Rename a.txt. Type or say the new name, then press Enter. The file type stays the same.')
-        # Will, October 31, 2026: a new name without a type keeps the old one.
-        self.manager.command('Shopping')
-        self.settle(self.manager)
-        self.assertEqual(self.manager.backend.actions[-1][3] if hasattr(self.manager.backend, 'actions') else None, 'Shopping.txt')
+                         'Rename a.txt. Type or say the new name, then press Enter. A name you say keeps the file type.')
 
 
 class FileManagerUnknownWordsTests(FileActionWordsTests):
