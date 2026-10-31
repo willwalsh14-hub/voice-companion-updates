@@ -5390,8 +5390,16 @@ def _handle(text, mode, typed=False):
     if command.startswith('open email draft '):
         try:
             email_draft = VoiceEmail.open_existing(APP / 'Email Drafts', text[len('open email draft '):])
-        except (FileNotFoundError, ValueError, OSError, KeyError, TypeError):
+        except FileNotFoundError:
             speak_prompt('I could not open that draft. Say list email drafts to hear the names.')
+            return mode
+        except OSError:
+            speak_prompt('That draft could not be opened. It may be open in another program. Close it, then try again.')
+            return mode
+        except (ValueError, KeyError, TypeError):
+            # The name was right; its saved file is damaged (never "say the names" again).
+            speak_prompt('That draft is damaged, so it could not be opened. Your other drafts are safe. '
+                         'Ask your helper to check the Email Drafts folder.')
             return mode
         email_draft.dictating = INPUT_MODE != 'commands'
         email_draft.automatic_dictation = INPUT_MODE != 'commands'

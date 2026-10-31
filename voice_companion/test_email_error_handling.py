@@ -76,6 +76,24 @@ class DraftCannotBeSavedTests(CompanionCase):
         self.assertIs(companion.email_draft, draft)
 
 
+class DamagedDraftTests(CompanionCase):
+    def test_a_damaged_or_locked_draft_says_what_is_wrong(self):
+        # Before: "I could not open that draft. Say list email drafts to hear the names." for
+        # every problem, though the name was right.
+        drafts = self.folder / 'Email Drafts'; drafts.mkdir()
+        (drafts / 'Broken.json').write_text('{not json', encoding='utf-8')
+        self.assertEqual(companion.handle('open email draft Broken', 'awake'), 'awake')
+        self.assertIn('That draft is damaged', self.last())
+        (drafts / 'Broken.json').write_text('{"paragraphs": 5}', encoding='utf-8')
+        companion.handle('open email draft Broken', 'awake')
+        self.assertIn('That draft is damaged', self.last())
+        with patch('pathlib.Path.read_text', side_effect=PermissionError('in use')):
+            companion.handle('open email draft Broken', 'awake')
+        self.assertIn('open in another program', self.last())
+        companion.handle('open email draft Nothing', 'awake')
+        self.assertIn('Say list email drafts to hear the names', self.last())
+
+
 class HalfFinishedMoveTests(CompanionCase):
     """The mail service stopped while messages were moving. Before: the open message stayed
     "open" with no list under it, so Reply said "Open and read a message first" and Down said
