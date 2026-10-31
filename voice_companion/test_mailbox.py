@@ -76,6 +76,14 @@ class MailboxTests(unittest.TestCase):
         self.assertEqual(status_words({'priority': 'normal'}), '')
         self.assertEqual(status_words({'priority': 'low'}), 'Low importance')
 
+    def test_the_new_email_option_comes_after_the_old_ones(self):
+        # New options go last: the Windows Options tests reach the header list by its place.
+        from settings_model import fields
+        keys = [f.key for f in fields('Email options', {'accounts': ()})]
+        self.assertEqual(keys[:6], ['email_format', 'email_account', 'email_list_size', 'email_header_names',
+                                    'email_header_order', 'thunderbird_window'])
+        self.assertIn('email_status_words', keys[6:])
+
     def test_status_keys_and_menu(self):
         from input_parity import SCREEN_KEYS
         self.assertEqual(SCREEN_KEYS['mailbox']['Q'], 'mark as read or unread')
