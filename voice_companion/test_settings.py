@@ -234,3 +234,40 @@ class DamagedFilesOptionsTests(unittest.TestCase):
                 values['podcast_limit']='5'
                 app_settings.apply_settings(companion,values)
             self.assertEqual(json.loads(path.read_text()),['junk',{**good,'download_limit':5}])
+
+
+
+from test_core_email_fixes import CompanionTestCase
+
+REAL_SAVE_SPEECH_SETTINGS = companion.save_speech_settings
+
+
+class SettingNotSavedTests(CompanionTestCase):
+    """A spoken setting change works at once even when it cannot be saved (a full disk,
+    or a settings file another program holds). Before, "Faster", "Verbosity low",
+    "Commands only" and others stopped the whole app; now the change is made and the
+    user hears that it lasts until Companion closes."""
+    def setUp(self):
+        super().setUp()
+        for name, value in dict(PREFERENCES=dict(DEFAULTS), VERBOSITY='high', SPEECH_RATE=0, SPEECH_PITCH=0,
+                                SPEECH_VOLUME=100, PUNCTUATION_LEVEL='some', KEYBOARD_SPEECH=None, web_session=None,
+                                save_speech_settings=REAL_SAVE_SPEECH_SETTINGS).items():
+            p = patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+        for target in ('storage.write_text_atomic', 'app_settings.save_preferences'):
+            p = patch(target, side_effect=PermissionError(13, 'Access is denied')); p.start(); self.addCleanup(p.stop)
+
+    def test_each_change_is_made_and_says_it_is_not_saved(self):
+        checks = (('faster', lambda: companion.SPEECH_RATE == 1, 'Voice rate 1.'),
+                  ('verbosity low', lambda: companion.VERBOSITY == 'low', 'Verbosity low.'),
+                  ('punctuation all', lambda: companion.PUNCTUATION_LEVEL == 'all', 'Punctuation all.'),
+                  ('commands only', lambda: companion.INPUT_MODE == 'commands', 'Commands only.'),
+                  ('keep audio playing in the background on', lambda: companion.PREFERENCES['keep_audio_playing'], 'Keep audio playing in the background on.'),
+                  ('capital letters raise pitch', lambda: companion.PREFERENCES['capital_letters'] == 'raise pitch', 'raise pitch'))
+        for command, changed, words in checks:
+            with self.subTest(command=command):
+                self.said.clear()
+                self.assertEqual(companion.handle(command, 'awake', typed=True), 'awake')
+                self.assertTrue(changed())
+                self.assertEqual(len(self.said), 1, self.said)
+                self.assertIn(words, self.said[0])
+                self.assertTrue(self.said[0].endswith(companion.NOT_SAVED), self.said)

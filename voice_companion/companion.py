@@ -885,7 +885,7 @@ def change_display(request,mode):
     if request[0]!='status':
         PREFERENCES.update(values)
         try:__import__('app_settings').save_preferences(sys.modules[__name__])
-        except OSError:words+=' This change could not be saved. It lasts until Companion closes.'
+        except OSError:words+=NOT_SAVED
     speak(words)
     sync_app_context(mode)
 
@@ -1640,6 +1640,20 @@ def update_audio_ducking(active=None):
         print('Audio ducking unavailable:', exc, file=sys.stderr)
 
 
+NOT_SAVED = ' This change could not be saved. It lasts until Companion closes.'
+
+
+def remembered(*savers):
+    """Save a changed setting. '' when saved; otherwise the words that say the change
+    still works now but lasts only until Companion closes (a full disk, or a settings
+    file another program holds). A setting that cannot be saved must never stop the app."""
+    try:
+        for save in savers:save()
+    except OSError:
+        return NOT_SAVED
+    return ''
+
+
 def save_speech_settings():
     from storage import write_text_atomic
     write_text_atomic(APP / 'speech-settings.json',
@@ -1672,14 +1686,14 @@ def change_speech_setting(command, writing=False):
     else:
         SPEECH_VOLUME = value
         if not TEXT_MODE: voice.Volume = value
-    save_speech_settings()
+    unsaved=remembered(save_speech_settings)
     if KEYBOARD_SPEECH and not TEXT_MODE:KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'))
     # Asked to go past a limit: say so, as "Bigger text." says "Largest text size."
     limit=''
     if operation=='delta' and value==current and amount:
         limit={('volume',1):'Loudest volume. ',('volume',-1):'Quietest volume. ',('rate',1):'Fastest rate. ',('rate',-1):'Slowest rate. ',
                ('pitch',1):'Highest pitch. ',('pitch',-1):'Lowest pitch. '}.get((kind,1 if amount>0 else -1),'')
-    speak(limit+('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.'))
+    speak(limit+('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.')+unsaved)
     return True
 
 def voice_choices(engine=None):
@@ -1725,8 +1739,7 @@ def keep_voice():
     name = choose_voice(voice_choices(VOICE_PICK_ENGINE)[VOICE_PICK_INDEX])
     VOICE_PICK_INDEX = VOICE_PICK_ORIGINAL = VOICE_PICK_ENGINE = None
     VOICE_PICK_CONFIRM = False
-    save_speech_settings()
-    speak('Using ' + name + '.')
+    speak('Using ' + name + '.' + remembered(save_speech_settings))
 
 
 VOICE_LIST_COMMANDS = frozenset(('list voices', 'voice list', 'voices list', 'list voice',
@@ -1755,8 +1768,7 @@ def use_synthesizer(text):
     if choices:
         choose_voice(choices[0])
         SYNTH_PICK_INDEX = VOICE_PICK_INDEX = VOICE_PICK_ORIGINAL = VOICE_PICK_ENGINE = None
-        save_speech_settings()
-        speak('Using ' + choices[0][1] + '.')
+        speak('Using ' + choices[0][1] + '.' + remembered(save_speech_settings))
     else:
         speak('That synthesizer is not configured. Ask your trainer to check setup.')
     return True
@@ -3987,8 +3999,8 @@ def _handle(text, mode, typed=False):
     if mode=='browser_menu' and web_session.menu.level=='name':return handle_browser_menu(text)
     background_request=re.fullmatch(r'(?:set )?keep audio playing in (?:the )?background (on|off)',command)
     if background_request and mode!='settings':
-        PREFERENCES['keep_audio_playing']=background_request[1]=='on';save_preferences()
-        speak('Keep audio playing in the background '+background_request[1]+'.');return mode
+        PREFERENCES['keep_audio_playing']=background_request[1]=='on'
+        speak('Keep audio playing in the background '+background_request[1]+'.'+remembered(save_preferences));return mode
 
     if mode=='web' and command in ('web browser menu','browser menu','leave website'):
         web_session.leave(PREFERENCES.get('web_keep_open',False))
@@ -4145,9 +4157,9 @@ def _handle(text, mode, typed=False):
     search_engine_request=re.fullmatch(r'(?:(?:set|choose|use) )?(?:default )?search engine(?: to)? (google|bing|brave(?: search)?|duck duck go|duckduckgo)',command)
     if search_engine_request:
         engine='brave' if search_engine_request[1].startswith('brave') else 'duckduckgo' if search_engine_request[1].startswith('duck') else search_engine_request[1]
-        PREFERENCES['web_search_engine']=engine;save_preferences()
+        PREFERENCES['web_search_engine']=engine
         if web_session:web_session.search_engine=engine
-        speak('Default search engine '+{'google':'Google','bing':'Bing','brave':'Brave Search','duckduckgo':'DuckDuckGo'}[engine]+'.');return mode
+        speak('Default search engine '+{'google':'Google','bing':'Bing','brave':'Brave Search','duckduckgo':'DuckDuckGo'}[engine]+'.'+remembered(save_preferences));return mode
     ducking_request=audio_ducking_request(command)
     if ducking_request:
         key,value=ducking_request
@@ -4165,23 +4177,23 @@ def _handle(text, mode, typed=False):
             return mode
     keep_open_request=re.fullmatch(r'(?:(?:set|turn) )?keep browser window open(?: to)? (on|off)',command)
     if keep_open_request:
-        PREFERENCES['web_keep_open']=keep_open_request[1]=='on';save_preferences()
-        speak('Keep browser window open '+keep_open_request[1]+'.');return mode
+        PREFERENCES['web_keep_open']=keep_open_request[1]=='on'
+        speak('Keep browser window open '+keep_open_request[1]+'.'+remembered(save_preferences));return mode
     auto_read_request=re.fullmatch(r'(?:(?:set|turn) )?(?:automatic page reading|automatically read (?:web )?pages|read pages automatically)(?: to)? (on|off)',command)
     toggle_read=re.fullmatch(r'(?:turn|switch) (on|off) automatic page reading',command)
     enable_read=re.fullmatch(r'(enable|disable) automatic page reading',command)
     if auto_read_request or toggle_read or enable_read:
         enabled=enable_read[1]=='enable' if enable_read else (auto_read_request or toggle_read)[1]=='on'
-        PREFERENCES['web_auto_read']=enabled;save_preferences()
+        PREFERENCES['web_auto_read']=enabled
         if web_session:web_session.auto_read=enabled
-        speak('Automatic page reading '+('on.' if enabled else 'off.'));return mode
+        speak('Automatic page reading '+('on.' if enabled else 'off.')+remembered(save_preferences));return mode
     startup_command=re.fullmatch(r'(?:set )?(?:start with windows|start voice companion with windows|start automatically with windows|windows startup)(?: to)? (on|off)',command)
     if startup_command:
         try:
             from windows_actions import set_startup
             enabled=startup_command[1]=='on';set_startup(enabled)
-            PREFERENCES['start_with_windows']=enabled;save_preferences()
-            speak('Start with Windows '+startup_command[1]+'.')
+            PREFERENCES['start_with_windows']=enabled
+            speak('Start with Windows '+startup_command[1]+'.'+remembered(save_preferences))
         except (OSError,ValueError) as exc:speak(str(exc))
         return mode
     if mode=='mailbox' and re.fullmatch(r'go to (?:the )?(main menu|options|settings)',command):
@@ -4194,8 +4206,7 @@ def _handle(text, mode, typed=False):
     if verbosity_request:
         VERBOSITY = verbosity_request[1]
         PREFERENCES['verbosity'] = VERBOSITY
-        save_preferences(); save_speech_settings()
-        speak('Verbosity '+VERBOSITY+'.')
+        speak('Verbosity '+VERBOSITY+'.'+remembered(save_preferences, save_speech_settings))
         return mode
     update_command = normalized_command(text)
     if re.match(r'^(?:set )?(?:echo dictated text|typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|when encountering capital letters|capital letters)\b.+',update_command):
@@ -4205,9 +4216,8 @@ def _handle(text, mode, typed=False):
             try:
                 message=session.set(*request)
                 PREFERENCES[request[0]]=session.values[request[0]]
-                save_preferences()
                 if request[0]=='capital_letters' and KEYBOARD_SPEECH:KEYBOARD_SPEECH.capital_letters=session.values['capital_letters']
-                speak(message+'.')
+                speak(message+'.'+remembered(save_preferences))
             except (ValueError,OSError) as exc:
                 if not (isinstance(exc,ValueError) and writing_dictation(mode,typed)):speak(str(exc));return mode
             else:return mode
@@ -4412,15 +4422,13 @@ def _handle(text, mode, typed=False):
                 chosen = choose_voice(matches[0])
                 SYNTH_PICK_INDEX = VOICE_PICK_ENGINE = VOICE_PICK_INDEX = VOICE_PICK_ORIGINAL = None
                 VOICE_PICK_CONFIRM = False
-                save_speech_settings()
-                speak('Using ' + chosen + '.')
+                speak('Using ' + chosen + '.' + remembered(save_speech_settings))
             else: speak_prompt('Voice name was not unique. Say list voices and try the full name.')
         return mode
     punctuation = re.fullmatch(r'(?:punctuation|set punctuation to) (none|some|most|all)', command)
     if punctuation:
         PUNCTUATION_LEVEL = punctuation[1]
-        save_speech_settings()
-        speak('Punctuation ' + PUNCTUATION_LEVEL + '.')
+        speak('Punctuation ' + PUNCTUATION_LEVEL + '.' + remembered(save_speech_settings))
         return mode
     # "Version." alone in a document, email or note is text, like "Time."; a question is a command.
     if command in VERSION_QUESTIONS or \
@@ -4584,7 +4592,7 @@ def _handle(text, mode, typed=False):
     requested_mode = INPUT_MODE_COMMANDS.get(command)
     if requested_mode:
         INPUT_MODE = requested_mode
-        save_speech_settings()
+        unsaved = remembered(save_speech_settings)
         if document is not None: document.dictating = requested_mode != 'commands'
         if email_draft is not None:
             email_draft.dictating = requested_mode != 'commands'
@@ -4592,7 +4600,7 @@ def _handle(text, mode, typed=False):
         if web_session is not None: web_session.input_mode = requested_mode
         speak({'mixed':'Normal mode. Commands and ordinary dictation are available.',
                'commands':'Commands only. Ordinary speech will not be added as text.',
-               'dictation':'Dictation only. Speech goes into the current document, email, or focused web text field.'}[requested_mode])
+               'dictation':'Dictation only. Speech goes into the current document, email, or focused web text field.'}[requested_mode] + unsaved)
         return mode
     if command in MODE_QUESTIONS:
         # The names the guide and the mode commands use, never the stored word ("mixed").
