@@ -119,9 +119,11 @@ class RequestTests(unittest.TestCase):
             self.assertEqual(options.voice_request(said), wanted, said)
 
     def test_sentences_are_not_display_commands(self):
-        for said in ('The text is bigger now', 'Bigger text messages are hard to read', 'text size 120',
-                     'my screen is full', 'contrast', 'colors', ''):
+        for said in ('The text is bigger now', 'Bigger text messages are hard to read',
+                     'my screen is full', 'contrast', 'colors', '', 'text size is too small'):
             self.assertIsNone(options.voice_request(said), said)
+        # A number that is not a size says the sizes and changes nothing (Will, October 31, 2026).
+        self.assertEqual(options.voice_request('text size 120'), ('size_invalid', None))
 
     def test_zoom_keys(self):
         for keysym, state, wanted in (('equal', CONTROL, 'Display:Bigger'), ('plus', CONTROL | SHIFT, 'Display:Bigger'),
