@@ -18,11 +18,11 @@ combines them in its own links), else from youtube_page.FILTERS.
 Lists (Home, search results, subscriptions, history, Watch later, liked
 videos, playlists, Up next, comments, chapters) use Up and Down, Home and
 End, and Enter. Single letters control the video, as on YouTube itself
-(K, M, C, F). Alt opens the YouTube actions menu with every action.
+(M, C, F). Alt opens the YouTube actions menu with every action.
 
 While a video plays you are in the player (Will, October 30, 2026): Up and Down
-change the volume, Left and Right skip back and forward, Space or K plays and
-pauses, N and P go to the next and previous video. Escape goes back to the list
+change the volume, Left and Right skip back and forward, Space or Enter plays and
+pauses (K was removed, Will, October 30, 2026), N and P go to the next and previous video. Escape goes back to the list
 you came from, and the video keeps playing.
 
 Videos play in a tab of their own, so the lists can still be browsed while a
@@ -64,13 +64,13 @@ PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to slee
 HELP = ('YouTube. The YouTube menu has Search, Home, and your own lists. Up and Down Arrow move. Enter chooses. '
         'Control+F searches: type or say your words, then press Enter. Control+Shift+F changes the filters. '
         'On a list, Enter plays a video and opens the player. In the player, Up and Down Arrow change the volume. '
-        'Left and Right Arrow skip back and forward. Space or K plays and pauses. N plays the next video, and P the one before. '
+        'Left and Right Arrow skip back and forward. Space or Enter plays and pauses. N plays the next video, and P the one before. '
         'Escape goes back to your list, and the video keeps playing. Alt opens the actions menu.')
 
 # Keys on the YouTube screen, as spoken commands (input_parity.SCREEN_KEYS uses this).
 KEYS = {
     'F1': 'help with youtube', 'Ctrl+F': 'search youtube', 'Ctrl+Shift+F': 'search filters', 'F5': 'refresh youtube',
-    'Space': 'play or pause video', 'K': 'play or pause video',
+    'Space': 'play or pause video',
     '0': 'restart video', 'M': 'mute or unmute', 'Ctrl+Up': 'video volume up', 'Ctrl+Down': 'video volume down',
     'comma': 'slower video', 'period': 'faster video', 'C': 'captions on or off', 'R': 'read caption', 'Q': 'video quality',
     'N': 'next video', 'P': 'previous video', 'A': 'autoplay on or off', 'F': 'video full screen',

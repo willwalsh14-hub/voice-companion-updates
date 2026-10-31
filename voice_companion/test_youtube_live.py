@@ -391,7 +391,7 @@ class ScreenTests(LiveYouTube):
 
     def test_player_keys(self):
         self.playing()
-        steps = [('K', 'Paused.'), ('Space', 'Playing.'), ('Right', 'Forward 10 seconds. 10 seconds of 3 minutes 33 seconds.'),
+        steps = [('Space', 'Paused.'), ('Enter', 'Playing.'), ('Right', 'Forward 10 seconds. 10 seconds of 3 minutes 33 seconds.'),
                  ('Right', 'Forward 10 seconds. 20 seconds of 3 minutes 33 seconds.'),
                  ('Left', 'Back 10 seconds. 10 seconds of 3 minutes 33 seconds.'), ('Left', 'Start of the video.'),
                  ('Down', 'Volume 90 percent.'), ('Up', 'Volume 100 percent.'),
@@ -789,7 +789,7 @@ class ScreenTests(LiveYouTube):
         self.home(); self.press('Enter')
         screen.video_page.close()
         self.assertEqual(self.poll(), ['The browser closed, so the video stopped.'])
-        self.press('K')
+        self.press('Space')
         self.assertEqual(self.last(), 'No video is playing. Choose a video and press Enter.')
 
 

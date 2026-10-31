@@ -1,20 +1,18 @@
 {
-  "version": "0.2.184-test",
+  "version": "0.2.185-test",
   "status": "Testing build",
   "date": "October 30, 2026",
-  "baseline": "0.2.183-test",
-  "scope": "YouTube videos keep playing past the first minute.",
+  "baseline": "0.2.184-test",
+  "scope": "The YouTube player has one key to play and pause.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "YouTube in your own Chrome",
+          "title": "Play and pause in YouTube",
           "details": [
-            "YouTube stops videos after about a minute in a browser a program controls. It says something went wrong.",
-            "Now YouTube always opens in your own Chrome, so videos play without stopping. This needs the Voice Companion extension in Chrome.",
-            "If Chrome is closed, Voice Companion opens it and gives your keys back. Your keys work the same.",
-            "If a video still stops, it goes on in your own Chrome, from where it stopped."
+            "Space or Enter plays and pauses a video.",
+            "K no longer plays or pauses. It did the same thing as Space."
           ]
         }
       ]
@@ -23,9 +21,9 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "YouTube messages",
+          "title": "YouTube help",
           "details": [
-            "YouTube's error no longer ends with the words Learn more."
+            "YouTube help and the user guide name Space and Enter for play and pause."
           ]
         }
       ]
