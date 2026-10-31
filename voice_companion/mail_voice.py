@@ -28,6 +28,7 @@ NUMBER_WORDS.update({'one hundred': 100, 'a hundred': 100})
 NUMBER = r'(?:\d+|' + '|'.join(sorted(NUMBER_WORDS, key=len, reverse=True)) + r')'
 MAIL_SIZES = (10, 20, 30, 40, 50, 100, 1000)
 # "All": pages of 10. The arrows stop at the end of a page, as in every list.
+MAIL_REQUEST_FAILED = 'Email could not finish that. Say list messages, then try again.'
 ALL_MESSAGES = 'All messages, 10 at a time. For more, press Page Down, or say next page.'
 # Commands about "the message you are on". In an empty folder each says the list is empty.
 EMPTY_LIST_COMMANDS = ('next', 'previous', 'next message', 'previous message', 'first message', 'last message',
@@ -1205,7 +1206,8 @@ class MailSession:
             return str(exc)
         except (ValueError, KeyError, IndexError):
             self.pending = None
-            return 'I could not complete that mail request. Check the account connection and say list messages to try again.'
+            # Not an account problem, so the account is not named (sweep, October 31, 2026).
+            return MAIL_REQUEST_FAILED
         except Exception as exc:
             self.pending = None
             self.folders = []

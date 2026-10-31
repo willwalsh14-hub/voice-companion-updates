@@ -15,6 +15,21 @@ from address_book import AddressBook
 from ai_dictation import prepare_dictation
 
 
+def flushed_write(path, data):
+    """Write the draft's temporary file all the way to the disk before it replaces the saved one, as
+    documents do: a power cut must not leave an empty draft (sweep, October 31, 2026). A full disk or
+    a locked file leaves no half-written copy behind."""
+    try:
+        with open(path, 'wb') as file:
+            file.write(data)
+            file.flush()
+            os.fsync(file.fileno())
+    except BaseException:
+        try: Path(path).unlink()
+        except OSError: pass
+        raise
+
+
 def email_field_destination(spoken):
     """Recognize short field navigation even with common speech homophones."""
     words = re.sub(r'[^a-z ]', ' ', spoken.casefold()).split()
@@ -342,7 +357,7 @@ class VoiceEmail(VoiceDocument):
             'paragraphs': [asdict(p) for p in self.paragraphs],
         }
         temporary = self.state_path.with_suffix('.writing.json')
-        temporary.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding='utf-8')
+        flushed_write(temporary, json.dumps(state, ensure_ascii=False, indent=2).encode('utf-8'))
         keep_previous(self.state_path)
         temporary.replace(self.state_path)
         msg = EmailMessage()
@@ -382,7 +397,7 @@ class VoiceEmail(VoiceDocument):
             data = (data[:end] + b''.join(b'--' + boundary.encode('ascii') + b'\n' + part + b'\n' for part in parts)
                     + b'--' + boundary.encode('ascii') + b'--\n')
         output = self.path.with_suffix('.writing.eml')
-        output.write_bytes(data)
+        flushed_write(output, data)
         output.replace(self.path)
         return self.path
 

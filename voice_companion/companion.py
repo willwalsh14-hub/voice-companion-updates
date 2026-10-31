@@ -5159,7 +5159,10 @@ def _handle(text, mode, typed=False):
             speak('Sending canceled. The email remains a local draft.')
             return mode
         if command in ('send email', 'send message', 'send the email', 'send this email',
-                       'send it', 'send that', 'send this', 'please send it', 'please send that', 'send'):
+                       'send it', 'send that', 'send this', 'please send it', 'please send that', 'send',
+                       # The whole sentence only (Will, October 31, 2026); the review still asks first.
+                       'send my email', 'send my message', 'send now', 'send it now', 'send email now',
+                       'send the message', 'please send', 'please send my email', 'send this message'):
             pending_send = None
             email_draft.dictating = False
             try: email_draft.save()
