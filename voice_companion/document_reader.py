@@ -93,7 +93,8 @@ def damaged_words(path,lead=DAMAGED):
         DAMAGED_PATH=Path(path)
         return lead+' Voice Companion kept an earlier copy. Say open earlier copy to use it.'
     DAMAGED_PATH=None
-    return lead+' If you have another copy, open that one. Word can sometimes repair a damaged file.'
+    word=path is not None and Path(path).suffix.lower() in ('.docx','.doc')
+    return lead+' If you have another copy, open that one.'+(' Word can sometimes repair a damaged file.' if word else '')
 
 
 def restore_earlier_copy():

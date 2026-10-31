@@ -113,7 +113,7 @@ class DownloadScreenTests(unittest.TestCase):
         mode = self.app.poll_file_manager(mode)
         mode = self.screen.poll(self.app, mode)
         self.assertEqual(mode, 'downloads')
-        self.assertIn('This file is damaged or empty, so it could not be opened.', self.said)
+        self.assertTrue(any(line.startswith('This file is damaged or empty, so it could not be opened.') for line in self.said), self.said)
         self.assertEqual(self.said[-1], 'Downloads. bad.pdf, finished, 1 of 1.')
         self.assertNotIn('Windows could not complete that file action', ' '.join(self.said))
 
