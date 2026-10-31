@@ -140,6 +140,20 @@ class BrowserMenuTests(unittest.TestCase):
                     self.assertEqual(app.handle('resume','browser_menu'),'web')
                     self.assertEqual(self.session.reading.position,4)
 
+    def test_resume_says_why_the_browser_is_not_ready(self):
+        """Resume while the regular browser reconnects said "Your favorites are still
+        saved. Try the favorite again." No favorite was chosen."""
+        from web_assistant import WebError
+        self.session.open('example.com')
+        said=[]
+        with patch.object(app,'web_session',self.session),patch.object(app,'PREFERENCES',{'web_keep_open':True}),patch.object(app,'speak',side_effect=said.append),patch.object(app,'APP_WINDOW',None):
+            self.session.backend.refocus=Mock(side_effect=WebError('The browser is reconnecting. Keep Companion open.'))
+            self.assertEqual(app.handle('resume','browser_menu'),'browser_menu')
+            self.assertEqual(said[-1],'The browser is reconnecting. Keep Companion open.')
+            self.session.backend.refocus=Mock(side_effect=RuntimeError('Target closed'))
+            app.handle('resume','browser_menu')
+            self.assertEqual(said[-1],'The page could not open. Try again in a moment.')
+
     def test_search_cancel_name_literal_and_keyboard_routes(self):
         self.session.open('example.com')
         with patch.object(app,'web_session',self.session),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',None):

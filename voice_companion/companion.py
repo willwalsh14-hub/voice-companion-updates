@@ -2096,8 +2096,10 @@ def handle_browser_menu(text):
             speak('No browser page is open. Use Web history to open an earlier page.');return 'browser_menu'
         revision=web_session.page_revision
         try:result=web_session.open(action[1]) if isinstance(action,tuple) else web_session.resume() if action=='resume' else web_session.command('go '+action)
+        except __import__('web_assistant').WebError as exc:
+            speak(str(exc));return 'browser_menu'   # the browser's own reason, such as reconnecting
         except Exception:
-            speak('The page could not open. Your favorites are still saved. Try the favorite again.');return 'browser_menu'
+            speak('The page could not open. Your favorites are still saved. Try the favorite again.' if isinstance(action,tuple) else 'The page could not open. Try again in a moment.');return 'browser_menu'
         if isinstance(action,tuple) and not getattr(web_session,'navigation_succeeded',False):
             speak(result)
             return 'browser_menu'
