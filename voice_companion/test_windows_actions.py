@@ -106,7 +106,7 @@ class PowerKeepsUnsavedWorkTests(unittest.TestCase):
                 power.assert_not_called()
                 self.assertEqual(words, ['Buy milk'])
                 self.assertEqual(len(said), 1, said)
-                self.assertTrue(said[0].startswith('Your note could not be saved, so the computer was not '
+                self.assertTrue(said[0].startswith('Your note could not be saved. The computer was not '
                                                    + ('restarted.' if action == 'restart' else 'shut down.')), said)
                 self.assertIn('Your words are still here.', said[0])
 

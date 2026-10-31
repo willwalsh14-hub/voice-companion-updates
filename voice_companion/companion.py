@@ -4083,21 +4083,21 @@ def _handle(text, mode, typed=False):
             POWER_ACTION=None;return canceled_to(POWER_RETURN_MODE)
         if command in ('yes','yes please','okay','ok','confirm','confirm that','that one'):
             # Never lose work: as Exit does, stay open when the draft or the note cannot be saved.
-            stopped='so the computer was not '+('restarted' if POWER_ACTION=='restart' else 'shut down')
+            not_done='The computer was not restarted.' if POWER_ACTION=='restart' else 'The computer was not shut down.'
             if email_draft is not None:
                 try:email_draft.save()
                 except OSError:
-                    speak('Your email draft could not be saved, '+stopped+'. Close any program using your drafts folder, then try again.')
+                    speak('Your email draft could not be saved. '+not_done+' Close any program using your drafts folder, then try again.')
                     POWER_ACTION=None;return POWER_RETURN_MODE
             said=[]
             if flush_note(POWER_RETURN_MODE,said.append) is False:
-                speak(' '.join(said).replace('Your note could not be saved.','Your note could not be saved, '+stopped+'.',1))
+                speak(' '.join(said).replace('Your note could not be saved.','Your note could not be saved. '+not_done,1))
                 POWER_ACTION=None;return POWER_RETURN_MODE
             try:
                 from windows_actions import request_power
                 request_power(POWER_ACTION)
             except (OSError,ValueError,__import__('subprocess').SubprocessError) as exc:
-                speak(' '.join(said+['The computer could not '+('restart' if POWER_ACTION=='restart' else 'shut down')+'. Your app is still open.']));POWER_ACTION=None;return POWER_RETURN_MODE
+                speak(' '.join(said+['The computer could not restart.' if POWER_ACTION=='restart' else 'The computer could not shut down.','Your app is still open.']));POWER_ACTION=None;return POWER_RETURN_MODE
             speak(' '.join(said+['Restarting the computer.' if POWER_ACTION=='restart' else 'Shutting down the computer.']))
             POWER_ACTION=None;return 'exit'
         speak('Restart the computer? Yes or no.' if POWER_ACTION=='restart' else 'Shut down the computer? Yes or no.');return mode
