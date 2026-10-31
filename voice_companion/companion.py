@@ -4458,14 +4458,19 @@ def _handle(text, mode, typed=False):
     if spoken_control(command) == 'sleep':
         if mode != 'sleep': SLEEP_RETURN_MODE = mode
         pending_send = None
-        if mode == 'email_draft' and email_draft is not None: email_draft.save()
+        # A draft or note that cannot be saved stays open behind sleep; say so with the sleep words.
+        unsaved = ''
+        if mode == 'email_draft' and email_draft is not None:
+            try: email_draft.save()
+            except OSError: unsaved = UNSAVED_DRAFT + ' '
         if mode == 'document' and document is not None and not save_document_before_leaving(): return 'document'
-        if mode == 'note': flush_note(mode)
+        said = []
+        if mode == 'note' and flush_note(mode, said.append) is False: unsaved = ' '.join(said) + ' '
         pending_website = None
         if MEDIA_HUB is not None and MEDIA_HUB.player.kind:
             try: MEDIA_HUB.player.control('pause')
             except Exception: pass
-        speak(sleep_message())
+        speak(unsaved + sleep_message())
         return 'sleep'
     global FILE_MANAGER,FILE_READER
     if command in ('file manager','open file manager','manage files','browse files'):
