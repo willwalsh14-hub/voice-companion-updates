@@ -237,6 +237,50 @@ class AppPathTests(unittest.TestCase):
                          'That file was not found. Check its name and folder, then try again.')
 
 
+class StuckPage:
+    """The player page of a file that stopped answering: the page script throws, as
+    the real page does when play() is refused ("This audio could not resume")."""
+    url = ''
+    def is_closed(self): return False
+    def goto(self, url): self.url = url
+    def evaluate(self, script, args=None):
+        from playwright.sync_api import Error
+        if isinstance(args, dict) and 'url' in args: return True   # open()
+        raise Error('Error: This audio could not resume. Choose the station or episode again.')
+
+
+class MediaPlayerScreenTests(unittest.TestCase):
+    """The Media player screen (your own files) when the player stops answering."""
+    def setUp(self):
+        import companion
+        from media_player import MediaPlayer
+        self.companion = companion
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        player = MediaPlayer(Path(self.temp.name) / 'Audio Player')
+        player.page = StuckPage()
+        player.start = lambda: None
+        player.open('file:///C:/Music/song.mp3', 'song.mp3', 'local')
+        self.hub = MediaHub(self.temp.name, player=player)
+        for name, value in (('MEDIA_HUB', self.hub),):
+            patcher = patch.object(companion, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        self.said = []
+        patcher = patch.object(companion, 'speak', lambda text, *args, **kwargs: self.said.append(text))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_player_commands_say_the_player_did_not_answer(self):
+        for command in ('play or pause', 'pause', 'stop media', 'volume up', 'speed 1.5', 'media status',
+                        'start of file', 'back 15 seconds'):
+            with self.subTest(command=command):
+                self.said.clear()
+                self.assertEqual(self.companion.handle(command, 'local_media'), 'local_media')
+                self.assertTrue(self.said, 'nothing was said')
+                self.assertEqual(self.said[-1], 'The media player did not answer. Choose Open a media file to play the file again.')
+
+
 class WindowErrorTests(unittest.TestCase):
     """The window's update loop runs every 15 ms and records each error it survives.
     An error that repeats on every update must not fill memory or the error log."""

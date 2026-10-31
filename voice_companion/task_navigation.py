@@ -414,6 +414,16 @@ class TaskNavigation:
         return None
 
     def handle(self, text, mode):
+        if mode != 'local_media': return self._handle(text, mode)
+        try: return self._handle(text, mode)
+        except (ValueError, OSError): raise   # said by the app: messages written for people
+        except Exception:
+            # The player's browser stopped answering or refused to play (a file that was
+            # moved, or a drive that was removed). Say so; the app keeps going.
+            self.app.speak('The media player did not answer. Choose Open a media file to play the file again.')
+            return mode
+
+    def _handle(self, text, mode):
         m = self.app
         command = text if text.startswith('@') else m.normalized_command(text)
         if mode == 'task_input':
