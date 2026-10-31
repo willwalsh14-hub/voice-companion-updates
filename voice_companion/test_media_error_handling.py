@@ -227,5 +227,25 @@ class AppPathTests(unittest.TestCase):
         self.assert_plain(spoken_error(OSError(28, 'No space left on device')))
 
 
+class WindowErrorTests(unittest.TestCase):
+    """The window's update loop runs every 15 ms and records each error it survives.
+    An error that repeats on every update must not fill memory or the error log."""
+    def test_a_repeating_window_error_is_kept_once(self):
+        from app_window import keep_window_error
+        errors = []
+        said = [keep_window_error(errors, 'Traceback: the same problem') for _ in range(1000)]
+        self.assertEqual(errors, ['Traceback: the same problem'])
+        self.assertEqual(said.count(True), 1)
+
+    def test_only_the_latest_window_errors_are_kept(self):
+        from app_window import keep_window_error, WINDOW_ERROR_LIMIT
+        errors = []
+        for number in range(500): keep_window_error(errors, 'problem %d' % number)
+        self.assertEqual(len(errors), WINDOW_ERROR_LIMIT)
+        self.assertEqual(errors[-1], 'problem 499')
+        # The first one is kept too: it is usually the cause of the rest.
+        self.assertEqual(errors[0], 'problem 0')
+
+
 if __name__ == '__main__':
     unittest.main()
