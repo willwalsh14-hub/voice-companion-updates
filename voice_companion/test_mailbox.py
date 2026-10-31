@@ -84,6 +84,7 @@ class MailboxTests(unittest.TestCase):
         self.assertEqual(SCREEN_KEYS['email_draft']['Ctrl+Shift+T'], 'read receipt on or off')
         from screen_menus import MENUS
         items = [item for _, group in MENUS['mailbox'][1] for item in group]
+        self.assertEqual(MENUS['mailbox'][1][1][0], 'Select')
         self.assertIn(('Mark as read or unread', 'Q', 'mark as read or unread'), items)
         self.assertIn(('Flag or unflag', 'X', 'flag or unflag'), items)
 
