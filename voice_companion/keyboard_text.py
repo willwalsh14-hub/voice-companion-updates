@@ -45,6 +45,9 @@ def keyboard_undo_step(doc,start,removed,inserted):
         doc.checkpoint('deleting: '+words(removed));doc.undo_steps[-1].run=('deleting',start,start,removed);return
     doc.checkpoint('typing: '+words(inserted) if inserted.strip() else 'the change');return
 
+TABLE_EDGE_NOTICE=('That would join or split table cells, so the table did not change. '
+                   'Type in one cell at a time. Tab moves to the next cell.')
+
 def replace_keyboard_text(doc,before,after,caret,selection=None):
     """Splice only the changed range, preserving surrounding runs and paragraph styles."""
     if document_text(doc)!=before:raise ValueError('Text changed before that keyboard edit could be applied. Your latest saved text is still available.')
@@ -59,7 +62,11 @@ def replace_keyboard_text(doc,before,after,caret,selection=None):
         prefix,suffix=first.text[:a],last.text[b:]
         prefix_styles=doc._character_styles(first)[:a];suffix_styles=doc._character_styles(last)[b:]
         inherited=copy.copy(prefix_styles[-1]) if prefix_styles else TextRun('',first.bold,first.italic,first.underline,first.font,first.size)
-        pieces=after[start:end_new].split('\n');keyboard_undo_step(doc,start,before[start:end_old],after[start:end_new]);created=[]
+        pieces=after[start:end_new].split('\n')
+        # Backspace or Delete across a cell's edge, Enter in a cell, or a selection across
+        # cells would join or split cells: the table could no longer be saved. Refuse it first.
+        if (i!=j or len(pieces)>1) and any(p.table_id for p in doc.paragraphs[i:j+1]):raise ValueError(TABLE_EDGE_NOTICE)
+        keyboard_undo_step(doc,start,before[start:end_old],after[start:end_new]);created=[]
         for index,piece in enumerate(pieces):
             p=copy.deepcopy(first if index==0 or index<len(pieces)-1 else last)
             p.text=(prefix if index==0 else '')+piece+(suffix if index==len(pieces)-1 else '')

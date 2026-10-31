@@ -70,12 +70,19 @@ def documents_folder():
             pass
     target = folder / 'Voice Companion'
     legacy = APP / 'Documents'
-    if legacy.exists() and legacy.resolve() != target.resolve():
-        target.mkdir(parents=True, exist_ok=True)
-        for old in legacy.glob('*.docx'):
-            destination = target / old.name
-            if not destination.exists():
-                shutil.copy2(old, destination)
+    # Documents from before October 19, 2026 are copied once, when the new folder is made.
+    # Copying on every call brought back documents the person had deleted or renamed.
+    # They are copied to a side folder first, so a failed copy leaves no half-filled folder
+    # and is tried again next time. The old copies are never removed.
+    if legacy.exists() and not target.exists() and legacy.resolve() != target.resolve():
+        moving = folder / 'Voice Companion.moving'
+        try:
+            moving.mkdir(parents=True, exist_ok=True)
+            for old in legacy.glob('*.docx'):
+                shutil.copy2(old, moving / old.name)
+            os.replace(moving, target)
+        except OSError as error:
+            print('Old documents could not be copied yet:', error, file=sys.stderr)
     return target
 
 def document_format_command(command):
@@ -555,7 +562,12 @@ def apply_keyboard_edit(payload,mode):
     else:
         logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
         editor=document if logical=='document' else email_draft
-        replace_keyboard_text(editor,payload['before'],payload['after'],payload['caret'],payload.get('selection'))
+        try:replace_keyboard_text(editor,payload['before'],payload['after'],payload['caret'],payload.get('selection'))
+        except ValueError:
+            # Refused (it would join table cells): the window gets the unchanged text back.
+            EDIT_ACK[payload['source']]=max(EDIT_ACK.get(payload['source'],0),payload['seq'])
+            sync_app_context(mode,True)
+            raise
         if payload['before']!=payload['after']:KEYBOARD_DIRTY[id(editor)]=(editor,time.monotonic())
     EDIT_ACK[payload['source']]=payload['seq']
     sync_app_context(mode)
@@ -2314,6 +2326,15 @@ def save_document_before_leaving():
 
 UNSAVED_DRAFT = ('Your change is in the draft, but the draft could not be saved. Check that the disk has space, '
                  'then say save draft.')
+
+
+def editor_process(editor, text, **options):
+    """A change in a document or draft. If only the save fails (the file is open in Word,
+    or the disk is full), the change stays, the person hears why, and the app keeps running."""
+    try:
+        return editor.process(text, **options)
+    except OSError:
+        return UNSAVED_DRAFT if isinstance(editor, VoiceEmail) else UNSAVED_DOCUMENT
 
 
 def finish_exit(mode):
@@ -4766,7 +4787,7 @@ def _handle(text, mode, typed=False):
         # "Save as My Letter Copy": the name is heard; the folder question comes next.
         return start_save_as(save_as_named[1])
     if mode == 'document' and document is not None and document_control_request(text):
-        result=document.process(text)
+        result=editor_process(document,text)
         if result.startswith(('Document named ','Saved document as ','Saved the Word document as ')):checkpoint_document()
         speak(result)
         return mode
@@ -4780,10 +4801,10 @@ def _handle(text, mode, typed=False):
                     email_draft.apply_field_selection_edit(*edit)
                 speak(result)
             else:
-                dictation_feedback(email_draft.process(text))
+                dictation_feedback(editor_process(email_draft,text))
             return mode
         if mode == 'document' and document is not None:
-            speak(document.process(text))
+            speak(editor_process(document,text))
             return mode
         if mode == 'note':
             speak(note_selection.select(' '.join(note_buffer), text)[0])
@@ -4796,7 +4817,7 @@ def _handle(text, mode, typed=False):
         editor = document if mode == 'document' else email_draft
         body_active = mode == 'document' or (email_draft.compose_step or 'body') == 'body'
         if body_active and ((((isinstance(editor.replacement_candidates, list) and editor.replacement_candidates) or (isinstance(editor.selection_candidates, list) and editor.selection_candidates)) and command not in ('main menu', 'back to main menu', 'leave document', 'close document', 'go back', 'back', 'exit', 'exit document', 'leave email', 'close email', 'exit email')) or re.fullmatch(r'(?:replace|change) .+ (?:with|to) .+', command) or re.fullmatch(r'insert (?:before|after) .+', command) or re.fullmatch(r'(?:select|find|highlight|bold|underline|italicize|copy|cut|delete) .+', command)):
-            speak(editor.process(text))
+            speak(editor_process(editor,text))
             return mode
     # While a send review is waiting, "yes" or "no" answers it; it is not message text.
     answering_send = mode == 'email_draft' and pending_send is not None and command in SEND_REVIEW_ANSWERS
