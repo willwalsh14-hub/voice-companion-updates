@@ -86,6 +86,7 @@
         {
           "title": "Other changes",
           "details": [
+            "A note is saved when a command takes you to another screen, such as Media menu. Before, its words could be lost.",
             "Text size with a number that is not a size tells you the sizes, and changes nothing.",
             "On the main menu, Go back tells you it is the first screen.",
             "In radio results, Go back leaves the results, as Escape does."
