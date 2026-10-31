@@ -120,8 +120,9 @@ class TaskNavigation:
         try:
             old = json.loads(target.read_text(encoding='utf-8')) if target.exists() else []
             names = [str(path.resolve())] + [str(p) for p in old if str(p).casefold() != str(path.resolve()).casefold()]
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(json.dumps(names[:20]), encoding='utf-8')
+            # Atomic: a full disk or a crash must not empty the list.
+            from storage import write_text_atomic
+            write_text_atomic(target, json.dumps(names[:20]))
         except (OSError, ValueError, TypeError):
             pass
 

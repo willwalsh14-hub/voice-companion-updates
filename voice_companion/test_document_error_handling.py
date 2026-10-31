@@ -150,5 +150,22 @@ class DocumentsFromTheOldFolder(unittest.TestCase):
         self.assertEqual((folder / 'Letter.docx').read_bytes(), b'old letter')
 
 
+class RecentDocumentsOnAFullDisk(DocumentFlowCase):
+    def test_a_full_disk_does_not_empty_the_recent_documents_list(self):
+        import errno, json
+        first = VoiceDocument(self.default, title='Letter'); first.append_text('Dear Bob.')
+        app.task_navigation().remember(first.path)
+        recent = self.root / 'recent-documents.json'
+        self.assertEqual(json.loads(recent.read_text(encoding='utf-8')), [str(first.path.resolve())])
+        def full_disk(path, *a, **k):
+            open(path, 'w').close()   # Windows has already emptied the file when the write fails
+            raise OSError(errno.ENOSPC, 'There is not enough space on the disk')
+        second = VoiceDocument(self.default, title='List'); second.append_text('Milk.')
+        with patch.object(Path, 'write_text', full_disk), patch('os.fsync', side_effect=OSError(errno.ENOSPC, 'full')):
+            app.task_navigation().remember(second.path)
+        self.assertEqual(json.loads(recent.read_text(encoding='utf-8')), [str(first.path.resolve())])
+        self.assertEqual(sorted(p.name for p in self.root.iterdir() if p.name.startswith('recent')), ['recent-documents.json'])
+
+
 if __name__ == '__main__':
     unittest.main()

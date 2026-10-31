@@ -33,11 +33,20 @@ def write_text_atomic(path, text, encoding='utf-8', encoding_errors=None):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + '.writing')
-    with open(temporary, 'w', encoding=encoding, errors=encoding_errors) as file:
-        file.write(text)
-        file.flush()
-        os.fsync(file.fileno())
-    os.replace(temporary, path)
+    try:
+        with open(temporary, 'w', encoding=encoding, errors=encoding_errors) as file:
+            file.write(text)
+            file.flush()
+            os.fsync(file.fileno())
+        os.replace(temporary, path)
+    except BaseException:
+        # A full disk, or the file open in another program: the old file is untouched,
+        # and no half-written copy is left beside it.
+        try:
+            temporary.unlink()
+        except OSError:
+            pass
+        raise
 
 
 def read_saved_list(path, empty):
