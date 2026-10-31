@@ -148,6 +148,16 @@ class LiveSnapshotTests(unittest.TestCase):
         WebSession(tempfile.mkdtemp(), backend)._refresh(read=False)
 
 
+class AddressBracketTests(unittest.TestCase):
+    def test_a_stray_bracket_is_said_plainly(self):
+        # Python's own words, "Invalid IPv6 URL", were spoken.
+        for typed in ('[example.com', 'example.com]', 'http://[::1'):
+            with self.subTest(typed=typed):
+                with self.assertRaises(ValueError) as said:
+                    prepare_address(typed)
+                self.assertEqual(str(said.exception), 'I could not understand that website address.')
+
+
 class PageLoadFailureTests(unittest.TestCase):
     """No internet, a wrong address and a slow site all said "The page did not open.
     Check the address and internet connection." Search said only that Google could

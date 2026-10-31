@@ -28,12 +28,13 @@ def prepare_address(spoken):
     address = re.sub(r'\s+', '', spoken_address(spoken))
     if not address or '\\' in address or any(ord(c)<32 for c in spoken):
         raise ValueError('Type a website address, such as example.com.')
-    if '://' in address:
-        parsed = urllib.parse.urlsplit(address)
-        if parsed.scheme not in ('http','https'):
-            raise ValueError('Use an HTTP or HTTPS website address.')
-    else:
-        parsed = urllib.parse.urlsplit('https://' + address)
+    try:
+        parsed = urllib.parse.urlsplit(address if '://' in address else 'https://' + address)
+    except ValueError as exc:
+        # A stray bracket ("[example.com"): Python's own words were "Invalid IPv6 URL".
+        raise ValueError('I could not understand that website address.') from exc
+    if '://' in address and parsed.scheme not in ('http','https'):
+        raise ValueError('Use an HTTP or HTTPS website address.')
     host = parsed.hostname or ''
     try:
         port = parsed.port
