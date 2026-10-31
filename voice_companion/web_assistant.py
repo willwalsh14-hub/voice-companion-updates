@@ -45,6 +45,28 @@ class FileDownloading(WebError):
     """The address is a file: the browser downloads it and the page stays as it was."""
 
 
+# Why a page did not load, from the browser's own error ("net::ERR_INTERNET_DISCONNECTED").
+# Without this, no internet, a wrong address and a slow site all sounded the same.
+LOAD_FAILURES=(
+    (('ERR_INTERNET_DISCONNECTED','ERR_NETWORK_CHANGED','ERR_NETWORK_ACCESS_DENIED','ERR_ADDRESS_UNREACHABLE','ERR_PROXY_CONNECTION_FAILED','ERR_TUNNEL_CONNECTION_FAILED'),
+     'The page did not open. This computer may not be connected to the internet. Check the connection, then try again.'),
+    (('ERR_NAME_NOT_RESOLVED','ERR_NAME_RESOLUTION_FAILED'),
+     'No website was found at that address. Check the address and the internet connection, then try again.'),
+    (('ERR_TIMED_OUT','ERR_CONNECTION_TIMED_OUT','TIMEOUT '),
+     'The page took too long to open. Try again in a moment.'),
+    (('ERR_CONNECTION_REFUSED','ERR_CONNECTION_RESET','ERR_CONNECTION_CLOSED','ERR_EMPTY_RESPONSE','ERR_CONNECTION_FAILED'),
+     'The website did not answer. Try again later.'),
+    (('ERR_CERT_','ERR_SSL_'),
+     'The page did not open because the website failed a security check. Check the address, or try again later.'))
+
+
+def load_failure(error,otherwise):
+    """What to say when a page did not load: the reason, then what to do next."""
+    message=str(error).upper()
+    if type(error).__name__=='TimeoutError':message+=' TIMEOUT '
+    return next((said for codes,said in LOAD_FAILURES if any(code in message for code in codes)),otherwise)
+
+
 LINK_DOWNLOADING='This link is a file, so it is downloading. Press Control+D to see your downloads.'
 ADDRESS_DOWNLOADING='This address is a file, so it is downloading. Press Control+D to see your downloads.'
 # Guided Chrome is started by the driver, which does not keep its downloads.
@@ -1832,8 +1854,8 @@ class WebSession:
                     page.goto(address,wait_until='domcontentloaded',timeout=30000)
                 else:page.reload(wait_until='domcontentloaded',timeout=30000)
                 return self._refresh()
-            except Exception:
-                return 'The page reload did not finish. Wait a moment, then press F5 again, or return to the browser menu.'
+            except Exception as exc:
+                return load_failure(exc,'The page reload did not finish. Wait a moment, then press F5 again, or return to the browser menu.')
         try:self._sync_browser_tab()
         except Exception:return 'The browser connection is not ready. Keep Voice Companion open; it will reconnect automatically.'
         if not self.snapshot:return 'Open a website first.'
@@ -2607,8 +2629,8 @@ class WebSession:
             return str(exc)
         except ValueError as exc:
             return str(exc)
-        except Exception:
-            return self.take_leave_notice() or 'The page did not open. Check the address and internet connection.'
+        except Exception as exc:
+            return self.take_leave_notice() or load_failure(exc,'The page did not open. Check the address and internet connection.')
 
     def take_leave_notice(self):
         """The notice for a page that stayed open because of unsaved changes, once."""
@@ -2626,8 +2648,11 @@ class WebSession:
             notice=self._navigate(base + quote(query))
             result = self._refresh()
             return notice+'Searching with ' + name + '. ' + result
-        except Exception:
-            return name + ' could not open. Your search engine was not changed. Try again or choose another search engine.'
+        except WebError as exc:
+            # The browser's own reason (it could not start) is what to fix, not the engine.
+            return str(exc)
+        except Exception as exc:
+            return load_failure(exc,name + ' could not open. Your search engine was not changed. Try again or choose another search engine.')
 
     def engine_names(self):
         return [{'google':'Google','bing':'Bing','brave':'Brave Search','duckduckgo':'DuckDuckGo'}[e] for e in self.engine_choices]

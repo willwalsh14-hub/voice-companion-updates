@@ -148,5 +148,46 @@ class LiveSnapshotTests(unittest.TestCase):
         WebSession(tempfile.mkdtemp(), backend)._refresh(read=False)
 
 
+class PageLoadFailureTests(unittest.TestCase):
+    """No internet, a wrong address and a slow site all said "The page did not open.
+    Check the address and internet connection." Search said only that Google could
+    not open, even when the guided browser itself could not start (October 31, 2026)."""
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.session = WebSession(self.folder.name, FakeBackend())
+        self.session.open('example.com')
+
+    def failing(self, error):
+        def goto(url): raise error
+        self.session.backend.goto = goto
+        self.session.backend.page = type('Page', (), {'url': 'https://example.com/', 'reload': lambda page, **_: goto('')})()
+
+    def test_the_browser_reason_is_said_for_open_search_and_reload(self):
+        from playwright.sync_api import Error, TimeoutError
+        cases = (
+            (Error('Page.goto: net::ERR_INTERNET_DISCONNECTED at https://va.gov/'), 'not be connected to the internet'),
+            (Error('Page.goto: net::ERR_NAME_NOT_RESOLVED at https://va.gov/'), 'No website was found at that address'),
+            (TimeoutError('Page.goto: Timeout 30000ms exceeded.'), 'took too long to open'),
+            (Error('Page.goto: net::ERR_CONNECTION_REFUSED at https://va.gov/'), 'The website did not answer'),
+            (Error('Page.goto: net::ERR_CERT_DATE_INVALID at https://va.gov/'), 'failed a security check'))
+        for error, said in cases:
+            with self.subTest(error=str(error)):
+                self.failing(error)
+                for result in (self.session.open('va.gov'), self.session.search('weather'), self.session.keyboard('Refresh')):
+                    self.assertIn(said, result)
+                    self.assertNotIn('net::', result)
+
+    def test_an_unknown_failure_keeps_the_plain_message(self):
+        self.failing(RuntimeError('Target closed'))
+        self.assertEqual(self.session.open('va.gov'), 'The page did not open. Check the address and internet connection.')
+        self.assertIn('Google could not open.', self.session.search('weather'))
+
+    def test_search_says_why_the_guided_browser_could_not_start(self):
+        from web_assistant import WebError
+        self.failing(WebError('Embedded Edge could not start, and Chrome is not installed. Say set up Chrome to install Chrome.'))
+        self.assertIn('Say set up Chrome', self.session.search('weather'))
+
+
 if __name__ == '__main__':
     unittest.main()
