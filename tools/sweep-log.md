@@ -7,6 +7,102 @@ The format for each night:
 - a heading with the date and the version
 - under it, a "Fixed" list and a "Questions for Will" list
 
+## October 31, 2026 (night 3, a code review of error handling): version 0.2.189-test
+
+Release pull request 111. No new Windows-only tests, so no try branch.
+
+### Fixed
+
+#### Startup, Options, sleep and updates
+- A damaged update settings file in the data folder no longer stops startup; it uses the feed that came with the app.
+- A full disk while copying the user guides no longer stops startup or the installer's guide refresh.
+- Damaged saved options are copied to preferences-damaged.json and said once at startup.
+- Reading the update helper's ready file while it is still empty no longer says "The update could not start."
+- Yes to an update from a note that cannot be saved waits, and keeps the note.
+- Alt+O opens with a damaged podcast, radio or AI voice file.
+- A failed Options save says it in plain words, not an error number and a path.
+- Spoken setting changes (speed, volume, verbosity, punctuation, modes, voice, capitals, Start with Windows, web reading choices) still work when the file cannot be saved, and say so. F9 and the transcript switch say so too.
+- Restart and Shut down keep a note that cannot be saved, and name a failing draft.
+- A missing, damaged or empty guide no longer stops Help or the tutorial.
+- Going to sleep with a draft or note that cannot be saved keeps the words and says so in one message.
+
+#### Email
+- New email, send, file manager, another account and reply no longer stop the app when the draft cannot be saved.
+- A move or delete that stops halfway clears the open message and says to list the folder again.
+- Yahoo reads flagged, answered and forwarded.
+- Thunderbird's add-on update restarts Thunderbird only once when its file is in use (also found by the Calendar helper; merged into one fix).
+- A damaged or locked draft says what is wrong.
+- After a folder change, the Inbox is listed again.
+
+#### Calendar and Contacts
+- A slow Thunderbird is its own error ("did not answer in time"), not "not connected"; a slow change says to check before trying again.
+- A Thunderbird that will not close for the add-on update says nothing changed.
+- A failed read keeps the chosen address book; Control+L says what went wrong.
+- A failed delete says nothing was deleted and what to try.
+- A damaged answer from Thunderbird no longer stops Contacts or Calendar.
+- "Email John Smith" uses the last contact list when Thunderbird is slow.
+
+#### Documents and files
+- Changes to a document open in Word or on a full disk stay in the document, say so, and no longer stop the app (new editor_process helper).
+- Undo with a locked file no longer drops the step.
+- A document save is flushed to the disk before it replaces the old file.
+- Old documents are copied once, so deleted or renamed documents no longer come back.
+- The Recent documents list is written atomically; write_text_atomic removes its temporary file on failure.
+- Typing-window edits that would join or split table cells are refused with a plain message.
+
+#### Web
+- A garbled favorites or history file no longer stops the browser; a file with a byte order mark is read.
+- Saving, renaming or deleting a favorite while the file is held says nothing changed.
+- Download history is no longer written over after a failed read.
+- Load failures say the real reason (no internet, no such site, too slow, no answer, security check).
+- Keys and commands say the real browser link reason instead of "it will reconnect".
+- Resume no longer blames a favorite.
+- Change Address in form review no longer stops the app.
+- An unexpected error in a spoken web command says to press F5 and try again, and records where in web-command-error.txt (no page text).
+- No more empty names or doubled periods in web speech; "[example.com" no longer says "Invalid IPv6 URL".
+- The extension popup no longer stays on "Checking" forever (extension 0.4.4; testers choose Reload).
+
+#### Media and the window
+- Broken or cut-off station and feed replies (HTTPException) no longer stop the app.
+- Failed SHOUTcast recordings and cut-off podcast downloads say so; part files are removed.
+- Bad station directory replies and damaged IPRD catalogs are skipped.
+- Radio and Podcasts keys handle errors as voice does.
+- Media errors are said in plain words (new spoken_error).
+- Recording folder and disk errors are named as disk errors, and do not hide the station.
+- Next and Previous chapter say the player could not respond when its browser closed.
+- Damaged podcast subscriptions are skipped.
+- The Media player screen says the player did not answer instead of stopping the app.
+- A scheduled recording with no web address is reported as damaged.
+- Counts: "1 new episode", not "1 new episodes".
+- The window's update loop keeps a bounded error list and no longer floods the log.
+
+### Questions for Will (not answered yet)
+
+#### General
+- There is no catch-all around commands: any unexpected error closes the app with "Voice Companion stopped because of a problem." Should every screen get a plain safety net, as the web commands now have?
+
+#### Email
+- A subject such as "High priority" is taken as the importance command. Should the Subject box keep it as the subject?
+- The general mail error names the account even when the account is not the cause. Change the wording?
+
+#### Calendar and Contacts
+- A dropped connection retries a request once, so an add could make a second copy. Should changes skip the retry?
+- Calendar says "No events." before the reason when it could not be read. Should it match "What's on my calendar"?
+- Should a failed new event keep the time and name already given?
+
+#### Documents
+- Changing only the capitals of a document name says the name already exists. Allow case-only renames?
+- The editor says "empty or damaged" and the reader "damaged or empty"; neither says what to do next. Reword?
+- Email drafts are saved without being flushed to the disk first. Flush them like documents?
+
+#### Web
+- Allow international site names such as münchen.de?
+- Keep "End of list" before "No next heading"?
+- Tab on an empty page gives two messages. Intended?
+
+#### Media
+- Should media screens catch every error and say something plain, not only known error types?
+
 ## October 30, 2026 (night 2, an expert screen reader user): version 0.2.181-test
 
 Release pull request 99. Try run for new Windows-only window tests: pull request 98.
