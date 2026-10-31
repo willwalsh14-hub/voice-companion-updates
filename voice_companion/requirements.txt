@@ -4,7 +4,7 @@ pywin32>=306
 playwright==1.63.0
 python-docx==1.2.0
 websockets==16.0
-pypdf==6.21.2
+pypdf==6.21.4
 rapidocr==3.9.2
 onnxruntime==1.31.0
 pypdfium2==5.3.0
