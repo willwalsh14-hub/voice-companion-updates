@@ -191,9 +191,12 @@ class AppUpdates:
         for config in (self.folder/'update-settings.json', self.resources/'update-settings.json'):
             if config.exists():
                 try:
-                    value = json.loads(config.read_text())['manifest_url']
+                    value = json.loads(config.read_text(encoding='utf-8-sig'))['manifest_url']
                     if value: self.manifest_url = https_url(value)
-                except (ValueError,KeyError,OSError): pass
+                except (ValueError,KeyError,OSError,TypeError):
+                    # A damaged file in the data folder must not stop the app or turn
+                    # updates off: the feed that came with the app is used instead.
+                    continue
                 break
         self.remove_old_downloads()
 
@@ -291,10 +294,16 @@ class AppUpdates:
         deadline = time.monotonic() + 15
         while time.monotonic() < deadline:
             if ready.is_file():
-                state = json.loads(ready.read_text(encoding='utf-8-sig'))
-                if not state.get('ready'): raise RuntimeError('Update helper could not initialize')
-                self.phase = 'installing'
-                return
+                # The helper's Set-Content creates the file before it writes it, and may
+                # still hold it: read it again until it is complete.
+                try:
+                    state = json.loads(ready.read_text(encoding='utf-8-sig'))
+                except (OSError, ValueError):
+                    state = None
+                if isinstance(state, dict):
+                    if not state.get('ready'): raise RuntimeError('Update helper could not initialize')
+                    self.phase = 'installing'
+                    return
             if process.poll() is not None: raise RuntimeError('Update helper exited before handoff')
             time.sleep(0.1)
         process.terminate()
