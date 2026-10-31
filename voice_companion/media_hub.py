@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib import request, parse
+from http.client import HTTPException
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from media_player import MediaPlayer, StreamWatch, seek_message, spoken_time as playback_time, _number
@@ -60,8 +61,14 @@ def _safe(name):
 
 
 def _http(url, limit=4_000_000):
-    with request.urlopen(request.Request(url, headers={'User-Agent':'VoiceCompanion/0.2'}), timeout=20) as response:
-        data = response.read(limit+1)
+    try:
+        with request.urlopen(request.Request(url, headers={'User-Agent':'VoiceCompanion/0.2'}), timeout=20) as response:
+            data = response.read(limit+1)
+    except HTTPException as exc:
+        # A reply cut off, or a server that does not speak HTTP (an old SHOUTcast
+        # station says "ICY 200 OK"). Python does not count these as OSError, so
+        # every caller's "the internet is down" handling missed them and the app stopped.
+        raise OSError('The connection was cut off or the reply was broken.') from exc
     if len(data)>limit: raise ValueError('The directory response is too large.')
     return data
 
@@ -728,7 +735,7 @@ class MediaHub:
             else:
                 target.unlink(missing_ok=True)
                 self.notify('The recording had no audio. Nothing was saved.')
-        except (OSError, ValueError, TimeoutError):
+        except (OSError, ValueError, TimeoutError, HTTPException):
             if not size: target.unlink(missing_ok=True)
             self._mark_bad(station)
             self.notify('Radio recording stopped because the stream failed. Check saved recordings before retrying.')
@@ -1334,10 +1341,11 @@ class MediaHub:
             with self._lock: self.download_errors.pop(episode['url'],None)
             if announce: self.notify('Downloaded '+episode['title']+'. It is available offline in Podcast Downloads.')
             return True
-        except (OSError,ValueError,TimeoutError) as exc:
+        except (OSError,ValueError,TimeoutError,HTTPException) as exc:
             temp.unlink(missing_ok=True)
             reason=('Podcast host refused the download with HTTP '+str(exc.code)+'.' if isinstance(exc,HTTPError)
                     else 'Podcast host could not be reached.' if isinstance(exc,URLError)
+                    else 'The connection to the podcast host was cut off.' if isinstance(exc,HTTPException)
                     else str(exc) if isinstance(exc,ValueError) else 'The network or disk interrupted the download.')
             with self._lock: self.download_errors[episode['url']]=reason
             print('Podcast download failed:',repr(exc),file=sys.stderr)
