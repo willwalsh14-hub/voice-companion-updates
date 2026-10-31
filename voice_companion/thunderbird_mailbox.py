@@ -7,7 +7,7 @@ to the Voice Companion Mail Connection add-on through thunderbird_bridge.
 from email.utils import getaddresses
 
 from mailbox_access import MailboxError, html_text, message_date, reply_addresses
-from thunderbird_bridge import ThunderbirdError, ThunderbirdUnavailable, current
+from thunderbird_bridge import NoAnswer, ThunderbirdError, ThunderbirdUnavailable, current
 
 INBOX = 'inbox'   # Voice Companion's name for "this account's inbox"
 
@@ -90,6 +90,9 @@ def relay():
 
 
 STOPPED = 'Stopped waiting for Thunderbird.'
+# Thunderbird is connected but slow (a large calendar, a server that does not answer). It is not
+# "not connected": that sent people to add their account again.
+NO_ANSWER = 'Thunderbird did not answer in time. Wait a minute, then try again.'
 
 
 def call(method, **params):
@@ -98,6 +101,8 @@ def call(method, **params):
         return relay().request(method, params)
     except Stopped as exc:
         raise MailboxError(STOPPED) from exc
+    except NoAnswer as exc:
+        raise MailboxError(NO_ANSWER) from exc
     except ThunderbirdUnavailable as exc:
         # Thunderbird closed after it was connected: start it again once, then repeat the request.
         if STARTER is None or connected():
@@ -106,6 +111,8 @@ def call(method, **params):
             return relay().request(method, params)
         except Stopped as again:
             raise MailboxError(STOPPED) from again
+        except NoAnswer as again:
+            raise MailboxError(NO_ANSWER) from again
         except ThunderbirdUnavailable as again:
             raise MailboxError(NOT_CONNECTED) from again
         except ThunderbirdError as again:

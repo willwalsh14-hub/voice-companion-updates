@@ -216,6 +216,19 @@ class ContactsScreenTests(CompanionHarness):
         pat = contacts_screen.current()
         self.assertEqual((pat.source, pat.emails, pat.book), ('thunderbird', ['pat@example.com'], 'me@gmail.com'))
 
+    def test_a_slow_thunderbird_is_never_called_not_saved_or_saved_twice(self):
+        # Thunderbird got the new contact but answered too late. It saved it, so "The contact was
+        # not saved." was wrong, and nothing is saved on this computer as well.
+        from test_calendar_screen import slow_thunderbird
+        mode = self.press('Ctrl+N', self.open())
+        mode = app.handle('Pat Doe.', mode)
+        mode = app.handle('pat at example dot com.', mode)
+        with slow_thunderbird('addContact'):
+            mode = self.press('Enter', mode)
+        self.assertEqual((mode, self.said()), ('contacts', thunderbird_pim.UNSURE))
+        self.assertIsNone(AddressBook(self.root, 'me@gmail.com').get('Pat Doe'))
+        self.assertIn('Pat Doe', [c.name for c in contacts_screen.BOOK.load()])
+
     def test_adding_needs_a_name_and_an_email_or_phone_and_escape_cancels(self):
         mode = self.press('Ctrl+N', self.open())
         mode = app.handle('Sam', mode)

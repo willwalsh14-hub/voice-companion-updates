@@ -885,7 +885,7 @@ def add_step(m, step, value):
     try:
         where = saved_words(BOOK.add(details['name'], details.get('email', ''), phone, book_id=book_id, here=here))
     except ValueError as exc:
-        m.speak(str(exc) + ' The contact was not saved.')
+        m.speak(str(exc) + ('' if thunderbird_pim.unsure(exc) else ' The contact was not saved.'))
         return MODE
     reload(m)
     m.speak(after_adding(details['name'], details.get('email', ''), where, note))
@@ -1071,7 +1071,7 @@ def edit_answer(m, command):
             reload(m)       # removed meanwhile: read the list again, so it is not said any more
             m.speak(str(exc) + ' The change was not saved. ' + describe())
             return MODE
-        m.speak(str(exc) + ' The change was not saved.')
+        m.speak(str(exc) + ('' if thunderbird_pim.unsure(exc) else ' The change was not saved.'))
         return MODE
     reload(m, keep=contact.key)
     email = value if field == 'email' else (contact.emails[0] if contact.emails else '')

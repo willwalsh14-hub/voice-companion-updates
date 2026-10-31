@@ -27,6 +27,13 @@ NEXT_STEPS = {
 }
 
 
+# Requests that change something. When Thunderbird got one but did not answer in time, it may still
+# make the change, so "not saved" would be wrong and trying again at once could add it twice.
+CHANGING = ('addContact', 'updateContact', 'deleteContact', 'addEvent', 'deleteEvent', 'modifyEvent')
+UNSURE = ('Thunderbird did not answer in time, so it may still make the change. '
+          'Wait a minute. Then check if it worked before you try again.')
+
+
 class PimError(Exception):
     """Thunderbird could not give or change contacts or events. The text says why and what to do."""
 
@@ -35,6 +42,12 @@ def gone(exc):
     """True when the contact or event was removed meanwhile (in Thunderbird, on a phone), so the
     list on screen must be read again: "That event is no longer in the calendar."."""
     return 'is no longer in' in str(exc)
+
+
+def unsure(exc):
+    """True when Thunderbird may have made the change after all (it did not answer in time),
+    so the screen must not say it was not saved."""
+    return str(exc) == UNSURE
 
 
 def connected():
@@ -63,6 +76,8 @@ def call(method, **params):
         return thunderbird_mailbox.call(method, **params)
     except MailboxError as exc:
         text = str(exc)
+        if text == thunderbird_mailbox.NO_ANSWER and method in CHANGING:
+            raise PimError(UNSURE) from exc
         if text in NEXT_STEPS:
             text += ' ' + NEXT_STEPS[text]
         raise PimError(UPDATE_NEEDED if text == UNSUPPORTED else text) from exc

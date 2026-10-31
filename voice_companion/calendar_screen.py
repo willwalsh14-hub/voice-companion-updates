@@ -834,7 +834,7 @@ def read_again(m):
 def not_saved(exc, words):
     """Why saving failed, and that nothing was saved, unless the reason already says so."""
     text = str(exc)
-    return text if 'could not save' in text else text + ' ' + words
+    return text if 'could not save' in text or thunderbird_pim.unsure(exc) else text + ' ' + words
 
 
 def not_shown(calendar_id):
