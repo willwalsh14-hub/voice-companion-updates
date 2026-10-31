@@ -3046,7 +3046,8 @@ class WebSession:
             self.form_index=None;return 'Your answer was entered, but the form could not be checked again. Nothing was submitted. Say read page to retry.'
         if getattr(self,'review_edit_active',False):
             self.review_edit_active=False;self.form_index=None
-            self._refresh(read=False,wait=False)
+            try:self._refresh(read=False,wait=False)
+            except Exception:return 'Field updated, but the page could not be read again. Nothing was submitted. Say read page, then review and submit form.'
             return 'Field updated. '+self.prepare_submit()
         return ('Password entered. ' if item.get('type')=='password' else 'Recorded ' + value + ' for ' + _label(item) + '. ') + self._ask_field()
 
@@ -3093,7 +3094,7 @@ class WebSession:
         piece = self.review_parts[self.review_cursor:end]
         self.review_cursor = end
         result = ('Form review, fields ' + str(end - len(piece) + 1) + ' through ' + str(end) +
-                  ' of ' + str(len(self.review_parts)) + ': ' + '. '.join(piece) + '. ')
+                  ' of ' + str(len(self.review_parts)) + ': ' + ' '.join(p if p[-1:] in '.!?' else p + '.' for p in piece) + ' ')
         if end < len(self.review_parts):
             return result + 'Say change this field to correct it, or continue review for the remaining fields. Submission is not ready yet.'
         if self.review_submission:
@@ -3106,7 +3107,9 @@ class WebSession:
         return result + 'End of form review. Nothing has been submitted.'
 
     def edit_review_field(self,request='this field'):
-        current=self.backend.snapshot()
+        # The browser can be busy or gone; the app must not stop on "change Subject".
+        try:current=self.backend.snapshot()
+        except Exception:return 'I could not read the form just now. Say read page, then try again.'
         if current.get('url')!=self.snapshot.get('url'):return 'The page changed. Say read page before editing this form.'
         fields=self._form_controls(current)
         request=request.strip().rstrip('.!?').casefold()

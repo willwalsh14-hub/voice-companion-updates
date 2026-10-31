@@ -235,5 +235,45 @@ class UntitledPageTests(unittest.TestCase):
                          'This is an excerpt; check the page for the full context.')
 
 
+class FormReviewFailureTests(unittest.TestCase):
+    """"Change Address" during form review called the browser with no guard: when the
+    browser was busy or gone, the whole app stopped. An answer ending in a period was
+    read with two ("Address: Main St.. ")."""
+    def setUp(self):
+        self.backend = FakeBackend()
+        self.backend.controls = [
+            {'key':'1','role':'field','label':'Address','tag':'input','type':'text','value':'12 Main St.'},
+            {'key':'2','role':'field','label':'City','tag':'input','type':'text','value':'Salem'},
+            {'key':'3','role':'button','label':'Submit application','tag':'button','type':'submit','in_form':True}]
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        self.session = WebSession(folder.name, self.backend)
+        self.session.open('example.com')
+
+    def test_review_reads_one_period_after_each_answer(self):
+        self.assertIn('Form review, fields 1 through 1 of 2: Address: 12 Main St. Say change',
+                      self.session.command('review and submit form'))
+        self.assertIn('City: Salem. The button is', self.session.command('continue review'))
+
+    def test_change_a_field_when_the_browser_is_gone_says_so(self):
+        self.session.command('review and submit form')
+        def gone(): raise RuntimeError('Target page, context or browser has been closed')
+        self.backend.snapshot = gone
+        self.assertEqual(self.session.command('change Address'),
+                         'I could not read the form just now. Say read page, then try again.')
+
+    def test_a_changed_field_that_cannot_be_read_again_says_nothing_was_submitted(self):
+        self.session.command('review and submit form')
+        self.assertIn('Changing Address', self.session.command('change Address'))
+        original = self.backend.snapshot; calls = []
+        def later():
+            calls.append(1)
+            if len(calls) > 1: raise RuntimeError('Target closed')
+            return original()
+        self.backend.snapshot = later
+        said = self.session.command('14 Oak Road')
+        self.assertIn('Nothing was submitted', said)
+        self.assertEqual(self.backend.activated, [])
+
+
 if __name__ == '__main__':
     unittest.main()
