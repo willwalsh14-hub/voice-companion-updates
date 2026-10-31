@@ -314,6 +314,20 @@ class ImportanceAndReceiptTests(unittest.TestCase):
             self.assertEqual(draft.recipient, 'sam@example.com')
             self.assertEqual(draft.process('No read receipt.'), 'No read receipt.')
 
+    def test_subject_box_keeps_importance_words_as_the_subject(self):
+        """Sweep, October 31, 2026: "High priority" said in the Subject box is the subject."""
+        with tempfile.TemporaryDirectory() as folder:
+            draft = self.draft(folder)
+            draft.compose_step = 'subject'
+            answer = draft.process('High priority.')
+            self.assertEqual(draft.subject, 'High priority')
+            self.assertEqual(draft.importance, '')
+            self.assertIn('Subject recorded as High priority', answer)
+            # The keys still work in the Subject box.
+            draft.compose_step = 'subject'
+            self.assertEqual(draft.process('change importance'), 'High importance.')
+            self.assertEqual(draft.subject, 'High priority')
+
     def test_saved_and_reopened_with_the_draft(self):
         from email_draft import VoiceEmail
         with tempfile.TemporaryDirectory() as folder:

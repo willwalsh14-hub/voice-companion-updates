@@ -110,6 +110,8 @@ RECEIPT_COMMANDS = {
     'remove read receipt': False, 'remove the read receipt': False, 'cancel read receipt': False, 'return receipt off': False,
     'read receipt on or off': 'toggle', 'toggle read receipt': 'toggle',
 }
+# The phrases Control+Shift+I and Control+Shift+T send (input_parity.SCREEN_KEYS).
+KEY_OPTIONS = ('change importance', 'read receipt on or off')
 RECEIPT_QUESTIONS = ('read receipt', 'is there a read receipt', 'is a read receipt on', 'read receipt status')
 
 
@@ -260,6 +262,10 @@ class VoiceEmail(VoiceDocument):
         """Importance and read receipt. Only the whole phrase counts, so a sentence such as
         "This is of high importance." stays in the message."""
         command = re.sub(r'[,;]', '', command).strip()
+        if self.compose_step == 'subject' and command not in KEY_OPTIONS:
+            # In the Subject box, words such as "High priority" are the subject (writing comes
+            # first). Control+Shift+I and Control+Shift+T still work there.
+            return ''
         level = IMPORTANCE_COMMANDS.get(command)
         if level == 'next':
             order = ('', 'high', 'low')
@@ -553,7 +559,10 @@ class VoiceEmail(VoiceDocument):
             if self.compose_step == 'body':
                 return 'Recipient recorded as ' + recipient + '. Back to the message body.'
             return 'Recipient recorded as ' + recipient + '. What is the subject? You can also say CC or BCC first.'
-        if command.startswith('subject is ') and not (self.response_context and in_body):
+        # In the message, "Subject is ..." is words (writing comes first), unless nothing is written
+        # yet and there is no subject: then it can only mean the subject (sweep, October 31, 2026).
+        body_started = bool(self.subject) or any(p.text.strip() for p in self.paragraphs)
+        if command.startswith('subject is ') and not (in_body and (self.response_context or body_started)):
             if self.response_context:
                 # A reply keeps its subject: in the message, "Subject is ..." is only words (above).
                 return REPLY_SUBJECT

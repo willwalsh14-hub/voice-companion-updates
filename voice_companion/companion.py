@@ -5014,7 +5014,8 @@ def _handle(text, mode, typed=False):
     # Everyday words for the inbox, as a new user says them ("Open the inbox.", "Check my mail.").
     # In a document, email or note they are text you are writing. In the inbox and on a web
     # page they keep going to the mailbox or the page (a webmail page has its own Inbox).
-    if command in ('email', 'my email', 'open email') or mode not in ('mailbox', 'web') and not writing_dictation(mode, typed) and command in (
+    # In the inbox, "Open email" opens the message you are on (mail_voice), not the inbox again.
+    if command in ('email', 'my email') or command == 'open email' and mode != 'mailbox' or mode not in ('mailbox', 'web') and not writing_dictation(mode, typed) and command in (
             'open my email', 'go to email', 'go to my email', 'inbox', 'my inbox', 'open inbox', 'open the inbox',
             'open my inbox', 'go to inbox', 'go to the inbox', 'go to my inbox', 'check my email', 'check mail',
             'check my mail', 'read email', 'read mail', 'read my mail', 'open mail', 'open my mail'):
