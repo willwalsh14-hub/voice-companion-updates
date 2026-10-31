@@ -635,8 +635,9 @@ class YahooMessagesTests(YahooTestCase):
             yahoo = self.mailbox().read_message(str(uid), 'inbox')
             self.assertEqual(str(yahoo), spoken)
             self.assertEqual(getattr(yahoo, 'plain', None), plain)
-        # Reading never marks the message read.
-        self.assertTrue(all('\\Seen' not in m['flags'] for m in self.server.folders['Inbox'].messages))
+        # Opening marks the message read on Yahoo's server, as Yahoo Mail and Thunderbird do,
+        # so phones and the web show it read too (Will, October 31, 2026).
+        self.assertTrue(all('\\Seen' in m['flags'] for m in self.server.folders['Inbox'].messages))
 
     def test_missing_and_huge_messages(self):
         box = self.mailbox()
@@ -667,6 +668,56 @@ class YahooMessagesTests(YahooTestCase):
             self.assertEqual(str(yahoo['original_body']), body)
         with self.assertRaises(MailboxError):
             self.mailbox().response_context(str(uid), 'delete', ADDRESS, 'inbox')
+
+
+class YahooMarkTests(YahooTestCase):
+    # Will, October 31, 2026: read, unread and flagged are kept on Yahoo's server,
+    # so Yahoo Mail on the phone and the web show the same marks.
+    def test_read_unread_and_flagged_are_set_on_the_server(self):
+        first = self.server.add('Inbox', message(subject='One'))
+        second = self.server.add('Inbox', message(subject='Two'), flags=('\\Seen',))
+        box = self.mailbox()
+        flags = lambda uid: next(m['flags'] for m in self.server.folders['Inbox'].messages if m['uid'] == uid)
+        self.assertEqual(box.mark([str(first)], read=True, folder_id='INBOX'), {'changed': 1, 'missing': 0})
+        self.assertIn('\\Seen', flags(first))
+        box.mark([str(second)], read=False, folder_id='INBOX')
+        self.assertNotIn('\\Seen', flags(second))
+        box.mark([str(first), str(second)], flagged=True, folder_id='INBOX')
+        self.assertTrue(all('\\Flagged' in flags(uid) for uid in (first, second)))
+        box.mark([str(first)], flagged=False, folder_id='INBOX')
+        self.assertNotIn('\\Flagged', flags(first))
+        rows, _ = box.list_messages('INBOX')
+        self.assertEqual([(r['subject'], r['unread'], r['flagged']) for r in rows],
+                         [('Two', True, True), ('One', False, False)])
+
+    def test_marks_in_another_folder_and_messages_that_are_gone(self):
+        kept = self.server.add('Archive', message(subject='Old'))
+        box = self.mailbox()
+        self.assertEqual(box.mark([str(kept), '99'], read=True, folder_id='Archive'), {'changed': 1, 'missing': 1})
+        self.assertIn('\\Seen', self.server.folders['Archive'].messages[0]['flags'])
+        with self.assertRaisesRegex(MailboxError, 'could not find that message') as said:
+            box.mark(['99'], flagged=True, folder_id='Archive')
+        self.assertTrue(said.exception.unchanged)
+        with self.assertRaisesRegex(MailboxError, 'Nothing to change'):
+            box.mark([str(kept)], folder_id='Archive')
+        with self.assertRaisesRegex(MailboxError, 'Invalid message identifier'):
+            box.mark(['1 2'], read=True)
+
+    def test_opening_a_message_marks_it_read_on_the_server(self):
+        uid = self.server.add('Inbox', message(subject='New', body='Hello there.'))
+        box = self.mailbox()
+        body = box.read_message(str(uid), 'INBOX')
+        self.assertIn('Hello there.', str(body.plain if hasattr(body, 'plain') else body))
+        self.assertTrue(body.marked_read)
+        self.assertIn('\\Seen', self.server.folders['Inbox'].messages[0]['flags'])
+
+    def test_message_is_still_read_aloud_when_yahoo_refuses_the_read_mark(self):
+        uid = self.server.add('Inbox', message(subject='New', body='Hello there.'))
+        self.server.refuse['UID STORE'] = 'NO [CANNOT] Try later'
+        box = self.mailbox()
+        body = box.read_message(str(uid), 'INBOX')
+        self.assertFalse(body.marked_read)
+        self.assertIn('Hello there.', str(body.plain if hasattr(body, 'plain') else body))
 
 
 class YahooMovingTests(YahooTestCase):
@@ -903,6 +954,8 @@ class ReferenceClient:
     labels = [('Inbox', 'inbox'), ('Sent', 'sent'), ('Drafts', 'drafts'), ('Trash', 'trash'), ('Spam', 'spam'),
               ('Archive', 'archive')]
 
+    read = set()   # opened messages, kept like a server keeps them
+
     def __init__(self, store):
         self.store = store
 
@@ -920,13 +973,16 @@ class ReferenceClient:
         for ident, raw in items[start:start + limit]:
             msg = BytesParser(policy=policy.default).parsebytes(raw)
             rows.append({'id': ident, 'from': str(msg['From']), 'subject': str(msg['Subject']),
-                         'date': message_date('1791194400000'), 'size': len(raw), 'unread': True})
+                         'date': message_date('1791194400000'), 'size': len(raw), 'unread': ident not in self.read})
         return rows, (str(start + limit) if len(items) > start + limit else None)
 
     def read_message(self, message_id, folder_id=None):
         from yahoo_mailbox import message_body
         raw = next(raw for box in self.store.values() for ident, raw in box if ident == message_id)
-        return message_body(BytesParser(policy=policy.default).parsebytes(raw))
+        body = message_body(BytesParser(policy=policy.default).parsebytes(raw))
+        body.marked_read = True   # opening marks it read, as Thunderbird does
+        self.read.add(message_id)
+        return body
 
     def move(self, ids, source_id, destination_id):
         for ident in ids:

@@ -81,6 +81,13 @@ function load(api) {
   await call('mark', {ids: [25], flagged: false});
   assert.equal(state.messages[24].flagged, false);
   assert.deepEqual(await call('mark', {ids: [25, 999], read: true}), {changed: 1, missing: 1});
+  // An IMAP account: the mark goes to the server, so nothing more is said. A POP account
+  // keeps mail only on this computer, and the answer says so (Will, October 31, 2026).
+  const imapAccount = state.accounts[0];
+  imapAccount.type = 'pop3';
+  assert.deepEqual(await call('mark', {ids: [25], read: true}), {changed: 1, missing: 0, thisComputerOnly: true});
+  imapAccount.type = 'imap';
+  assert.deepEqual(await call('mark', {ids: [25], read: true}), {changed: 1, missing: 0});
   await assert.rejects(call('mark', {ids: [999], read: true}), /could not change that message/);
   await assert.rejects(call('mark', {ids: [], read: true}), /Choose a message first/);
   await assert.rejects(call('mark', {ids: [25]}), /Nothing to change/);

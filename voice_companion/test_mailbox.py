@@ -42,7 +42,7 @@ class MailboxTests(unittest.TestCase):
 
     def test_marking_read_needs_an_account_that_can_mark(self):
         import tempfile
-        class FakeClient:   # like the Yahoo mailbox: no mark()
+        class FakeClient:   # an account kind that cannot mark: no mark()
             def __init__(self, *args): pass
             def list_messages(self, folder, cursor=None, limit=10):
                 return ([{'id': 'a', 'from': 'a@example.com', 'subject': 'Mail', 'unread': True}], None)
@@ -54,6 +54,33 @@ class MailboxTests(unittest.TestCase):
             self.assertEqual(session.process('flag'), mail_voice.MARK_NEEDS_THUNDERBIRD)
             self.assertTrue(session.rows[0]['unread'])
             self.assertEqual(session.process('message status'), 'Unread, not flagged.')
+
+    def test_marks_go_to_the_open_yahoo_folder_and_pop_accounts_say_this_computer_only(self):
+        # Will, October 31, 2026: read, unread and flagged must show on every device.
+        import tempfile
+        calls = []
+        class FakeClient:
+            local = False
+            def __init__(self, *args): pass
+            def folders(self): return [('Inbox', 'INBOX'), ('Saved', 'Saved')]
+            def list_messages(self, folder, cursor=None, limit=10):
+                return ([{'id': '7', 'from': 'a@example.com', 'subject': 'Mail', 'unread': True}], None)
+            def mark(self, ids, **change):
+                calls.append((ids, change))
+                return {'changed': 1, 'missing': 0, 'this_computer_only': self.local}
+        with tempfile.TemporaryDirectory() as folder, patch('mail_voice.account_token', return_value=('a@example.com', 'token')):
+            session = MailSession('yahoo', folder, FakeClient)
+            session.process('list messages')
+            self.assertEqual(session.process('mark as read'), 'Marked as read.')
+            self.assertEqual(calls[-1], (['7'], {'read': True, 'folder_id': session.folder_id}))
+            FakeClient.local = True
+            session = MailSession('thunderbird', folder, FakeClient)
+            session.process('list messages')
+            said = session.process('flag')
+            self.assertEqual(calls[-1], (['7'], {'flagged': True}))
+            self.assertIn('Flagged. This account keeps mail only on this computer.', said)
+            # Said once, not after every mark.
+            self.assertEqual(session.process('remove flag'), 'Flag removed.')
 
     def test_status_commands_in_an_empty_folder_say_the_list_is_empty(self):
         import tempfile

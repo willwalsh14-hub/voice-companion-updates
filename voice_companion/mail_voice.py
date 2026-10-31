@@ -83,6 +83,9 @@ STATUS_QUESTIONS = ('message status', 'what is the status', "what's the status",
                     'is it read', 'is this read', 'is it unread', 'is it flagged', 'is this flagged', 'status')
 MARK_NEEDS_THUNDERBIRD = ('This account cannot mark messages in Voice Companion yet. '
                           'Add it in Thunderbird to mark messages read, unread or flagged.')
+# Said once a session: a POP or Local Folders account has no server copy for phones to show.
+MARK_THIS_COMPUTER_ONLY = ('This account keeps mail only on this computer. '
+                           'Your phone and the web will not show this change.')
 IMPORTANCE_WORDS = {'highest': 'highest importance', 'high': 'high importance', 'low': 'low importance',
                     'lowest': 'lowest importance'}
 
@@ -180,6 +183,7 @@ class MailSession:
         self.pending = None
         self.folder_picker = None
         self.folder_choice = None
+        self.told_this_computer_only = False
         self.list_size = 10
         self.all_messages = False
         # The open message's files ([] none, None unknown) and the (id, folder) they belong to.
@@ -495,7 +499,9 @@ class MailSession:
         now = {'read': lambda row: not row.get('unread'), 'flagged': lambda row: bool(row.get('flagged'))}[name]
         if value is None:
             value = not all(now(row) for row in rows) if rows else True
-        result = marker(ids, **{name: value})
+        # Yahoo marks in the folder that is open; Thunderbird finds the folder on its own.
+        where = {'folder_id': self.folder_id} if self.provider == 'yahoo' else {}
+        result = marker(ids, **{name: value}, **where)
         for number, row in enumerate(self.rows, 1):
             if row['id'] in ids:
                 if name == 'read':
@@ -516,6 +522,9 @@ class MailSession:
         if missing:
             said += ' ' + str(missing) + (' message was' if missing == 1 else ' messages were') + \
                     ' not changed. It may have been moved or deleted. Say list messages to refresh.'
+        if result.get('this_computer_only') and not self.told_this_computer_only:
+            self.told_this_computer_only = True
+            said += ' ' + MARK_THIS_COMPUTER_ONLY
         return said
 
     def _message_boundary(self,number):
@@ -613,7 +622,7 @@ class MailSession:
         row = self.rows[number - 1]
         body = self.client().read_message(row['id'], self.folder_id)
         if getattr(body, 'marked_read', False):
-            row['unread'] = False   # Thunderbird marked it read, as when it is opened there
+            row['unread'] = False   # marked read on the server, as when it is opened in Thunderbird or Yahoo Mail
             if row['id'] in self.marked_ids:
                 self.marked_ids[row['id']] = self._summary(number)
         self.current = number

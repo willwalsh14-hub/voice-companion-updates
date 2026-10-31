@@ -497,7 +497,48 @@ class YahooMailbox:
                 from email_reader import plain_body
                 body = plain_body(body or '')
             body.attachments = found
+            # Opening a message marks it read on Yahoo's server, as Yahoo Mail and Thunderbird do,
+            # so the phone and the web show it read too. The words are kept if that fails.
+            body.marked_read = self._mark_seen(conn, message_id, folder_id)
             return body
+        return self._with(operation)
+
+    def _mark_seen(self, conn, message_id, folder_id):
+        try:
+            self._select(conn, folder_id, readonly=False)
+            status, _ = conn.uid('STORE', self._uid(message_id), '+FLAGS.SILENT', '(\\Seen)')
+            return status == 'OK'
+        except (MailboxError, imaplib.IMAP4.error):
+            return False
+
+    # Read, unread and flagged: kept on Yahoo's server, so every phone, computer and
+    # Yahoo Mail on the web shows the same. Flagged here is Starred in Yahoo Mail.
+    MARKS = {'read': '(\\Seen)', 'flagged': '(\\Flagged)'}
+
+    def mark(self, ids, read=None, flagged=None, folder_id='INBOX'):
+        uids = [self._uid(ident) for ident in ids]
+        changes = [(('+' if value else '-') + 'FLAGS.SILENT', self.MARKS[name])
+                   for name, value in (('read', read), ('flagged', flagged)) if isinstance(value, bool)]
+        if not uids:
+            raise MailboxError('Choose a message first.', unchanged=True)
+        if not changes:
+            raise MailboxError('Nothing to change.', unchanged=True)
+        def operation(conn):
+            self._select(conn, folder_id, readonly=False)
+            uid_set = ','.join(uids)
+            status, data = conn.uid('FETCH', uid_set, '(UID)')
+            self._check(status)
+            present = {match.decode('ascii') for item in data or [] if isinstance(item, bytes)
+                       for match in re.findall(rb'UID (\d+)', item)}
+            here = [uid for uid in uids if uid in present]
+            if not here:
+                raise MailboxError('Yahoo could not find that message. It may have been moved or deleted. '
+                                   'Say list messages to refresh.', unchanged=True)
+            for command, flag in changes:
+                # Setting a mark twice gives the same result, so a dropped connection is tried again.
+                status, _ = conn.uid('STORE', ','.join(here), command, flag)
+                self._check(status, 'Yahoo did not change that message. Wait a minute, then try again.')
+            return {'changed': len(here), 'missing': len(uids) - len(here)}
         return self._with(operation)
 
     def message_headers(self, message_id, folder_id='INBOX'):
