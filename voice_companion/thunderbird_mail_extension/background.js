@@ -294,7 +294,13 @@ class MailBridge {
     const marks = this.api.voiceCompanionMarks;
     try {
       if (marks && typeof marks.mark === 'function') {
-        result = await marks.mark([messageId], true, null, true);
+        // The message is not held back for a slow server: Thunderbird has marked it already, and
+        // the Experiment keeps trying to reach the server after this answer.
+        let timer = null;
+        const slow = new Promise(resolve => { timer = setTimeout(() => resolve('slow'), MailBridge.OPEN_MARK_MS); });
+        result = await Promise.race([marks.mark([messageId], true, null, true), slow]);
+        clearTimeout(timer);
+        if (result === 'slow') result = {changed: 1, server: 'pending'};
         read = Boolean(result && result.changed);
         server = result && result.server || '';
       } else {
@@ -931,6 +937,7 @@ MailBridge.LOCAL_ACCOUNT_TYPES = ['pop3', 'none', 'rss'];
 MailBridge.PRIORITIES = ['highest', 'high', 'normal', 'low', 'lowest'];
 MailBridge.ALREADY_IN_TRASH = 'This is already in Trash. Deleting it there would remove it for good, so nothing was changed.';
 MailBridge.SENT_IMPORTANT_MS = 12000;
+MailBridge.OPEN_MARK_MS = 4000;   // longest an opened message waits for the server to confirm it is read
 MailBridge.RECEIPT_CHECK_BYTES = 5 * 1024 * 1024;   // largest message read whole to look for a receipt request
 // Changes that update the kept list themselves, so it is kept.
 MailBridge.KEEPS_LIST = ['mark', 'important', 'receiptAnswer'];

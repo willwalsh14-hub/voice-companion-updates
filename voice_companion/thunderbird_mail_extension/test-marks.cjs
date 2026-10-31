@@ -166,12 +166,20 @@ async function experimentChecks() {
   assert.equal(result.server, 'confirmed');
   assert.equal(tb.stores.length, 3);
   assert.deepEqual(tb.closed, ['gmail'], 'connections are dropped once, before the third try');
+  // No answer at all: the connection is stuck, so a fresh one is used at once.
+  tb.stores.length = 0; tb.closed.length = 0;
+  tb.storeAnswers = ['silent', true];
+  result = plain(await marks.mark([other.extId], true, null, true));
+  assert.equal(result.server, 'confirmed');
+  assert.equal(tb.stores.length, 2);
+  assert.deepEqual(tb.closed, ['gmail'], 'dropped right after the first try that got no answer');
   // Never answered three times: said as not confirmed (the mark stays in Thunderbird).
   tb.stores.length = 0; tb.closed.length = 0;
   tb.storeAnswers = ['silent', 'silent', 'silent'];
   result = plain(await marks.mark([other.extId], false, null, true));
   assert.equal(result.server, 'failed');
   assert.equal(tb.stores.length, 3);
+  assert.equal(tb.closed.length, 2, 'each stuck try gets a fresh connection');
   assert.ok(!(other.flags & READ), 'Thunderbird still shows the change');
   tb.storeAnswers = [];
 
@@ -363,6 +371,17 @@ async function bridgeChecks() {
   opened = await call('read', {messageId: 25});
   assert.equal(opened.readNotConfirmed, true);
   experiment.server = 'confirmed';
+  // A slow server does not hold the message back: it opens, and the server keeps being tried.
+  const quick = api.voiceCompanionMarks.mark;
+  api.voiceCompanionMarks.mark = (...args) => new Promise(resolve => setTimeout(() => resolve(quick(...args)), 300));
+  Bridge.OPEN_MARK_MS = 20;
+  const began = Date.now();
+  opened = await call('read', {messageId: 25});
+  assert.ok(Date.now() - began < 250, 'not held back');
+  assert.equal(opened.read, true);
+  assert.equal('readNotConfirmed' in opened, false);
+  api.voiceCompanionMarks.mark = quick;
+  Bridge.OPEN_MARK_MS = 4000;
   experiment.conversationIds = [];
   // A very large message is not read whole just to look for a receipt request.
   experiment.receiptDue = 'maybe';
