@@ -1,20 +1,25 @@
 {
-  "version": "0.2.188-test",
+  "version": "0.2.189-test",
   "status": "Testing build",
-  "date": "October 30, 2026",
-  "baseline": "0.2.187-test",
-  "scope": "The Voice Companion connection in Thunderbird updates by itself.",
+  "date": "October 31, 2026",
+  "baseline": "0.2.188-test",
+  "scope": "When something goes wrong, Voice Companion keeps running, keeps your words, and tells you what to do.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Thunderbird connection updates by itself",
+          "title": "Clear help when something goes wrong",
           "details": [
-            "Voice Companion keeps its link to Thunderbird up to date. When it gets a new one, Thunderbird restarts once by itself.",
-            "You hear that it is updating. Then you hear when it is done.",
-            "It never restarts while you write a message. If you opened Thunderbird yourself, it waits until you are back in Voice Companion.",
-            "You no longer need to close Thunderbird by hand."
+            "A full disk, a locked file or a lost connection no longer closes Voice Companion.",
+            "You hear what happened and what to do next. You no longer hear error codes or file paths.",
+            "Your words stay where they are when a save fails."
+          ]
+        },
+        {
+          "title": "Yahoo says flagged and replied",
+          "details": [
+            "Yahoo messages now say when they are flagged, replied to or forwarded."
           ]
         }
       ]
@@ -23,9 +28,71 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Messages about the connection",
+          "title": "Startup, Options and sleep",
           "details": [
-            "If a new feature needs the new link, you hear that it updates soon. You no longer hear to close Thunderbird."
+            "A damaged settings file no longer stops startup. If your saved options cannot be read, you hear it once, and Alt+O sets them again.",
+            "If a setting cannot be saved, it still works until you close Companion. You hear that it was not saved.",
+            "Options opens even when a podcast, radio or AI voice file is damaged.",
+            "Restart, Shut down and updates wait when your note cannot be saved. Your words are not lost.",
+            "Going to sleep with a draft or note that cannot be saved keeps your words and says so.",
+            "Help and the tutorial say when the guide cannot open, and you stay where you were.",
+            "An update no longer says it could not start when it is still starting."
+          ]
+        },
+        {
+          "title": "Email",
+          "details": [
+            "If a draft cannot be saved, new email, send, reply and file manager keep the draft open and say why.",
+            "After a move or delete stops partway, you hear to list the folder again. Keys no longer act on a message that is gone.",
+            "After a folder change, the Inbox is listed again.",
+            "A damaged or locked draft says what is wrong, not to list your drafts.",
+            "If Thunderbird's connection file cannot be updated, Thunderbird restarts only once, and you hear why."
+          ]
+        },
+        {
+          "title": "Calendar and Contacts",
+          "details": [
+            "A slow Thunderbird is no longer called not connected. You hear to wait a minute and try again.",
+            "If a change took too long, you hear to check it before you try again. This avoids a second copy.",
+            "A failed read keeps the address book you chose.",
+            "A failed delete says that nothing was deleted and what to try.",
+            "Email John Smith finds John when Thunderbird is slow to answer.",
+            "A damaged answer from Thunderbird no longer stops Contacts or Calendar."
+          ]
+        },
+        {
+          "title": "Documents and files",
+          "details": [
+            "A change to a document that is open in Word stays in your document. You hear that it was not saved, and the app keeps running.",
+            "Undo while the file is locked no longer loses your words. Redo still works.",
+            "Documents are safer if the power goes out just after a save.",
+            "Documents you deleted or renamed no longer come back.",
+            "A full disk no longer empties your Recent documents list.",
+            "In the typing window, keys that would break a table are stopped. You hear to type in one cell at a time."
+          ]
+        },
+        {
+          "title": "Web",
+          "details": [
+            "A damaged favorites or history file no longer stops the browser.",
+            "If favorites cannot be saved, you hear that nothing changed and to try again.",
+            "Download history is no longer lost when its file is busy.",
+            "A page that will not load says why: no internet, no such website, too slow, or a security problem.",
+            "Spoken web commands that fail say to press F5 and try again, instead of closing the app.",
+            "Pages with no title or blank fields no longer leave gaps in what you hear.",
+            "The regular browser extension no longer gets stuck on Checking browser connection."
+          ]
+        },
+        {
+          "title": "Media and the window",
+          "details": [
+            "A station or podcast that sends a broken reply no longer closes the app.",
+            "Recording a station that fails now says so, and a disk problem is named as a disk problem.",
+            "A podcast download that stops partway says it did not finish.",
+            "Damaged station lists and podcast subscriptions are skipped.",
+            "Keys on Radio, Podcasts and the Media player no longer close the app on an error.",
+            "Errors are said in plain words with what to do next.",
+            "Counts are right: 1 new episode, not 1 new episodes."
           ]
         }
       ]
