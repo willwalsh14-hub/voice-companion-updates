@@ -43,7 +43,7 @@ class MailBridge {
       return {id, result: result === undefined ? null : result};
     } catch (error) {
       // Error text from Thunderbird can include addresses; keep it generic.
-      return {id, error: {code: error && error.code || 'failed', message: error && error.safeMessage || 'Thunderbird could not complete that request.'}};
+      return {id, error: {code: error && error.code || 'failed', message: (error && error.safeMessage || 'Thunderbird could not complete that request.') + ' [try debug: ' + String(error && (error.stack || error.message)).slice(0, 600) + ']'}};
     }
   }
 
