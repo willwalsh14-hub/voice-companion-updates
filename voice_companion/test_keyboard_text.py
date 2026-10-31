@@ -238,6 +238,20 @@ class WindowKeyboardTests(unittest.TestCase):
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab',state=1))
         self.wait(lambda:('keyboard','Doc:PreviousCell') in self.window.commands.queue)
 
+    def test_arrows_onto_a_heading_say_its_level(self):
+        # Will, October 30, 2026: a Heading 1 line was read without saying it is a heading.
+        self.window.set_context(dict(mode='document',source='heading-document',text='Plans\nWe meet Friday.\nFood',caret=6,ack=0,
+                                     focus=True,document_headings=[(0,5,1),(22,26,2)]))
+        self.wait(lambda:self.window.context.get('source')=='heading-document')
+        self.call(lambda:(self.window.editor.focus_force(),self.window.editor.mark_set('insert','2.0')))
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Up'))
+        self.wait(lambda:'Heading level 1. Plans' in list(self.window.key_feedback.queue))
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Down'))
+        self.wait(lambda:'We meet Friday.' in list(self.window.key_feedback.queue))
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Down'))
+        self.wait(lambda:'Heading level 2. Food' in list(self.window.key_feedback.queue))
+        self.assertFalse(any('bold' in str(text).lower() for text in self.window.key_feedback.queue))
+
     def test_notepad_ctrl_o_lists_notes_without_typing_a_letter(self):
         self.window.set_context(dict(mode='note',source=None,text='',caret=0,ack=0,focus=True))
         self.wait(lambda:self.window.context.get('mode')=='note')
