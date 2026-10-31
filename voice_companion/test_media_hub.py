@@ -400,7 +400,7 @@ class MediaHubTests(unittest.TestCase):
         manifest=self.hub._load('podcast-auto-files.json',{})[feed]
         self.assertEqual(set(manifest),{episodes[0]['url'],episodes[1]['url']})
         self.assertTrue(manual.exists())
-        self.assertTrue(any('1 new episodes' in notice for notice in self.notices))
+        self.assertTrue(any('1 new episode in' in notice for notice in self.notices))
 
     def test_failed_refresh_retains_saved_episodes_and_files(self):
         show={'name':'History','feed':'https://pod.example/feed','download_limit':'all',

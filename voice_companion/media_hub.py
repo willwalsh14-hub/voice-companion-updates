@@ -840,6 +840,8 @@ class MediaHub:
                     due=datetime.fromisoformat(job['when'])
                     due<=now
                     if not isinstance(job['station'],dict) or not isinstance(job['station'].get('name'),str): raise TypeError
+                    # Without a web address the recorder could only stop without a word.
+                    if not isinstance(job['station'].get('url'),str) or not _http_url(job['station']['url']): raise ValueError
                     int(job['minutes'])
                 except (TypeError,KeyError,ValueError,AttributeError,OverflowError):
                     # Kept in the file for a helper to inspect, but never retried as an error.
@@ -1112,9 +1114,10 @@ class MediaHub:
                 entry['last_checked']=time.time()
                 policy=entry.get('download_limit','manual')
                 self._save('podcast-subscriptions.json',current)
-            if new: self.notify(f'{new} new episodes in {show["name"]}.')
+            if new: self.notify(_counted(new,'new episode')+' in '+show['name']+'.')
             if policy!='manual': pending.append((show,episodes,policy))
-        if failures: self.notify(f'{failures} subscribed podcast feeds could not refresh. Their saved lists remain available.')
+        if failures: self.notify(_counted(failures,'subscribed podcast feed')+' could not refresh. '+
+                                 ('Its saved list is still there.' if failures==1 else 'Their saved lists are still there.'))
         for show,episodes,policy in pending: self._auto_download(show,episodes,policy)
         return f'Checked {len(saved)-failures} of {len(saved)} subscribed podcast feeds.'
 
@@ -1154,9 +1157,9 @@ class MediaHub:
             if not success and first_error is None:
                 with self._lock: first_error=self.download_errors.pop(url,None)
         if failed:
-            self.notify(f'{failed} episodes from {show["name"]} could not download. '+
+            self.notify(_counted(failed,'episode')+' from '+show['name']+' could not download. '+
                         (first_error+' ' if first_error else '')+'Companion will try again later.')
-        if completed: self.notify(f'{completed} episodes from {show["name"]} downloaded for offline listening.')
+        if completed: self.notify(_counted(completed,'episode')+' from '+show['name']+' downloaded for offline listening.')
         if not failed: self._prune_auto(feed,{e['url'] for e in desired})
 
     def _prune_auto(self, feed, desired):

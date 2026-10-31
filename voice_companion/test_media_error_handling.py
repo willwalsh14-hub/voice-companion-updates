@@ -177,6 +177,32 @@ class MediaErrorTests(unittest.TestCase):
         self.assertEqual(self.hub.open_podcast(1), 'The podcast feed is unavailable. Try again later.')
         self.assertEqual(self.hub.open_podcast(2), 'The podcast feed is unavailable. Try again later.')
 
+    # Background podcast news: "1 new episode", never "1 new episodes".
+    def test_podcast_news_counts_one_episode_and_one_feed_correctly(self):
+        import json
+        shows = [{'name': 'History', 'feed': 'https://pod.example/history',
+                  'episodes': [{'title': 'Old', 'url': 'https://pod.example/old.mp3'}]},
+                 {'name': 'Down', 'feed': 'https://pod.example/down', 'episodes': []}]
+        (Path(self.temp.name) / 'podcast-subscriptions.json').write_text(json.dumps(shows), encoding='utf-8')
+        def feed(show):
+            if show['name'] == 'Down': raise OSError('offline')
+            return [{'title': 'New', 'url': 'https://pod.example/new.mp3'}, {'title': 'Old', 'url': 'https://pod.example/old.mp3'}]
+        self.hub._feed_episodes = feed
+        self.hub.refresh_subscriptions()
+        self.assertIn('1 new episode in History.', self.notices)
+        self.assertIn('1 subscribed podcast feed could not refresh. Its saved list is still there.', self.notices)
+
+    # A scheduled recording whose saved station has no address: reported as damaged, never a silent recorder.
+    def test_a_scheduled_station_without_an_address_is_reported_as_damaged(self):
+        import json
+        job = {'station': {'name': 'WGN'}, 'when': '2026-10-31T20:00:00', 'minutes': 30, 'repeat': False, 'id': '1'}
+        (Path(self.temp.name) / 'radio-schedule.json').write_text(json.dumps([job]), encoding='utf-8')
+        self.hub._last_refresh_attempt = self.hub._last_podcast_refresh_attempt = time.time()
+        self.hub.tick()
+        self.assertIsNone(self.hub.recording)
+        self.assertEqual(len(self.notices), 1, self.notices)
+        self.assertIn('One scheduled radio recording is damaged and will be skipped.', self.notices[0])
+
 
 class AppPathTests(unittest.TestCase):
     """Through the app, by key and by voice: the error is said in plain words."""
