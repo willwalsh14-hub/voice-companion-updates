@@ -655,10 +655,19 @@ class VoiceDocument:
             if changed is not None:
                 step.cursor = changed
         now = self._snapshot(step.label)
-        if not self._restore_step(step):
-            return 'I cannot ' + ('redo' if redo else 'undo') + ' the rename because another document has that name.'
+        # Move the step first: if only the save fails (Word has the file), the words are
+        # already changed, and Redo or Undo must still be able to bring them back.
         source.pop()
         target.append(now)
+        try:
+            restored = self._restore_step(step)
+        except BaseException:
+            self.last_change_type = 'edit'
+            raise
+        if not restored:
+            target.pop()
+            source.append(step)
+            return 'I cannot ' + ('redo' if redo else 'undo') + ' the rename because another document has that name.'
         self.last_change_type = 'edit'
         done = ('Redid ' if redo else 'Undid ') + step.label + '. '
         if not self.paragraphs:

@@ -64,5 +64,34 @@ class LockedDraftWhileEditing(DocumentFlowCase):
         self.assertIn(app.UNSAVED_DRAFT, ' '.join(self.said))
 
 
+class UndoWhileTheFileIsLocked(DocumentFlowCase):
+    """Undo with Word holding the file: Redo must still bring the words back."""
+    def test_redo_brings_back_what_a_locked_undo_took_away(self):
+        app.document = VoiceDocument(self.default, title='Letter')
+        app.handle('Dear Bob.', 'document')
+        app.handle('new paragraph', 'document')
+        app.handle('See you on Friday.', 'document')
+        with patch.object(Path, 'replace', side_effect=LOCKED):
+            app.handle('undo', 'document')
+        self.assertIn(app.UNSAVED_DOCUMENT, self.last())
+        self.assertNotIn('See you on Friday.', [p.text for p in app.document.paragraphs])
+        app.handle('redo', 'document')
+        self.assertIn('Redid', self.last())
+        self.assertIn('See you on Friday.', [p.text for p in app.document.paragraphs])
+        # The redone words reach the file once Word lets go.
+        from document_reader import open_document
+        self.assertIn('See you on Friday.', open_document(app.document.path).text)
+
+    def test_undo_twice_while_locked_undoes_two_steps(self):
+        app.document = VoiceDocument(self.default, title='Letter')
+        for words in ('One.', 'Two.', 'Three.'):
+            app.handle('new paragraph', 'document'); app.handle(words, 'document')
+        with patch.object(Path, 'replace', side_effect=LOCKED):
+            app.handle('undo', 'document')
+            app.handle('undo', 'document')
+        app.handle('redo', 'document'); app.handle('redo', 'document')
+        self.assertEqual([p.text for p in app.document.paragraphs if p.text], ['One.', 'Two.', 'Three.'])
+
+
 if __name__ == '__main__':
     unittest.main()
