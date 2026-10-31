@@ -83,10 +83,10 @@ class DamagedDraftTests(CompanionCase):
         drafts = self.folder / 'Email Drafts'; drafts.mkdir()
         (drafts / 'Broken.json').write_text('{not json', encoding='utf-8')
         self.assertEqual(companion.handle('open email draft Broken', 'awake'), 'awake')
-        self.assertIn('That draft is damaged', self.last())
+        self.assertIn('Its saved file is damaged', self.last())
         (drafts / 'Broken.json').write_text('{"paragraphs": 5}', encoding='utf-8')
         companion.handle('open email draft Broken', 'awake')
-        self.assertIn('That draft is damaged', self.last())
+        self.assertIn('Its saved file is damaged', self.last())
         with patch('pathlib.Path.read_text', side_effect=PermissionError('in use')):
             companion.handle('open email draft Broken', 'awake')
         self.assertIn('open in another program', self.last())

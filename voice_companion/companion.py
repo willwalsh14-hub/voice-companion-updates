@@ -5394,11 +5394,11 @@ def _handle(text, mode, typed=False):
             speak_prompt('I could not open that draft. Say list email drafts to hear the names.')
             return mode
         except OSError:
-            speak_prompt('That draft could not be opened. It may be open in another program. Close it, then try again.')
+            speak_prompt('I could not open that draft. It may be open in another program. Close it, then try again.')
             return mode
         except (ValueError, KeyError, TypeError):
             # The name was right; its saved file is damaged (never "say the names" again).
-            speak_prompt('That draft is damaged, so it could not be opened. Your other drafts are safe. '
+            speak_prompt('I could not open that draft. Its saved file is damaged. Your other drafts are safe. '
                          'Ask your helper to check the Email Drafts folder.')
             return mode
         email_draft.dictating = INPUT_MODE != 'commands'
