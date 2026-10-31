@@ -3113,6 +3113,7 @@ def poll_thunderbird_accounts():
 # Thunderbird restarts once, when nothing is waiting on it and no message is being written.
 ADDON_REFRESH = __import__('types').SimpleNamespace(connection=None, retry_at=0.0, thread=None, results=queue.Queue())
 ADDON_RETRY_SECONDS = 60
+ADDON_GIVE_UP_SECONDS = 24 * 60 * 60
 
 
 def poll_thunderbird_addon(system=None):
@@ -3126,6 +3127,11 @@ def poll_thunderbird_addon(system=None):
         speak_status(thunderbird_setup.ADDON_UPDATED)
     elif result == 'not started':
         speak_status(thunderbird_setup.ADDON_UPDATE_SLOW)
+    if result == 'not replaced':
+        speak_status(thunderbird_setup.ADDON_NOT_REPLACED)
+    if result in ('not replaced', 'failed'):
+        # Not again in this session: each try restarts Thunderbird, and would fail the same way.
+        ADDON_REFRESH.retry_at = time.monotonic() + ADDON_GIVE_UP_SECONDS
     elif result == 'composing':
         ADDON_REFRESH.connection = None; ADDON_REFRESH.retry_at = time.monotonic() + ADDON_RETRY_SECONDS
     if ADDON_REFRESH.thread is not None and ADDON_REFRESH.thread.is_alive():

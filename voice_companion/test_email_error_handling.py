@@ -122,5 +122,42 @@ class YahooFlagsTests(unittest.TestCase):
             self.assertEqual(session.process('message status'), 'Read, not flagged.')
 
 
+class AddonFileLockedTests(unittest.TestCase):
+    """The add-on file in Thunderbird's profile cannot be replaced (held by a virus scanner or a
+    sync program). Before: the error was dropped, Thunderbird came back with the old add-on,
+    Voice Companion said "Thunderbird has not started again yet" while it was open, and then
+    restarted Thunderbird again on every new connection."""
+    def test_a_locked_add_on_restarts_thunderbird_once_and_says_why(self):
+        import queue
+        from test_thunderbird_addon_refresh import StaleCase
+        import thunderbird_setup
+        case = StaleCase('run'); case.setUp(); self.addCleanup(case.doCleanups)
+        system, relay, _ = case.make()
+        said = []
+        for patcher in (patch.object(companion, 'speak_status', said.append),
+                        patch.object(companion, 'mail_log', lambda text: None),
+                        patch.object(companion, 'addon_package', lambda: case.package),
+                        patch.object(companion, 'ADDON_REFRESH', type(companion.ADDON_REFRESH)(
+                            connection=None, retry_at=0.0, thread=None, results=queue.Queue())),
+                        patch.object(companion, 'THUNDERBIRD_STARTED', True),
+                        patch.object(companion, 'THUNDERBIRD_WATCH', None),
+                        patch.object(companion, 'THUNDERBIRD_SETUP', None),
+                        patch.object(companion, 'THUNDERBIRD_SIGN_IN', None),
+                        patch.object(companion, 'THUNDERBIRD_STARTING', False),
+                        patch.object(companion, 'ACCOUNT_ENTRY', None),
+                        patch.object(companion, 'quiet_thunderbird', lambda relay: None),
+                        patch('thunderbird_bridge.current', lambda: relay),
+                        patch.object(thunderbird_setup, 'write_atomic', side_effect=PermissionError('in use'))):
+            patcher.start(); self.addCleanup(patcher.stop)
+        for _ in range(3):
+            companion.poll_thunderbird_addon(system)
+            if companion.ADDON_REFRESH.thread is not None:
+                companion.ADDON_REFRESH.thread.join(10)
+            companion.poll_thunderbird_addon(system)
+        self.assertEqual(relay.asked.count('quit'), 1)
+        self.assertTrue(system.is_running and relay.connected.is_set())
+        self.assertEqual(said, [thunderbird_setup.ADDON_UPDATING, thunderbird_setup.ADDON_NOT_REPLACED])
+
+
 if __name__ == '__main__':
     unittest.main()
