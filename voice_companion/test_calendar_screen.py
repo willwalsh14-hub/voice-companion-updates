@@ -210,6 +210,21 @@ class CalendarScreenTests(CalendarHarness):
             self.assertEqual(self.said(), 'Thunderbird could not complete that request. Close Thunderbird, then try again. '
                                           'The event was not saved.')
 
+    def test_damaged_answers_from_thunderbird_never_stop_the_screen(self):
+        import thunderbird_mailbox
+        real = thunderbird_mailbox.call
+
+        def damaged(method, **params):
+            answer = real(method, **params)
+            if method == 'events':
+                answer['failed'] = None
+            return answer
+        with mock.patch.object(thunderbird_mailbox, 'call', damaged):
+            mode = self.open()
+            self.assertTrue(self.said().startswith('Calendar. Today, Monday, October 26. 1 event.'), self.said())
+            app.handle("What's on my calendar tomorrow?", 'awake')
+        self.assertTrue(self.said().startswith('Tomorrow, Tuesday, October 27. 1 event.'), self.said())
+
     def test_an_event_removed_in_thunderbird_meanwhile_leaves_the_list(self):
         # Deleted on the phone or in Thunderbird while Calendar was open: the day is read again,
         # so Down and F2 never reach an event that is gone.

@@ -58,6 +58,7 @@ def words(text):
 
 def from_thunderbird(item):
     def strings(values):
+        values = [values] if isinstance(values, str) else values if isinstance(values, (list, tuple)) else []
         return [str(v).strip() for v in (values or []) if isinstance(v, str) and str(v).strip()][:10]
     emails = strings(item.get('emails'))
     # A contact with only a phone number still has a name to say ("Delete No name?", not "Delete ?").

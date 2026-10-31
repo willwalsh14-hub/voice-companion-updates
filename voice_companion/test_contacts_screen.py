@@ -268,6 +268,17 @@ class ContactsScreenTests(CompanionHarness):
             self.assertEqual(self.said(), 'Thunderbird could not complete that request. Close Thunderbird, then try again. '
                                           'The contact was not saved.')
 
+    def test_damaged_answers_from_thunderbird_never_stop_the_screen(self):
+        # An answer with missing or wrong parts (an add-on from another version, a damaged profile).
+        damaged = {'contacts': [{'id': 'c1', 'name': 'Bo Lee', 'emails': 'bo@example.com', 'phones': None, 'bookId': 'b'},
+                                'not a contact', {'id': 'c2', 'emails': [None, 'kim@example.com']}],
+                   'books': None, 'failed': 0, 'failedBooks': 'b'}
+        with mock.patch.object(thunderbird_mailbox, 'call', lambda method, **params: damaged):
+            mode = self.open()
+        self.assertEqual(mode, 'contacts')
+        self.assertEqual([(c.name, c.emails) for c in contacts_screen.CONTACTS],
+                         [('Bo Lee', ['bo@example.com']), ('kim@example.com', ['kim@example.com'])])
+
     def test_delete_asks_first_and_read_only_books_are_protected(self):
         mode = self.open()
         self.press('Letter:p', mode)

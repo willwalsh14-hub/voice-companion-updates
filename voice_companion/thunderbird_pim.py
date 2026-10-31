@@ -85,12 +85,17 @@ def call(method, **params):
         raise PimError(UPDATE_NEEDED if text == UNSUPPORTED else text) from exc
 
 
+def lists(value):
+    """A part of an answer that should be a list, or [] when it is missing or damaged."""
+    return list(value) if isinstance(value, (list, tuple)) else []
+
+
 def contacts():
     """{'books': [...], 'contacts': [...], 'failed': n} from every Thunderbird address book."""
     answer = call('contacts')
     if not isinstance(answer, dict) or not isinstance(answer.get('contacts'), list):
         raise PimError('Thunderbird sent contacts Voice Companion could not read. Try again.')
-    return answer
+    return dict(answer, books=lists(answer.get('books')), failedBooks=lists(answer.get('failedBooks')))
 
 
 def add_contact(name, email='', phone='', book_id=''):
@@ -118,7 +123,7 @@ def events(start_ms, end_ms):
     answer = call('events', start=int(start_ms), end=int(end_ms))
     if not isinstance(answer, dict) or not isinstance(answer.get('events'), list):
         raise PimError('Thunderbird sent events Voice Companion could not read. Try again.')
-    return answer
+    return dict(answer, failed=lists(answer.get('failed')))
 
 
 def add_event(calendar_id, title, start, end, all_day=False, location='', notes=''):
