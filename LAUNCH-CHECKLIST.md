@@ -208,3 +208,13 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 - Cause: `test-update-close-windows.ps1` read the close log with `Get-Content` while the close step was still appending to it. Windows refused the read ("being used by another process"), and the error ended the test.
 - Fix: `Read-Shared` opens the log with read and write sharing. A busy file counts as "not ready yet", and the wait goes on.
 - 0.2.185 was merged but not published. 0.2.186 carries its changes.
+
+## 0.2.190: the unsaved-changes web test said to fail sometimes (October 31, 2026)
+- The sweep log said `LiveDialogTests.test_unsaved_changes_keep_the_page_and_a_second_try_leaves` failed on main sometimes.
+- It passed 45 times out of 45 here: 12 runs alone, 8 runs of its module, and 25 dirty-page tries in one process. Leaving took about 0.2 seconds, far below the 4-second limit.
+- No failure output was kept, so the cause is not known yet.
+- [ ] If it fails again, keep the full failure text (the message it got and the time it took) and add it here before rerunning.
+
+## 0.2.190: a note was not saved when a command left it (October 31, 2026)
+- Found while checking routing: "Media menu" said in a note opened the Media menu, and the note was not saved. Starting a new note then lost its words.
+- Fix: any command that leaves a note saves it first (`NOTE_KEPT_OPEN` in companion.py lists the screens that come back to it). If it cannot be saved, the note stays open.
