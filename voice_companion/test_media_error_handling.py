@@ -135,5 +135,56 @@ class MediaErrorTests(unittest.TestCase):
         self.assertIn('Good', [entry['name'] for entry in saved])
 
 
+class AppPathTests(unittest.TestCase):
+    """Through the app, by key and by voice: the error is said in plain words."""
+    def setUp(self):
+        import companion
+        self.companion = companion
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.hub = MediaHub(self.temp.name, player=NoPlayer())
+        self.hub.shows = [{'name': 'History', 'feed': 'https://pod.example/feed'}]
+        self.hub.show_index = 0
+        self.hub.episodes = [{'title': 'Rome', 'url': 'https://pod.example/rome.mp3', 'show': 'History'}]
+        self.hub.browsing_episodes = True
+        self.hub.episode_index = 0
+        # The downloads folder cannot be made: a file has its name (a real FileExistsError).
+        (Path(self.temp.name) / 'Podcast Downloads').write_text('not a folder', encoding='utf-8')
+        for name, value in (('MEDIA_HUB', self.hub), ('MEDIA_NAV', None), ('MEDIA_SECTION', 'podcast')):
+            patcher = patch.object(companion, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        self.said = []
+        patcher = patch.object(companion, 'speak', lambda text, *args, **kwargs: self.said.append(text))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def assert_plain(self, text):
+        self.assertNotIn('Errno', text)
+        self.assertNotIn(self.temp.name, text)
+        self.assertIn('then try again', text)
+
+    def test_a_key_that_fails_is_said_and_the_app_keeps_going(self):
+        # Control+D downloads the selected episode. Before, the error stopped the app.
+        self.assertIsNone(self.companion.navigation_key('Ctrl+D', 'media'))
+        self.assertTrue(self.said, 'nothing was said')
+        self.assert_plain(self.said[-1])
+
+    def test_a_spoken_command_that_fails_is_said_in_plain_words(self):
+        self.assertEqual(self.companion.handle('download this episode', 'media'), 'media')
+        self.assertTrue(self.said, 'nothing was said')
+        self.assertTrue(self.said[-1].startswith('I could not complete that media request. '), self.said[-1])
+        self.assert_plain(self.said[-1])
+
+    def test_a_message_written_for_people_is_said_as_it_is(self):
+        from media_navigation import spoken_error
+        self.assertEqual(spoken_error(ValueError('That station number is unavailable. Search radio again.')),
+                         'That station number is unavailable. Search radio again.')
+        self.assertEqual(spoken_error(OSError('Radio Browser mirrors are unavailable.')),
+                         'Radio Browser mirrors are unavailable.')
+        self.assert_plain(spoken_error(IndexError('list index out of range')))
+        self.assert_plain(spoken_error(OSError(28, 'No space left on device')))
+
+
 if __name__ == '__main__':
     unittest.main()

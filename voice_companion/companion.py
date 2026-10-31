@@ -1091,7 +1091,10 @@ def _navigation_key(key,mode):
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
     if mode in ('media','podcast') and MEDIA_HUB:
-        result=media_navigation().keyboard(key)
+        from media_navigation import spoken_error
+        # As by voice: a key whose action fails says so, and the app keeps going.
+        try:result=media_navigation().keyboard(key)
+        except (OSError,ValueError,IndexError,ET.ParseError) as exc:result='I could not complete that media request. '+spoken_error(exc)
         if result=='__main__':return 'media menu'
         if result:speak(result)
         sync_app_context(mode,True)
@@ -3943,7 +3946,7 @@ def _handle(text, mode, typed=False):
     if station:
         hub=media()
         try:result=hub.play_by_name(station)
-        except (OSError,ValueError) as exc:result='I could not complete that radio request. '+str(exc)
+        except (OSError,ValueError) as exc:result='I could not complete that radio request. '+__import__('media_navigation').spoken_error(exc)
         if hub.station_choices:
             MEDIA_SECTION='radio';media_navigation().show_choices()
             speak(result);return 'media'
@@ -4670,7 +4673,7 @@ def _handle(text, mode, typed=False):
         try:
             speak(media_navigation().command(text));sync_app_context('media',True)
         except (OSError,ValueError,IndexError,ET.ParseError) as exc:
-            speak('I could not complete that media request. ' + str(exc))
+            speak('I could not complete that media request. ' + __import__('media_navigation').spoken_error(exc))
         return 'media'
     literal = re.fullmatch(r'(?:type|dictate) literally\s+(.+)', text, re.I | re.S)
     if command == 'type new line': literal_text = 'new line'
@@ -5468,7 +5471,7 @@ def _handle(text, mode, typed=False):
         MEDIA_SECTION = 'podcast' if any(word in command for word in ('podcast','subscription','episode','download')) else 'radio'
         try: speak(media_navigation().command(text))
         except (OSError,ValueError,IndexError,ET.ParseError) as exc:
-            speak('I could not complete that media request. ' + str(exc))
+            speak('I could not complete that media request. ' + __import__('media_navigation').spoken_error(exc))
         return 'media'
     if command=='open first podcast':
         try: speak(media().open_podcast(1))
