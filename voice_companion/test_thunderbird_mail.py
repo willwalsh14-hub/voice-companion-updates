@@ -320,8 +320,10 @@ class ThunderbirdOfflineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             with zipfile.ZipFile(build(Path(folder) / 'mail.xpi')) as archive:
                 # pim.js and the calendar Experiment: contacts and calendars (add-on 1.3.0).
+                # The marks Experiment: marks the server confirms, Important, read receipts (1.9.0).
                 self.assertEqual(sorted(archive.namelist()), ['background.js', 'experiment/calendar-schema.json',
                                                               'experiment/calendar.js', 'experiment/implementation.js',
+                                                              'experiment/marks-schema.json', 'experiment/marks.js',
                                                               'experiment/schema.json', 'manifest.json', 'pim.js'])
 
     def test_send_review_accepts_a_thunderbird_draft(self):

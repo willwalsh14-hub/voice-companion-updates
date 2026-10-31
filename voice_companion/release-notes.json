@@ -1,19 +1,26 @@
 {
-  "version": "0.2.191-test",
+  "version": "0.2.192-test",
   "status": "Testing build",
   "date": "October 31, 2026",
-  "baseline": "0.2.190-test",
-  "scope": "Read, unread and flags match on every device.",
+  "baseline": "0.2.191-test",
+  "scope": "Every mark reaches your email service right away, and Companion checks that it did.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Marks in Yahoo Mail",
+          "title": "Gmail's Important marker",
           "details": [
-            "A Yahoo account can now mark mail read or unread, and flag it. Press Q or X, as in Thunderbird.",
-            "A flag shows as a star in Yahoo Mail.",
-            "Opening a Yahoo message marks it read, as Yahoo Mail does."
+            "To mark a Gmail message important, say \"Mark as important\", or press H. Press H again to take it off.",
+            "Your phone and the Gmail website show it too.",
+            "When you send from Gmail with high importance, your copy in Sent Mail gets the marker too."
+          ]
+        },
+        {
+          "title": "Read receipts",
+          "details": [
+            "When a message asks for a read receipt, Companion asks you first. Say yes or no. Then it reads the message.",
+            "If Thunderbird is set to always or never send receipts, Companion does that and does not ask."
           ]
         }
       ]
@@ -22,11 +29,17 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "The same on every device",
+          "title": "Marks that reach your email service",
           "details": [
-            "Read, unread and flags are kept on your mail server. Your phone and the web show the same marks.",
-            "A POP account keeps mail only on this computer. Companion tells you once that its marks stay here.",
-            "Importance is part of each message, so every device shows the same importance."
+            "Read, unread and flags now reach Gmail right away. Before, a mark could stay on this computer until Thunderbird was closed.",
+            "Companion waits for your email service to take each change. If it does not, Companion tries again on a new connection, then tells you.",
+            "Work email from Microsoft is checked right after each change too."
+          ]
+        },
+        {
+          "title": "Gmail conversations",
+          "details": [
+            "Marking a Gmail message read marks its whole conversation read, as the Gmail website does. Opening it with Enter does too."
           ]
         },
         {

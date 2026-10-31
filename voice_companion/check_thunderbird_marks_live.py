@@ -108,11 +108,14 @@ def main():
     system = thunderbird_setup.WindowsSystem()
     report = {'checks': {}, 'details': {}}
     checks, details = report['checks'], report['details']
+    lists = []
 
     def finish():
         ok = bool(checks) and all(checks.values())
         report['passed'] = ok
-        report['server_log_tail'] = gmail.log[-160:]
+        report['last_lists'] = lists[-3:]
+        report['server_log_tail'] = [line for line in gmail.log if not line.startswith(('IMAP') ) or
+                                     any(word in line for word in ('STORE', 'COPY', 'EXPUNGE', 'Sent', 'Important', 'X-GM'))][-80:]
         text = json.dumps(report, indent=2, default=str)
         print(text, flush=True)
         (work / 'report.json').write_text(text, encoding='utf-8')
@@ -121,12 +124,8 @@ def main():
     gmail = FakeGmail(ADDRESS)
     gmail.serve_imap(IMAP_PORT)
     gmail.serve_smtp(SMTP_PORT)
-    early = gmail.deliver('Your Saturday morning trip with Uber', thread=7001)
-    other = gmail.deliver('Lunch on Tuesday', sender='ann@example.com', thread=7002)
-    late = gmail.deliver('Your Saturday morning trip with Uber', thread=7001)
-    flag_me = gmail.deliver('Your Friday evening trip with Uber', thread=7003)
-    receipt = gmail.deliver('Please confirm you got this', sender='boss@example.com', thread=7004,
-                            extra_headers='Disposition-Notification-To: boss@example.com\r\n')
+    # One message at first: Thunderbird learns on its first connection that this is Gmail, and
+    # asks for Gmail's conversation numbers from then on, as for an account in everyday use.
     keep = gmail.deliver('Your Uber One annual plan', thread=7005)
 
     # 1. The current Thunderbird Release, from Mozilla.
@@ -178,11 +177,18 @@ def main():
 
     def rows():
         page = ask('list', {'folderId': folder_id, 'offset': 0, 'limit': 10})
-        details.setdefault('lists', []).append(page if not isinstance(page, dict) or 'rows' not in page
-                                               else [(r.get('subject'), r.get('unread'), r.get('flagged'), r.get('important')) for r in page['rows']])
+        lists.append(page if not isinstance(page, dict) or 'rows' not in page
+                     else [(r.get('id'), r.get('subject')[:20], r.get('unread'), r.get('flagged'), r.get('important')) for r in page['rows']])
         return page.get('rows', []) if isinstance(page, dict) else []
 
     found = []
+    wait(lambda: found.append(rows()) or len(found[-1]) >= 1, 120)
+    early = gmail.deliver('Your Saturday morning trip with Uber', thread=7001)
+    other = gmail.deliver('Lunch on Tuesday', sender='ann@example.com', thread=7002)
+    late = gmail.deliver('Your Saturday morning trip with Uber', thread=7001)
+    flag_me = gmail.deliver('Your Friday evening trip with Uber', thread=7003)
+    receipt = gmail.deliver('Please confirm you got this', sender='boss@example.com', thread=7004,
+                            extra_headers='Disposition-Notification-To: boss@example.com\r\n')
     wait(lambda: found.append(rows()) or len(found[-1]) >= 6, 120)
     listed = found[-1] if found else []
     checks['inbox_listed_all_six'] = len(listed) >= 6
@@ -193,7 +199,7 @@ def main():
 
     def ident(message):
         """The add-on's number for a server message, matched by subject and order."""
-        same = [m for m in [early, other, late, flag_me, receipt, keep] if m.header_value('Subject') == message.header_value('Subject')]
+        same = [m for m in [keep, early, other, late, flag_me, receipt] if m.header_value('Subject') == message.header_value('Subject')]
         ids = sorted(by_subject.get(message.header_value('Subject'), []))
         return ids[same.index(message)] if len(ids) == len(same) else None
 
@@ -250,6 +256,8 @@ def main():
     seen = []
     wait(lambda: seen.append({r['id']: r for r in rows()}) or (seen[-1].get(ident(other), {}).get('unread') is True and
                                                                 seen[-1].get(ident(keep), {}).get('flagged') is True), 60)
+    details['phone_change_rows'] = {k: (v.get('unread'), v.get('flagged')) for k, v in (seen[-1] if seen else {}).items()}
+    details['phone_change_ids'] = {'other': ident(other), 'keep': ident(keep)}
     checks['phone_change_shows_without_restart'] = bool(seen) and seen[-1].get(ident(other), {}).get('unread') is True and \
         seen[-1].get(ident(keep), {}).get('flagged') is True
 
@@ -285,6 +293,8 @@ def main():
     checks['sent'] = isinstance(sent, dict) and bool(sent.get('headerMessageId')) and bool(mails)
     checks['sent_with_x_priority_high'] = any(b'x-priority: 2' in m['raw'].lower() for m in mails)
     copy = gmail.find(sent.get('headerMessageId', '')) if isinstance(sent, dict) else None
+    details['sent_copy_labels'] = gmail.labels(copy) if copy else 'no copy found'
+    details['sent_mail_ids'] = [m.header_value('Message-ID') for _, m in gmail.boxes['[Gmail]/Sent Mail'].uids]
     checks['gmail_sent_copy_marked_important'] = isinstance(sent, dict) and sent.get('sentImportant') in ('done', 'pending') and \
         settle(lambda: copy is not None and '[Gmail]/Important' in gmail.labels(copy), 60)
 
