@@ -81,4 +81,40 @@ class WindowsActionTests(unittest.TestCase):
             self.assertEqual(companion.handle('ok','awake'),'awake')
             updater.check.assert_called_once_with(manual=True)
 
+
+class PowerKeepsUnsavedWorkTests(unittest.TestCase):
+    """Restart or Shut down from a note whose words cannot be saved (the notes file
+    held by another program, or a full disk). Before, the computer shut down anyway
+    and the note was lost; Exit already stayed open and said why."""
+    def answer_yes(self, action, failure=OSError('The disk is full.')):
+        said = []
+        with tempfile.TemporaryDirectory() as folder, patch.object(companion, 'APP', Path(folder)), \
+             patch.object(companion, 'note_buffer', ['Buy milk']), patch.object(companion, 'OPEN_NOTE', None), \
+             patch.object(companion, 'email_draft', None), patch.object(companion, 'POWER_ACTION', action), \
+             patch.object(companion, 'POWER_RETURN_MODE', 'note'), patch.object(companion, 'TEXT_MODE', True), \
+             patch.object(companion, 'speak', side_effect=lambda text, *a, **k: said.append(str(text))), \
+             patch.object(companion, 'sync_app_context'), patch('notepad.add', side_effect=failure), \
+             patch('windows_actions.request_power') as power:
+            mode = companion.handle('yes', 'power_confirm', typed=True)
+            return mode, said, power, list(companion.note_buffer)
+
+    def test_a_note_that_cannot_be_saved_stops_the_restart_and_is_kept(self):
+        for action in ('restart', 'shutdown'):
+            with self.subTest(action=action):
+                mode, said, power, words = self.answer_yes(action)
+                self.assertEqual(mode, 'note')
+                power.assert_not_called()
+                self.assertEqual(words, ['Buy milk'])
+                self.assertEqual(len(said), 1, said)
+                self.assertTrue(said[0].startswith('Your note could not be saved, so the computer was not '
+                                                   + ('restarted.' if action == 'restart' else 'shut down.')), said)
+                self.assertIn('Your words are still here.', said[0])
+
+    def test_a_saved_note_is_said_with_the_shut_down(self):
+        mode, said, power, words = self.answer_yes('shutdown', failure=None)
+        self.assertEqual(mode, 'exit')
+        power.assert_called_once_with('shutdown')
+        self.assertEqual(said, ['Saved your note. Shutting down the computer.'])
+
+
 if __name__=='__main__':unittest.main()

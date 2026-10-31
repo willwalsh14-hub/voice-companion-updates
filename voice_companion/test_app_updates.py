@@ -215,6 +215,25 @@ class DamagedUpdateFilesTests(unittest.TestCase):
             self.assertEqual(service.phase,'installing')
 
 
+class UpdateKeepsUnsavedNoteTests(unittest.TestCase):
+    def test_a_note_that_cannot_be_saved_holds_the_update(self):
+        """Yes to the update from a note that cannot be saved: before, the update
+        downloaded, closed the app and the note was lost."""
+        service=Mock();service.can_install.return_value=True
+        said=[]
+        with tempfile.TemporaryDirectory() as folder,patch.object(companion,'APP',Path(folder)),patch.object(companion,'UPDATES',service),\
+             patch.object(companion,'UPDATE_RETURN_MODE','note'),patch.object(companion,'STARTUP_UPDATE_PENDING',False),\
+             patch.object(companion,'document',None),patch.object(companion,'email_draft',None),\
+             patch.object(companion,'note_buffer',['Call the VA']),patch.object(companion,'OPEN_NOTE',None),\
+             patch.object(companion,'speak',side_effect=lambda text,*a,**k:said.append(str(text))),patch.object(companion,'sync_app_context'),\
+             patch('notepad.add',side_effect=PermissionError(13,'Access is denied')):
+            self.assertEqual(companion.handle('yes','update_offer',typed=True),'note')
+            service.download.assert_not_called()
+            self.assertEqual(companion.note_buffer,['Call the VA'])
+        self.assertEqual(len(said),1,said)
+        self.assertIn('I could not save your work. The update will wait.',said[0])
+
+
 
 class ExternalUpdaterEnvironmentTests(unittest.TestCase):
     def test_external_launch_cleans_environment_and_restores_dll_directory(self):

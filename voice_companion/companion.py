@@ -4071,14 +4071,23 @@ def _handle(text, mode, typed=False):
         if command in ('no','no thanks','cancel','main menu','back'):
             POWER_ACTION=None;return canceled_to(POWER_RETURN_MODE)
         if command in ('yes','yes please','okay','ok','confirm','confirm that','that one'):
+            # Never lose work: as Exit does, stay open when the draft or the note cannot be saved.
+            stopped='so the computer was not '+('restarted' if POWER_ACTION=='restart' else 'shut down')
+            if email_draft is not None:
+                try:email_draft.save()
+                except OSError:
+                    speak('Your email draft could not be saved, '+stopped+'. Close any program using your drafts folder, then try again.')
+                    POWER_ACTION=None;return POWER_RETURN_MODE
+            said=[]
+            if flush_note(POWER_RETURN_MODE,said.append) is False:
+                speak(' '.join(said).replace('Your note could not be saved.','Your note could not be saved, '+stopped+'.',1))
+                POWER_ACTION=None;return POWER_RETURN_MODE
             try:
-                if email_draft is not None:email_draft.save()
-                flush_note(POWER_RETURN_MODE)
                 from windows_actions import request_power
                 request_power(POWER_ACTION)
             except (OSError,ValueError,__import__('subprocess').SubprocessError) as exc:
-                speak('The computer could not '+str(POWER_ACTION)+'. Your app is still open.');POWER_ACTION=None;return POWER_RETURN_MODE
-            speak('Restarting the computer.' if POWER_ACTION=='restart' else 'Shutting down the computer.')
+                speak(' '.join(said+['The computer could not '+('restart' if POWER_ACTION=='restart' else 'shut down')+'. Your app is still open.']));POWER_ACTION=None;return POWER_RETURN_MODE
+            speak(' '.join(said+['Restarting the computer.' if POWER_ACTION=='restart' else 'Shutting down the computer.']))
             POWER_ACTION=None;return 'exit'
         speak('Restart the computer? Yes or no.' if POWER_ACTION=='restart' else 'Shut down the computer? Yes or no.');return mode
     if mode == 'draft_leave' and not spoken_control(command):
@@ -4261,15 +4270,17 @@ def _handle(text, mode, typed=False):
         if update_command in ('yes', 'yes please', 'install it', 'install update', 'okay', 'ok'):
             if not UPDATES.can_install():
                 return return_from_update('Automatic installation works in the installed app. Quick Test can check for updates but cannot replace an installation.')
+            said = []
             try:
                 if document is not None: document.save()
                 if email_draft is not None: email_draft.save()
-                flush_note(UPDATE_RETURN_MODE)
+                # flush_note keeps the words and returns False when the note cannot be saved.
+                if flush_note(UPDATE_RETURN_MODE, said.append) is False: raise OSError('The note could not be saved.')
             except (OSError, ValueError):
                 return return_from_update('I could not save your work. The update will wait.')
             UPDATE_LAST_PERCENT = 0
             if UPDATES.download():
-                speak('Downloading the update. Say cancel update to stop.')
+                speak(' '.join(said + ['Downloading the update. Say cancel update to stop.']))
                 return 'update_download'
             return return_from_update('The updater is busy. Please try again shortly.')
         if spoken_control(update_command) != 'exit':
