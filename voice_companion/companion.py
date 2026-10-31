@@ -743,7 +743,10 @@ def process_keyboard_batch(mode):
                     if key=='Control':KEYBOARD_BATCH_TEXT=None
                     # Control+F12 wakes the microphone; other keys work in the screen behind sleep.
                     asleep=mode=='sleep' and key in __import__('input_parity').SCREEN_KEYS['sleep']
-                    command='open options' if key=='settings' else navigation_key(key,'sleep' if asleep else SLEEP_RETURN_MODE if mode=='sleep' else mode)
+                    try:command='open options' if key=='settings' else navigation_key(key,'sleep' if asleep else SLEEP_RETURN_MODE if mode=='sleep' else mode)
+                    except Exception as exc:
+                        if isinstance(exc,user_stop.Stopped) or not safety_net_on():raise
+                        command_failed(exc,mode);command=None
                 if command is None:continue
             mode=resume_from_sleep() if mode=='sleep' and command.lower() in ('wake up','wake companion') else handle_keyboard(command,mode)
             if mode=='exit':break
@@ -5877,6 +5880,38 @@ def announce_startup():
 
 _HANDLE_DEPTH = 0
 
+# Every screen's safety net (Will, October 31, 2026). An unexpected error in a command or key
+# says what happened and keeps the app running on the same screen. Under tests it is off, so a
+# bug still stops the test that found it; SAFETY_NET = True turns it on there.
+SAFETY_NET = None
+COMMAND_FAILED = 'That did not work because of a problem in Voice Companion. You are still on {screen}. Try again, or press F1 for help.'
+
+
+def safety_net_on():
+    return SAFETY_NET if SAFETY_NET is not None else 'unittest' not in sys.modules
+
+
+def command_failed(exc, mode):
+    """Say the command did not work, record where (code places only, never what was said), and stay."""
+    try:
+        frames = traceback.extract_tb(exc.__traceback__)
+        detail = ('Voice Companion ' + APP_VERSION + '\n' + type(exc).__module__ + '.' + type(exc).__name__ + '\n' +
+                  '\n'.join(Path(f.filename).name + ':' + str(f.lineno) + ' in ' + f.name for f in frames[-12:]))
+        APP.mkdir(parents=True, exist_ok=True)
+        __import__('storage').write_text_atomic(APP / 'command-error.txt', detail)
+    except Exception:
+        pass
+    try:
+        screen = __import__('display_options').screen_name(mode) if mode not in ('sleep', 'exit') else 'the same screen'
+    except Exception:
+        screen = 'the same screen'
+    try:
+        speak(COMMAND_FAILED.format(screen=screen))
+    except Exception:
+        pass
+    return mode if mode != 'exit' else 'awake'
+
+
 def handle(text, mode, typed=False):
     global _HANDLE_DEPTH, CONFIRM_CHOICE, KEYBOARD_NAVIGATION
     if _HANDLE_DEPTH==0:TRANSCRIPT.mode=SLEEP_RETURN_MODE+', asleep' if mode=='sleep' else mode
@@ -5901,8 +5936,12 @@ def handle(text, mode, typed=False):
         if _HANDLE_DEPTH==1:
             try:flush_keyboard_edits(True)
             except OSError:speak('Your typed changes could not be saved yet. The file may be open in another program. Close it and they will be saved.')
-        with dictation_scope(PREFERENCES.get('dictation_type','old school'), typed=typed):
-            result = _handle(text, mode, typed)
+        try:
+            with dictation_scope(PREFERENCES.get('dictation_type','old school'), typed=typed):
+                result = _handle(text, mode, typed)
+        except Exception as exc:
+            if _HANDLE_DEPTH!=1 or isinstance(exc,user_stop.Stopped) or not safety_net_on():raise
+            result = command_failed(exc, mode)
         if (mail_session and not old_mail_pending and getattr(mail_session,"pending",None)) or old_send is None and pending_send is not None:CONFIRM_CHOICE="yes"
     finally:
         _HANDLE_DEPTH -= 1

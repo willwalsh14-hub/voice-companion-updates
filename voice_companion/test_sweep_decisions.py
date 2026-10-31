@@ -395,5 +395,33 @@ class MediaWordsTests(unittest.TestCase):
         hub.command.assert_not_called()
 
 
+
+class SafetyNetTests(CompanionCase):
+    """An unexpected error on any screen says what happened, and the app keeps running there."""
+    def test_an_unexpected_error_in_a_command_is_said_and_the_screen_stays(self):
+        with patch.object(companion, 'SAFETY_NET', True), \
+             patch.object(companion, '_handle', side_effect=TypeError('boom')):
+            self.assertEqual(companion.handle('read paragraph', 'document'), 'document')
+        self.assertEqual(self.last(), 'That did not work because of a problem in Voice Companion. '
+                                      'You are still on Document. Try again, or press F1 for help.')
+        detail = (self.folder / 'command-error.txt').read_text(encoding='utf-8')
+        self.assertIn('builtins.TypeError', detail)
+        self.assertNotIn('read paragraph', detail)
+
+    def test_off_under_tests_so_bugs_still_stop_them(self):
+        with patch.object(companion, '_handle', side_effect=TypeError('boom')):
+            with self.assertRaises(TypeError):
+                companion.handle('hello', 'awake')
+
+    def test_a_key_that_fails_is_said_too(self):
+        from unittest.mock import Mock
+        import queue
+        window = Mock(); window.commands = queue.Queue(); window.commands.put(('keyboard', 'Down'))
+        with patch.object(companion, 'SAFETY_NET', True), patch.object(companion, 'APP_WINDOW', window), \
+             patch.object(companion, 'navigation_key', side_effect=KeyError('x')), patch.object(companion, 'interrupt_speech'):
+            self.assertEqual(companion.process_keyboard_batch('mailbox'), 'mailbox')
+        self.assertIn('You are still on Email.', ' '.join(self.said))
+
+
 if __name__ == '__main__':
     unittest.main()
