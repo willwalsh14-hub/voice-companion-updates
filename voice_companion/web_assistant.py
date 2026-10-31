@@ -2369,7 +2369,10 @@ class WebSession:
             dialog_notice=GOOGLE_SIGN_IN_NOTICE+'.'+(' '+dialog_notice if dialog_notice else '')
         dialog=self._dialog_change(leaving,known_state,old_anchor,read)
         if dialog:return (dialog_notice+' ' if dialog_notice else '')+dialog
-        return ((dialog_notice+' ' if dialog_notice else '')+('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
+        # A page with no title says "Page loaded. Site: ..."; a title's own period is not doubled.
+        title=_plain(self.snapshot.get('title'))
+        return ((dialog_notice+' ' if dialog_notice else '')+('Page loaded' if getattr(self.backend,'page_ready',True) else 'Page content ready') +
+                (': '+title+('' if title[-1] in '.!?' else '.') if title else '.') + ' Site: ' +
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
     def _live_news(self):

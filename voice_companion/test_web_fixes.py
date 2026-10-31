@@ -203,6 +203,16 @@ class UntitledPageTests(unittest.TestCase):
         self.assertIn(' window. The site is example.com.', session.command('ask for help'))
         self.assertEqual(session.command('where am i'), 'Focused Unlabeled, edit field. Current value blank.')
 
+    def test_page_loaded_names_no_empty_title_and_one_period(self):
+        for title, said in (('', 'Page loaded. Site: example.com.'), ('Welcome!', 'Page loaded: Welcome! Site: example.com.'),
+                            ('News.', 'Page loaded: News. Site: example.com.')):
+            with self.subTest(title=title):
+                backend = FakeBackend()
+                backend.snapshot = lambda: {'title': title, 'url': backend.url, 'controls': [], 'text': 'Some words.'}
+                folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+                session = WebSession(folder.name, backend); session.auto_read = False
+                self.assertEqual(session.open('example.com'), said)
+
     def test_a_page_answer_has_one_period_and_no_empty_title(self):
         backend = FakeBackend()
         backend.snapshot = lambda: {'title': '', 'url': backend.url, 'controls': [],
