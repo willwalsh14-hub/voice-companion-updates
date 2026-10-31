@@ -56,6 +56,11 @@ SENTENCES = (
     'Add appointment tomorrow at 3 PM called doctor', 'Add event', 'Add contact', 'Next event', 'Next contact',
     'Today', 'Tomorrow.', 'Find John', 'Delete contact', 'Read event', 'Call details', 'Go to October 30',
     "What's on Friday?", 'What is on the menu tonight?', 'Write to the council about the road.',
+    # Message status and send options (Will, October 30, 2026), and sentences that look like them.
+    'Mark as read.', 'Mark as unread', 'Flag.', 'Flag or unflag', 'Remove flag', 'Message status', 'Status.',
+    'Star this message', 'Is it flagged?', 'High importance.', 'Change importance', 'Read receipt on or off',
+    'Request a read receipt.', 'Importance', 'This is of high importance.', 'Flag the car down at the corner.',
+    'Mark as read when you get it.', 'The status of the order is late.',
 )
 
 

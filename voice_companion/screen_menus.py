@@ -28,7 +28,12 @@ MENUS = {
             ('New email', 'N', 'new email'),
             ('Delete', 'Delete', 'delete'),
             ('Move to folder', 'M', 'move'),
-            ('Message details', 'I', 'message details')]),
+            ('Message details', 'I', 'message details'),
+            ('Mark as read or unread', 'Q', 'mark as read or unread'),
+            ('Mark as read', '', 'mark as read'),
+            ('Mark as unread', '', 'mark as unread'),
+            ('Flag or unflag', 'X', 'flag or unflag'),
+            ('Message status', '', 'message status')]),
         ('Select', [
             ('Mark or unmark message', 'Space', 'toggle message selection'),
             ('Select all messages', 'Ctrl+A', 'select all messages'),
@@ -116,6 +121,14 @@ MENUS = {
         ('Undo and redo', [
             ('Undo', 'Ctrl+Z', 'undo'),
             ('Redo', 'Ctrl+Y', 'redo')]),
+        # Added after the groups above, so their Alt paths stay the same.
+        ('Importance and read receipt', [
+            ('Change importance', 'Ctrl+Shift+I', 'change importance'),
+            ('High importance', '', 'high importance'),
+            ('Normal importance', '', 'normal importance'),
+            ('Low importance', '', 'low importance'),
+            ('Read receipt on or off', 'Ctrl+Shift+T', 'read receipt on or off'),
+            ('Importance and receipt now', '', 'importance')]),
     ]),
     # Named after what is open, so it is not confused with the Notepad menu you start from.
     'note': ('Note menu', [

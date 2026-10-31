@@ -91,6 +91,36 @@ def original_split(context):
     return kept, dropped
 
 
+IMPORTANCE = ('high', 'low')
+IMPORTANCE_COMMANDS = {
+    'high importance': 'high', 'set importance to high': 'high', 'importance high': 'high', 'mark as high importance': 'high',
+    'make it high importance': 'high', 'mark as important': 'high', 'mark it important': 'high', 'high priority': 'high',
+    'low importance': 'low', 'set importance to low': 'low', 'importance low': 'low', 'mark as low importance': 'low',
+    'make it low importance': 'low', 'low priority': 'low',
+    'normal importance': '', 'set importance to normal': '', 'importance normal': '', 'mark as normal importance': '',
+    'normal priority': '', 'clear importance': '', 'remove importance': '',
+    'change importance': 'next',
+}
+IMPORTANCE_QUESTIONS = ('importance', 'what is the importance', 'read importance', 'what importance', 'read the importance')
+RECEIPT_COMMANDS = {
+    'request a read receipt': True, 'request read receipt': True, 'ask for a read receipt': True, 'read receipt on': True,
+    'turn on read receipt': True, 'turn on the read receipt': True, 'add a read receipt': True, 'add read receipt': True,
+    'return receipt on': True,
+    'read receipt off': False, 'turn off read receipt': False, 'turn off the read receipt': False, 'no read receipt': False,
+    'remove read receipt': False, 'remove the read receipt': False, 'cancel read receipt': False, 'return receipt off': False,
+    'read receipt on or off': 'toggle', 'toggle read receipt': 'toggle',
+}
+RECEIPT_QUESTIONS = ('read receipt', 'is there a read receipt', 'is a read receipt on', 'read receipt status')
+
+
+def importance_words(level):
+    return {'high': 'High importance', 'low': 'Low importance'}.get(level, 'Normal importance')
+
+
+def receipt_words(on):
+    return ('Read receipt on. The person is asked to tell you when they open it.' if on else 'No read receipt.')
+
+
 @dataclass
 class VoiceEmail(VoiceDocument):
     automatic_dictation: bool = True
@@ -106,6 +136,10 @@ class VoiceEmail(VoiceDocument):
     response_context: dict = field(default_factory=dict)
     # Files from this computer: [{'path', 'name', 'size'}]. Read again when the email is sent.
     attachments: list = field(default_factory=list)
+    # Importance ('high', 'low', or '' for normal) and a read receipt, as in Thunderbird's
+    # Options menu while writing (Will, October 30, 2026).
+    importance: str = ''
+    read_receipt: bool = False
     EMPTY_NOTICE = 'The message body is empty.'
     EDGE_NAME = 'message'
 
@@ -149,6 +183,9 @@ class VoiceEmail(VoiceDocument):
         if self.attachments:
             # Only when there are files, so drafts saved before attachments keep their fingerprint.
             content.append([[item.get('path'), item.get('name'), item.get('size')] for item in self.attachments])
+        if self.importance or self.read_receipt:
+            # Likewise only when set: a change after the review needs a new review.
+            content.append({'importance': self.importance, 'read_receipt': self.read_receipt})
         return hashlib.sha256(json.dumps(content, ensure_ascii=False).encode('utf-8')).hexdigest()
 
     # Attachments ----------------------------------------------------------
@@ -219,6 +256,31 @@ class VoiceEmail(VoiceDocument):
             cache[key] = part.as_bytes()
         return cache[key]
 
+    def send_option(self, command):
+        """Importance and read receipt. Only the whole phrase counts, so a sentence such as
+        "This is of high importance." stays in the message."""
+        command = re.sub(r'[,;]', '', command).strip()
+        level = IMPORTANCE_COMMANDS.get(command)
+        if level == 'next':
+            order = ('', 'high', 'low')
+            level = order[(order.index(self.importance) + 1) % len(order)]
+        if level is not None:
+            self.importance = level
+            self.save()
+            return importance_words(level) + '.'
+        if command in IMPORTANCE_QUESTIONS:
+            return importance_words(self.importance) + '. ' + receipt_words(self.read_receipt)
+        receipt = RECEIPT_COMMANDS.get(command)
+        if receipt == 'toggle':
+            receipt = not self.read_receipt
+        if receipt is not None:
+            self.read_receipt = receipt
+            self.save()
+            return receipt_words(receipt)
+        if command in RECEIPT_QUESTIONS:
+            return receipt_words(self.read_receipt)
+        return ''
+
     def _undo_extra(self):
         # Undo brings back the addresses, subject and account with the message text.
         return (self.recipient, self.subject, self.provider, list(self.cc), list(self.bcc),
@@ -270,6 +332,7 @@ class VoiceEmail(VoiceDocument):
             'last_attempt_hash': self.last_attempt_hash,
             'cc': self.cc, 'bcc': self.bcc, 'response_context': self.response_context,
             'attachments': self.attachments,
+            'importance': self.importance, 'read_receipt': self.read_receipt,
             'paragraphs': [asdict(p) for p in self.paragraphs],
         }
         temporary = self.state_path.with_suffix('.writing.json')
@@ -360,6 +423,9 @@ class VoiceEmail(VoiceDocument):
         draft.compose_step = 'recipient' if not draft.recipient else 'subject' if not draft.subject else 'body'
         draft.response_context = data.get('response_context', {})
         draft.attachments = [dict(item) for item in attached]
+        # A damaged or unknown value is normal importance, never a refusal to open the draft.
+        draft.importance = data.get('importance') if data.get('importance') in IMPORTANCE else ''
+        draft.read_receipt = data.get('read_receipt') is True
         names = {f.name for f in fields(Paragraph)}
         for p in paragraphs:
             if set(p) - names or not isinstance(p.get('runs', []), list) or any(
@@ -392,6 +458,9 @@ class VoiceEmail(VoiceDocument):
             return result
         text = raw.strip()
         command = text.lower().rstrip('.!?').strip()
+        options = self.send_option(command)
+        if options:
+            return options
         if command in ('save email', 'save draft', 'finish email', 'save document', 'save my document', 'finish document', 'save', 'save it'):
             self.dictating = False
             self.save()

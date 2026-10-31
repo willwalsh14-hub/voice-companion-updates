@@ -49,7 +49,7 @@ process.stdin.on('end', () => {
   for (const listener of disconnectListeners) listener();
   process.stderr.write(JSON.stringify({sent: state.sent.map(s => ({kind: s.kind, replyType: s.replyType, messageId: s.messageId,
     identityId: (s.details || {}).identityId, to: s.current.to, cc: s.current.cc, bcc: s.current.bcc, subject: s.current.subject,
-    body: s.current.body, plainTextBody: s.current.plainTextBody,
+    body: s.current.body, plainTextBody: s.current.plainTextBody, priority: s.current.priority, returnReceipt: s.current.returnReceipt,
     attachments: (s.attachments || []).map(({file}) => ({name: file.name, size: file.size}))})),
     moved: state.moved, deleted: state.deleted}));
   process.exit(0);

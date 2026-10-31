@@ -159,6 +159,46 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
         session.process('next message')
         self.assertEqual(session.process('read the cc'), 'No CC.')
 
+    def test_message_status_is_said_and_can_be_changed(self):
+        # Will, October 30, 2026: Thunderbird did not say read or unread, importance, replied or
+        # forwarded. Each message now says them first, and Q, X and spoken commands change them.
+        mail_accounts.connect('thunderbird', self.folder)
+        session = MailSession('thunderbird', self.folder)
+        listed = session.list_messages()
+        self.assertTrue(listed.startswith('Inbox. Unread, replied, high importance. Sender 25. Message 25.'), listed)
+        self.assertEqual(session.process('message status'), 'Unread, replied, high importance, not flagged.')
+        self.assertEqual(session.process('Mark as read.'), 'Marked as read.')
+        self.assertTrue(session.process('message details').startswith('Replied, high importance. Sender 25.'))
+        self.assertEqual(session.process('mark as read or unread'), 'Marked as unread.')
+        self.assertEqual(session.process('flag or unflag'), 'Flagged.')
+        self.assertEqual(session.process('Is it flagged?'), 'Unread, flagged, replied, high importance.')
+        self.assertEqual(session.process('remove flag'), 'Flag removed.')
+        nxt = session.process('next message')
+        self.assertTrue(nxt.startswith('Forwarded. Sender 24.'), nxt)          # read, so not said
+        self.assertTrue(session.process('next message').startswith('Unread, flagged. Sender 23.'))
+        self.assertTrue(session.process('next message').startswith('Lowest importance. Sender 22.'))
+        # Several marked messages change together.
+        session.process('select message 1'); session.process('select message 3')
+        self.assertEqual(session.process('mark as read'), '2 messages marked as read.')
+        self.assertEqual([session.rows[0]['unread'], session.rows[2]['unread']], [False, False])
+        session.process('clear selection')
+        # Opening a message marks it read, as in Thunderbird.
+        session.process('go to message 5')
+        self.assertTrue(session.rows[4]['unread'])
+        session.process('open current message')
+        session.process('back to folder')
+        self.assertFalse(session.rows[4]['unread'])
+        self.assertEqual(session.process('message status'), 'Read, not flagged.')
+        report = self.finish()
+        self.assertEqual(report['sent'], [])
+
+    def test_status_words_can_be_turned_off(self):
+        mail_accounts.connect('thunderbird', self.folder)
+        (self.folder / 'preferences.json').write_text(json.dumps({'email_status_words': False}), encoding='utf-8')
+        session = MailSession('thunderbird', self.folder)
+        self.assertTrue(session.list_messages().startswith('Inbox. Sender 25. Message 25.'))
+        self.assertEqual(session.process('message status'), 'Unread, replied, high importance, not flagged.')
+
     @simulated(FAKE_THUNDERBIRD_SERVER_MAIL=1)
     def test_list_shows_mail_that_just_reached_the_server(self):
         # Will, October 23, 2026: Thunderbird with Gmail did not show the latest messages, while
@@ -239,6 +279,19 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
         self.assertIn('Thanks!', sent[1]['body'])
         self.assertIn('Original message', sent[1]['body'])
         self.assertNotIn('Forwarded message', sent[1]['body'])
+        # Normal importance and no receipt leave Thunderbird's own settings alone.
+        self.assertNotIn('priority', sent[0]); self.assertNotIn('returnReceipt', sent[0])
+
+    def test_importance_and_read_receipt_reach_thunderbird(self):
+        mail_accounts.connect('thunderbird', self.folder)
+        address, account = mail_accounts.account_token('thunderbird', self.folder)
+        draft = VoiceEmail(self.folder / 'Email Drafts', recipient='sam@example.com', subject='Lunch', provider='thunderbird')
+        draft.paragraphs = [Paragraph('See you at noon.')]
+        self.assertEqual(draft.process('High importance.'), 'High importance.')
+        self.assertTrue(draft.process('Request a read receipt.').startswith('Read receipt on.'))
+        submit('thunderbird', draft, account, sender=address)
+        sent = self.finish()['sent']
+        self.assertEqual((sent[0]['priority'], sent[0]['returnReceipt']), ('high', True))
 
 
 class ThunderbirdOfflineTests(unittest.TestCase):

@@ -108,6 +108,12 @@ def yahoo_submit(draft, address, app_password, smtp_factory=smtplib.SMTP_SSL, se
     if draft.cc: msg['Cc'] = ', '.join(draft.cc)
     if getattr(draft, 'bcc', []): msg['Bcc'] = ', '.join(draft.bcc)
     msg['Subject'] = subject
+    importance = getattr(draft, 'importance', '')
+    if importance in ('high', 'low'):
+        msg['X-Priority'] = '2 (High)' if importance == 'high' else '4 (Low)'
+        msg['Importance'] = importance.capitalize()
+    if getattr(draft, 'read_receipt', False) is True:
+        msg['Disposition-Notification-To'] = normalize_recipient(address)
     # Yahoo's Sent copy needs these to sort and match.
     msg['Date'] = formatdate(localtime=True)
     msg['Message-ID'] = make_msgid(domain=normalize_recipient(address).rpartition('@')[2] or 'yahoo.com')

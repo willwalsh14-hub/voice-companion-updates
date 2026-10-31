@@ -48,6 +48,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | Change importance": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | Contacts": {
 "said": [
 "Contacts. No contacts yet. Press Control+N to add one, or say add contact. Only contacts saved on this computer are here. To use your Google or Outlook contacts, say add Thunderbird account."
@@ -118,6 +124,24 @@
 ],
 "screen_after": "web"
 },
+"awake | Flag or unflag": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Flag the car down at the corner.": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Flag.": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | Go to October 30": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -136,9 +160,51 @@
 ],
 "screen_after": "help"
 },
+"awake | High importance.": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Importance": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Is it flagged?": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | Lower other apps on.": {
 "said": [
 "Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "awake"
+},
+"awake | Mark as read when you get it.": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Mark as read.": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Mark as unread": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Message status": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
 ],
 "screen_after": "awake"
 },
@@ -196,6 +262,24 @@
 ],
 "screen_after": "awake"
 },
+"awake | Read receipt on or off": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Remove flag": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Request a read receipt.": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | Send an email to John Smith": {
 "said": [
 "No contact named john smith. Say open contacts to hear your contacts, or add contact to save one."
@@ -211,6 +295,18 @@
 "awake | Speed limits matter.": {
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
+],
+"screen_after": "awake"
+},
+"awake | Star this message": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Status.": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
 ],
 "screen_after": "awake"
 },
@@ -232,7 +328,19 @@
 ],
 "screen_after": "awake"
 },
+"awake | The status of the order is late.": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | The trial period is over": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | This is of high importance.": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
@@ -1868,6 +1976,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | high": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | history": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -1897,6 +2011,12 @@
 "Say search followed by a station name, browse genre jazz, list stations, or play station followed by its number."
 ],
 "screen_after": "media"
+},
+"awake | importance": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
 },
 "awake | inbox": {
 "said": [
@@ -2197,6 +2317,12 @@
 "awake | louder": {
 "said": [
 "Loudest volume. Volume 100 percent."
+],
+"screen_after": "awake"
+},
+"awake | low": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
 ],
 "screen_after": "awake"
 },
@@ -4928,6 +5054,15 @@
 "Hello world. Second sentence. Capital letters are important."
 ]
 },
+"document | Change importance": {
+"said": [
+"Change importance"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Change importance"
+]
+},
 "document | Contacts": {
 "said": [
 "Contacts"
@@ -5018,6 +5153,33 @@
 "Hello world. Second sentence."
 ]
 },
+"document | Flag or unflag": {
+"said": [
+"Flag or unflag"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Flag or unflag"
+]
+},
+"document | Flag the car down at the corner.": {
+"said": [
+"Flag the car down at the corner."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Flag the car down at the corner."
+]
+},
+"document | Flag.": {
+"said": [
+"Flag."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Flag."
+]
+},
 "document | Go to October 30": {
 "said": [
 "Go to October 30"
@@ -5045,6 +5207,33 @@
 "Hello world. Second sentence. Help with the dishes tonight"
 ]
 },
+"document | High importance.": {
+"said": [
+"High importance."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. High importance."
+]
+},
+"document | Importance": {
+"said": [
+"Importance"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Importance"
+]
+},
+"document | Is it flagged?": {
+"said": [
+"Is it flagged?"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Is it flagged?"
+]
+},
 "document | Lower other apps on.": {
 "said": [
 "Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
@@ -5052,6 +5241,42 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | Mark as read when you get it.": {
+"said": [
+"Mark as read when you get it."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Mark as read when you get it."
+]
+},
+"document | Mark as read.": {
+"said": [
+"Mark as read."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Mark as read."
+]
+},
+"document | Mark as unread": {
+"said": [
+"Mark as unread"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Mark as unread"
+]
+},
+"document | Message status": {
+"said": [
+"Message status"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Message status"
 ]
 },
 "document | Next contact": {
@@ -5135,6 +5360,33 @@
 "Hello world. Second sentence. Read event"
 ]
 },
+"document | Read receipt on or off": {
+"said": [
+"Read receipt on or off"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Read receipt on or off"
+]
+},
+"document | Remove flag": {
+"said": [
+"Remove flag"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Remove flag"
+]
+},
+"document | Request a read receipt.": {
+"said": [
+"Request a read receipt."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Request a read receipt."
+]
+},
 "document | Send an email to John Smith": {
 "said": [
 "Send an email to John Smith"
@@ -5160,6 +5412,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. Speed limits matter."
+]
+},
+"document | Star this message": {
+"said": [
+"Star this message"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Star this message"
+]
+},
+"document | Status.": {
+"said": [
+"Status."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Status."
 ]
 },
 "document | Subject is closed for now.": {
@@ -5189,6 +5459,15 @@
 "Hello world. Second sentence. The date of the party is Friday."
 ]
 },
+"document | The status of the order is late.": {
+"said": [
+"The status of the order is late."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. The status of the order is late."
+]
+},
 "document | The trial period is over": {
 "said": [
 "The trial period is over"
@@ -5196,6 +5475,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. The trial period is over"
+]
+},
+"document | This is of high importance.": {
+"said": [
+"This is of high importance."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. This is of high importance."
 ]
 },
 "document | Time to go home.": {
@@ -7588,6 +7876,15 @@
 "Hello world. Second sentence. help with"
 ]
 },
+"document | high": {
+"said": [
+"high"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. high"
+]
+},
 "document | history": {
 "said": [
 "history"
@@ -7631,6 +7928,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. import radiosure"
+]
+},
+"document | importance": {
+"said": [
+"importance"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. importance"
 ]
 },
 "document | inbox": {
@@ -8063,6 +8369,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | low": {
+"said": [
+"low"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. low"
 ]
 },
 "document | mail": {
@@ -12005,6 +12320,15 @@
 "Hello world. Capital letters are important."
 ]
 },
+"email_draft | Change importance": {
+"said": [
+"High importance."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | Contacts": {
 "said": [
 "Contacts"
@@ -12095,6 +12419,33 @@
 "Hello world."
 ]
 },
+"email_draft | Flag or unflag": {
+"said": [
+"Flag or unflag"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Flag or unflag"
+]
+},
+"email_draft | Flag the car down at the corner.": {
+"said": [
+"Flag the car down at the corner."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Flag the car down at the corner."
+]
+},
+"email_draft | Flag.": {
+"said": [
+"Flag."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Flag."
+]
+},
 "email_draft | Go to October 30": {
 "said": [
 "Go to October 30"
@@ -12122,6 +12473,33 @@
 "Hello world. Help with the dishes tonight"
 ]
 },
+"email_draft | High importance.": {
+"said": [
+"High importance."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | Importance": {
+"said": [
+"Normal importance. No read receipt."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | Is it flagged?": {
+"said": [
+"Is it flagged?"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Is it flagged?"
+]
+},
 "email_draft | Lower other apps on.": {
 "said": [
 "Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
@@ -12129,6 +12507,42 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | Mark as read when you get it.": {
+"said": [
+"Mark as read when you get it."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Mark as read when you get it."
+]
+},
+"email_draft | Mark as read.": {
+"said": [
+"Mark as read."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Mark as read."
+]
+},
+"email_draft | Mark as unread": {
+"said": [
+"Mark as unread"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Mark as unread"
+]
+},
+"email_draft | Message status": {
+"said": [
+"Message status"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Message status"
 ]
 },
 "email_draft | Next contact": {
@@ -12212,6 +12626,33 @@
 "Hello world. Read event"
 ]
 },
+"email_draft | Read receipt on or off": {
+"said": [
+"Read receipt on. The person is asked to tell you when they open it."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | Remove flag": {
+"said": [
+"Remove flag"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Remove flag"
+]
+},
+"email_draft | Request a read receipt.": {
+"said": [
+"Read receipt on. The person is asked to tell you when they open it."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | Send an email to John Smith": {
 "said": [
 "Send an email to John Smith"
@@ -12237,6 +12678,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. Speed limits matter."
+]
+},
+"email_draft | Star this message": {
+"said": [
+"Star this message"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Star this message"
+]
+},
+"email_draft | Status.": {
+"said": [
+"Status."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Status."
 ]
 },
 "email_draft | Subject is closed for now.": {
@@ -12266,6 +12725,15 @@
 "Hello world. The date of the party is Friday."
 ]
 },
+"email_draft | The status of the order is late.": {
+"said": [
+"The status of the order is late."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. The status of the order is late."
+]
+},
 "email_draft | The trial period is over": {
 "said": [
 "The trial period is over"
@@ -12273,6 +12741,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. The trial period is over"
+]
+},
+"email_draft | This is of high importance.": {
+"said": [
+"This is of high importance."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. This is of high importance."
 ]
 },
 "email_draft | Time to go home.": {
@@ -14804,6 +15281,15 @@
 "Hello world. help with"
 ]
 },
+"email_draft | high": {
+"said": [
+"high"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. high"
+]
+},
 "email_draft | history": {
 "said": [
 "history"
@@ -14847,6 +15333,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. import radiosure"
+]
+},
+"email_draft | importance": {
+"said": [
+"Normal importance. No read receipt."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | inbox": {
@@ -15285,6 +15780,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | low": {
+"said": [
+"low"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. low"
 ]
 },
 "email_draft | mail": {
@@ -17267,7 +17771,7 @@
 },
 "email_draft | save": {
 "said": [
-"Email draft saved locally as Routing check 415. It has not been sent."
+"Email draft saved locally as Routing check 434. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17285,7 +17789,7 @@
 },
 "email_draft | save document": {
 "said": [
-"Email draft saved locally as Routing check 416. It has not been sent."
+"Email draft saved locally as Routing check 435. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17303,7 +17807,7 @@
 },
 "email_draft | save draft": {
 "said": [
-"Email draft saved locally as Routing check 417. It has not been sent."
+"Email draft saved locally as Routing check 436. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17330,7 +17834,7 @@
 },
 "email_draft | save it": {
 "said": [
-"Email draft saved locally as Routing check 419. It has not been sent."
+"Email draft saved locally as Routing check 438. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17339,7 +17843,7 @@
 },
 "email_draft | save my document": {
 "said": [
-"Email draft saved locally as Routing check 420. It has not been sent."
+"Email draft saved locally as Routing check 439. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -19219,6 +19723,12 @@
 ],
 "screen_after": "help"
 },
+"help | Change importance": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | Contacts": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -19279,6 +19789,24 @@
 ],
 "screen_after": "help"
 },
+"help | Flag or unflag": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Flag the car down at the corner.": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Flag.": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | Go to October 30": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -19297,9 +19825,51 @@
 ],
 "screen_after": "help"
 },
+"help | High importance.": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Importance": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Is it flagged?": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | Lower other apps on.": {
 "said": [
 "Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "help"
+},
+"help | Mark as read when you get it.": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Mark as read.": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Mark as unread": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Message status": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
 "screen_after": "help"
 },
@@ -19357,6 +19927,24 @@
 ],
 "screen_after": "help"
 },
+"help | Read receipt on or off": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Remove flag": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Request a read receipt.": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | Send an email to John Smith": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -19372,6 +19960,18 @@
 "help | Speed limits matter.": {
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
+],
+"screen_after": "help"
+},
+"help | Star this message": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Status.": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
 "screen_after": "help"
 },
@@ -19393,7 +19993,19 @@
 ],
 "screen_after": "help"
 },
+"help | The status of the order is late.": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | The trial period is over": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | This is of high importance.": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -20994,6 +21606,12 @@
 ],
 "screen_after": "help"
 },
+"help | high": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | history": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -21019,6 +21637,12 @@
 "screen_after": "help"
 },
 "help | import radiosure": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | importance": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -21309,6 +21933,12 @@
 "help | louder": {
 "said": [
 "Loudest volume. Volume 100 percent."
+],
+"screen_after": "help"
+},
+"help | low": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
 "screen_after": "help"
 },
@@ -23960,6 +24590,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Change importance": {
+"calls": [
+"call.process('Change importance')"
+],
+"said": [
+"session handled: Change importance"
+],
+"screen_after": "mailbox"
+},
 "mailbox | Contacts": {
 "calls": [
 "call.process('Contacts')"
@@ -24041,6 +24680,33 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Flag or unflag": {
+"calls": [
+"call.process('Flag or unflag')"
+],
+"said": [
+"session handled: Flag or unflag"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Flag the car down at the corner.": {
+"calls": [
+"call.process('Flag the car down at the corner.')"
+],
+"said": [
+"session handled: Flag the car down at the corner."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Flag.": {
+"calls": [
+"call.process('Flag.')"
+],
+"said": [
+"session handled: Flag."
+],
+"screen_after": "mailbox"
+},
 "mailbox | Go to October 30": {
 "calls": [
 "call.process('Go to October 30')"
@@ -24065,9 +24731,72 @@
 ],
 "screen_after": "help"
 },
+"mailbox | High importance.": {
+"calls": [
+"call.process('High importance.')"
+],
+"said": [
+"session handled: High importance."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Importance": {
+"calls": [
+"call.process('Importance')"
+],
+"said": [
+"session handled: Importance"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Is it flagged?": {
+"calls": [
+"call.process('Is it flagged?')"
+],
+"said": [
+"session handled: Is it flagged?"
+],
+"screen_after": "mailbox"
+},
 "mailbox | Lower other apps on.": {
 "said": [
 "Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Mark as read when you get it.": {
+"calls": [
+"call.process('Mark as read when you get it.')"
+],
+"said": [
+"session handled: Mark as read when you get it."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Mark as read.": {
+"calls": [
+"call.process('Mark as read.')"
+],
+"said": [
+"session handled: Mark as read."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Mark as unread": {
+"calls": [
+"call.process('Mark as unread')"
+],
+"said": [
+"session handled: Mark as unread"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Message status": {
+"calls": [
+"call.process('Message status')"
+],
+"said": [
+"session handled: Message status"
 ],
 "screen_after": "mailbox"
 },
@@ -24146,6 +24875,33 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Read receipt on or off": {
+"calls": [
+"call.process('Read receipt on or off')"
+],
+"said": [
+"session handled: Read receipt on or off"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Remove flag": {
+"calls": [
+"call.process('Remove flag')"
+],
+"said": [
+"session handled: Remove flag"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Request a read receipt.": {
+"calls": [
+"call.process('Request a read receipt.')"
+],
+"said": [
+"session handled: Request a read receipt."
+],
+"screen_after": "mailbox"
+},
 "mailbox | Send an email to John Smith": {
 "calls": [
 "call.process('Send an email to John Smith')"
@@ -24167,6 +24923,24 @@
 "mailbox | Speed limits matter.": {
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Star this message": {
+"calls": [
+"call.process('Star this message')"
+],
+"said": [
+"session handled: Star this message"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Status.": {
+"calls": [
+"call.process('Status.')"
+],
+"said": [
+"session handled: Status."
 ],
 "screen_after": "mailbox"
 },
@@ -24194,12 +24968,30 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | The status of the order is late.": {
+"calls": [
+"call.process('The status of the order is late.')"
+],
+"said": [
+"session handled: The status of the order is late."
+],
+"screen_after": "mailbox"
+},
 "mailbox | The trial period is over": {
 "calls": [
 "call.process('The trial period is over')"
 ],
 "said": [
 "session handled: The trial period is over"
+],
+"screen_after": "mailbox"
+},
+"mailbox | This is of high importance.": {
+"calls": [
+"call.process('This is of high importance.')"
+],
+"said": [
+"session handled: This is of high importance."
 ],
 "screen_after": "mailbox"
 },
@@ -26369,6 +27161,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | high": {
+"calls": [
+"call.process('high')"
+],
+"said": [
+"session handled: high"
+],
+"screen_after": "mailbox"
+},
 "mailbox | history": {
 "calls": [
 "call.process('history')"
@@ -26411,6 +27212,15 @@
 ],
 "said": [
 "session handled: import radiosure"
+],
+"screen_after": "mailbox"
+},
+"mailbox | importance": {
+"calls": [
+"call.process('importance')"
+],
+"said": [
+"session handled: importance"
 ],
 "screen_after": "mailbox"
 },
@@ -26789,6 +27599,15 @@
 "mailbox | louder": {
 "said": [
 "Loudest volume. Volume 100 percent."
+],
+"screen_after": "mailbox"
+},
+"mailbox | low": {
+"calls": [
+"call.process('low')"
+],
+"said": [
+"session handled: low"
 ],
 "screen_after": "mailbox"
 },
@@ -30260,6 +31079,12 @@
 ],
 "screen_after": "note"
 },
+"note | Change importance": {
+"said": [
+"Change importance"
+],
+"screen_after": "note"
+},
 "note | Contacts": {
 "said": [
 "Contacts"
@@ -30320,6 +31145,24 @@
 ],
 "screen_after": "note"
 },
+"note | Flag or unflag": {
+"said": [
+"Flag or unflag"
+],
+"screen_after": "note"
+},
+"note | Flag the car down at the corner.": {
+"said": [
+"Flag the car down at the corner."
+],
+"screen_after": "note"
+},
+"note | Flag.": {
+"said": [
+"Flag."
+],
+"screen_after": "note"
+},
 "note | Go to October 30": {
 "said": [
 "Go to October 30"
@@ -30338,9 +31181,51 @@
 ],
 "screen_after": "note"
 },
+"note | High importance.": {
+"said": [
+"High importance."
+],
+"screen_after": "note"
+},
+"note | Importance": {
+"said": [
+"Importance"
+],
+"screen_after": "note"
+},
+"note | Is it flagged?": {
+"said": [
+"Is it flagged?"
+],
+"screen_after": "note"
+},
 "note | Lower other apps on.": {
 "said": [
 "Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "note"
+},
+"note | Mark as read when you get it.": {
+"said": [
+"Mark as read when you get it."
+],
+"screen_after": "note"
+},
+"note | Mark as read.": {
+"said": [
+"Mark as read."
+],
+"screen_after": "note"
+},
+"note | Mark as unread": {
+"said": [
+"Mark as unread"
+],
+"screen_after": "note"
+},
+"note | Message status": {
+"said": [
+"Message status"
 ],
 "screen_after": "note"
 },
@@ -30398,6 +31283,24 @@
 ],
 "screen_after": "note"
 },
+"note | Read receipt on or off": {
+"said": [
+"Read receipt on or off"
+],
+"screen_after": "note"
+},
+"note | Remove flag": {
+"said": [
+"Remove flag"
+],
+"screen_after": "note"
+},
+"note | Request a read receipt.": {
+"said": [
+"Request a read receipt."
+],
+"screen_after": "note"
+},
 "note | Send an email to John Smith": {
 "said": [
 "Send an email to John Smith"
@@ -30413,6 +31316,18 @@
 "note | Speed limits matter.": {
 "said": [
 "Speed limits matter."
+],
+"screen_after": "note"
+},
+"note | Star this message": {
+"said": [
+"Star this message"
+],
+"screen_after": "note"
+},
+"note | Status.": {
+"said": [
+"Status."
 ],
 "screen_after": "note"
 },
@@ -30434,9 +31349,21 @@
 ],
 "screen_after": "note"
 },
+"note | The status of the order is late.": {
+"said": [
+"The status of the order is late."
+],
+"screen_after": "note"
+},
 "note | The trial period is over": {
 "said": [
 "The trial period is over"
+],
+"screen_after": "note"
+},
+"note | This is of high importance.": {
+"said": [
+"This is of high importance."
 ],
 "screen_after": "note"
 },
@@ -32037,6 +32964,12 @@
 ],
 "screen_after": "note"
 },
+"note | high": {
+"said": [
+"high"
+],
+"screen_after": "note"
+},
 "note | history": {
 "said": [
 "history"
@@ -32064,6 +32997,12 @@
 "note | import radiosure": {
 "said": [
 "import radiosure"
+],
+"screen_after": "note"
+},
+"note | importance": {
+"said": [
+"importance"
 ],
 "screen_after": "note"
 },
@@ -32352,6 +33291,12 @@
 "note | louder": {
 "said": [
 "Loudest volume. Volume 100 percent."
+],
+"screen_after": "note"
+},
+"note | low": {
+"said": [
+"low"
 ],
 "screen_after": "note"
 },
@@ -35008,6 +35953,16 @@
 ],
 "screen_after": "web"
 },
+"web | Change importance": {
+"calls": [
+"call.command('Change importance')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Change importance"
+],
+"screen_after": "web"
+},
 "web | Contacts": {
 "calls": [
 "call.command('Contacts')",
@@ -35096,6 +36051,36 @@
 ],
 "screen_after": "web"
 },
+"web | Flag or unflag": {
+"calls": [
+"call.command('Flag or unflag')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Flag or unflag"
+],
+"screen_after": "web"
+},
+"web | Flag the car down at the corner.": {
+"calls": [
+"call.command('Flag the car down at the corner.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Flag the car down at the corner."
+],
+"screen_after": "web"
+},
+"web | Flag.": {
+"calls": [
+"call.command('Flag.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Flag."
+],
+"screen_after": "web"
+},
 "web | Go to October 30": {
 "calls": [
 "call.command('Go to October 30')",
@@ -35122,9 +36107,79 @@
 ],
 "screen_after": "help"
 },
+"web | High importance.": {
+"calls": [
+"call.command('High importance.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: High importance."
+],
+"screen_after": "web"
+},
+"web | Importance": {
+"calls": [
+"call.command('Importance')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Importance"
+],
+"screen_after": "web"
+},
+"web | Is it flagged?": {
+"calls": [
+"call.command('Is it flagged?')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Is it flagged?"
+],
+"screen_after": "web"
+},
 "web | Lower other apps on.": {
 "said": [
 "Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "web"
+},
+"web | Mark as read when you get it.": {
+"calls": [
+"call.command('Mark as read when you get it.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Mark as read when you get it."
+],
+"screen_after": "web"
+},
+"web | Mark as read.": {
+"calls": [
+"call.command('Mark as read.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Mark as read."
+],
+"screen_after": "web"
+},
+"web | Mark as unread": {
+"calls": [
+"call.command('Mark as unread')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Mark as unread"
+],
+"screen_after": "web"
+},
+"web | Message status": {
+"calls": [
+"call.command('Message status')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Message status"
 ],
 "screen_after": "web"
 },
@@ -35210,6 +36265,36 @@
 ],
 "screen_after": "web"
 },
+"web | Read receipt on or off": {
+"calls": [
+"call.command('Read receipt on or off')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Read receipt on or off"
+],
+"screen_after": "web"
+},
+"web | Remove flag": {
+"calls": [
+"call.command('Remove flag')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Remove flag"
+],
+"screen_after": "web"
+},
+"web | Request a read receipt.": {
+"calls": [
+"call.command('Request a read receipt.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Request a read receipt."
+],
+"screen_after": "web"
+},
 "web | Send an email to John Smith": {
 "calls": [
 "call.command('Send an email to John Smith')",
@@ -35233,6 +36318,26 @@
 "web | Speed limits matter.": {
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
+],
+"screen_after": "web"
+},
+"web | Star this message": {
+"calls": [
+"call.command('Star this message')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Star this message"
+],
+"screen_after": "web"
+},
+"web | Status.": {
+"calls": [
+"call.command('Status.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Status."
 ],
 "screen_after": "web"
 },
@@ -35262,6 +36367,16 @@
 ],
 "screen_after": "web"
 },
+"web | The status of the order is late.": {
+"calls": [
+"call.command('The status of the order is late.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: The status of the order is late."
+],
+"screen_after": "web"
+},
 "web | The trial period is over": {
 "calls": [
 "call.command('The trial period is over')",
@@ -35269,6 +36384,16 @@
 ],
 "said": [
 "session handled: The trial period is over"
+],
+"screen_after": "web"
+},
+"web | This is of high importance.": {
+"calls": [
+"call.command('This is of high importance.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: This is of high importance."
 ],
 "screen_after": "web"
 },
@@ -37646,6 +38771,16 @@
 ],
 "screen_after": "web"
 },
+"web | high": {
+"calls": [
+"call.command('high')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: high"
+],
+"screen_after": "web"
+},
 "web | history": {
 "calls": [
 "call.menu.start()",
@@ -37693,6 +38828,16 @@
 ],
 "said": [
 "session handled: import radiosure"
+],
+"screen_after": "web"
+},
+"web | importance": {
+"calls": [
+"call.command('importance')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: importance"
 ],
 "screen_after": "web"
 },
@@ -38121,6 +39266,16 @@
 "web | louder": {
 "said": [
 "Loudest volume. Volume 100 percent."
+],
+"screen_after": "web"
+},
+"web | low": {
+"calls": [
+"call.command('low')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: low"
 ],
 "screen_after": "web"
 },

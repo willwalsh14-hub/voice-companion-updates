@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 735
-- Already had both ways: 577
-- Gaps found: 158
-- Gaps fixed (Added): 150
+- Actions inventoried: 747
+- Already had both ways: 582
+- Gaps found: 165
+- Gaps fixed (Added): 157
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -1309,6 +1309,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
+### Say read, unread, flagged and importance
+
+- Voice: "Set Say read, unread, flagged and importance to ..."
+- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
 ### Spoken email headers
 
 - Voice: "Set email header order to ..."
@@ -1917,6 +1923,36 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: I
 - Status: Both
 
+### Mark as read or unread
+
+- Voice: "Mark as read or unread"
+- Keyboard: Q
+- Status: Both
+
+### Mark as read
+
+- Voice: "Mark as read"
+- Keyboard: Alt, 1, 11
+- Status: Added: Alt menu path
+
+### Mark as unread
+
+- Voice: "Mark as unread"
+- Keyboard: Alt, 1, 12
+- Status: Added: Alt menu path
+
+### Flag or unflag
+
+- Voice: "Flag or unflag"
+- Keyboard: X
+- Status: Both
+
+### Message status
+
+- Voice: "Message status"
+- Keyboard: Alt, 1, 14
+- Status: Added: Alt menu path
+
 ## Alt menu, Email: Select
 
 ### Mark or unmark message
@@ -2352,6 +2388,44 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "Redo"
 - Keyboard: Ctrl+Y
 - Status: Both
+
+## Alt menu, Email draft: Importance and read receipt
+
+### Change importance
+
+- Voice: "Change importance"
+- Keyboard: Ctrl+Shift+I
+- Status: Both
+
+### High importance
+
+- Voice: "High importance"
+- Keyboard: Alt, 7, 2
+- Status: Added: Alt menu path
+
+### Normal importance
+
+- Voice: "Normal importance"
+- Keyboard: Alt, 7, 3
+- Status: Added: Alt menu path
+
+### Low importance
+
+- Voice: "Low importance"
+- Keyboard: Alt, 7, 4
+- Status: Added: Alt menu path
+
+### Read receipt on or off
+
+- Voice: "Read receipt on or off"
+- Keyboard: Ctrl+Shift+T
+- Status: Both
+
+### Importance and receipt now
+
+- Voice: "Importance"
+- Keyboard: Alt, 7, 6
+- Status: Added: Alt menu path
 
 ## Alt menu, Note: Notepad
 

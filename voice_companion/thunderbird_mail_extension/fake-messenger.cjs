@@ -47,6 +47,8 @@ function createFakeMessenger() {
       headerMessageId: `msg${i}@example.com`, html: i === 25 ? '<html><head><title>x</title></head><body><p>Latest <b>news</b></p></body></html>' : '',
       plain: `Plain text of message ${i}`, replyTo: i === 25 ? 'Replies <replies@example.com>' : '',
       attachments: [],
+      // Thunderbird's own status, beyond read: the Experiment reads replied, forwarded and importance.
+      flagged: i === 23, junk: false, replied: i === 25, forwarded: i === 24, priority: i === 25 ? 5 : i === 22 ? 2 : 4,
     });
   }
   // Message 24 has two files, an inline picture without a name (part of its look), and an
@@ -59,7 +61,8 @@ function createFakeMessenger() {
     {partName: '1.5', name: 'old.txt', contentType: 'text/x-moz-deleted', data: bytes('')},
   ];
   const folder = id => state.folders.find(f => f.id === id) || null;
-  const header = m => ({id: m.id, date: m.date, author: m.author, subject: m.subject, read: m.read, size: m.size,
+  const header = m => ({id: m.id, date: m.date, author: m.author, subject: m.subject, read: m.read, flagged: m.flagged === true,
+    junk: m.junk === true, size: m.size,
     recipients: m.recipients, ccList: m.ccList, headerMessageId: m.headerMessageId, folder: folder(m.folderId)});
   const lists = new Map();
   let nextList = 1, nextTab = 1, nextAttachment = 1;
@@ -101,6 +104,13 @@ function createFakeMessenger() {
       },
       continueList: async id => { const list = lists.get(id); lists.delete(id); return page(list.rest, list.size); },
       get: async id => header(state.messages.find(m => m.id === id)),
+      // Like Thunderbird 128: read, flagged and junk can change; a message that is gone throws.
+      update: async (id, properties) => {
+        const m = state.messages.find(x => x.id === id);
+        if (!m) throw new Error('Message not found: ' + id);
+        for (const name of ['read', 'flagged', 'junk']) if (name in properties) m[name] = properties[name];
+        state.updates = (state.updates || []).concat([{id, ...properties}]);
+      },
       getFull: async id => {
         const m = state.messages.find(x => x.id === id);
         return {headers: m.replyTo ? {'reply-to': [m.replyTo]} : {}, contentType: 'multipart/alternative',
@@ -221,6 +231,17 @@ function createFakeMessenger() {
       showSetup: async () => { state.shown++; return {shown: true}; },
       captureSignIn: async seconds => { state.capture.push(seconds); return {capturing: seconds > 0}; },
       takeSignIn: async () => { const found = state.signIn || {url: '', where: ''}; state.signIn = null; return found; },
+      // Replied, forwarded and importance, as the Experiment reads them (nsMsgPriority names).
+      messageStatus: async ids => {
+        if (state.noStatus) throw new Error('older Experiment');
+        const names = {6: 'highest', 5: 'high', 4: 'normal', 3: 'low', 2: 'lowest'};
+        const found = {};
+        for (const id of ids) {
+          const m = state.messages.find(x => x.id === id);
+          if (m) found[String(id)] = {replied: m.replied === true, forwarded: m.forwarded === true, priority: names[m.priority] || ''};
+        }
+        return found;
+      },
       // Which Thunderbird this is, and which profile it opened (experiment about()).
       about: async () => ({...state.about, composing: state.openCompose.length + state.userComposing}),
       // Ask the server for new mail in one folder, as Thunderbird does when a folder is opened.

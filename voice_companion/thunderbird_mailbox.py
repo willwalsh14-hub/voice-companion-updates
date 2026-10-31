@@ -37,6 +37,10 @@ class SignInNeeded(Exception):
 UNSUPPORTED = 'Unsupported mail request.'
 NEEDS_NEWER_ADDON = ('Attachments need the newer Voice Companion connection in Thunderbird. Close Thunderbird, '
                      'then try again. Voice Companion updates the connection when it starts Thunderbird.')
+OLD_ADDON_MARK = ('Marking messages needs the newer Voice Companion connection in Thunderbird. Close Thunderbird, '
+                  'then try again. Voice Companion updates the connection when it starts Thunderbird.')
+# Thunderbird's importance names, highest first (the add-on passes them as they are).
+PRIORITIES = ('highest', 'high', 'normal', 'low', 'lowest')
 UPLOAD_PIECE = 512 * 1024      # a file to send goes to Thunderbird in pieces this size (1 MB message limit)
 SAVE_PIECE = 1024 * 1024       # an attachment comes back in pieces this size
 NOT_CONNECTED = ('Thunderbird is not connected to Voice Companion. '
@@ -193,7 +197,10 @@ class ThunderbirdMailbox:
                          'sender_name': name, 'subject': item.get('subject') or '(no subject)',
                          'date': message_date(item.get('date')),
                          'size': item.get('size') if isinstance(item.get('size'), int) else 'unavailable',
-                         'unread': bool(item.get('unread'))})
+                         'unread': bool(item.get('unread')), 'flagged': item.get('flagged') is True,
+                         'junk': item.get('junk') is True, 'replied': item.get('replied') is True,
+                         'forwarded': item.get('forwarded') is True,
+                         'priority': item.get('priority') if item.get('priority') in PRIORITIES else ''})
         following = page.get('next')
         return rows, (str(following) if following is not None else None)
 
@@ -219,7 +226,25 @@ class ThunderbirdMailbox:
         # None: an older add-on, or Thunderbird could not list them.
         found = parts.get('attachments')
         body.attachments = self._attachment_rows(found) if isinstance(found, list) else None
+        # Thunderbird marks a message read when it is opened (add-on 1.8.0 and newer).
+        body.marked_read = parts.get('read') is True
         return body
+
+    def mark(self, ids, read=None, flagged=None):
+        """Mark messages read or unread, flagged or not: {changed, missing}."""
+        params = {'ids': [self._message(item) for item in ids]}
+        if read is not None:
+            params['read'] = bool(read)
+        if flagged is not None:
+            params['flagged'] = bool(flagged)
+        try:
+            result = call('mark', **params)
+        except MailboxError as exc:
+            if 'Unsupported mail request' in str(exc):
+                raise MailboxError(OLD_ADDON_MARK) from None
+            raise
+        result = result if isinstance(result, dict) else {}
+        return {'changed': int(result.get('changed') or 0), 'missing': int(result.get('missing') or 0)}
 
     @staticmethod
     def _attachment_rows(items):
@@ -346,6 +371,11 @@ def submit(draft, account):
     params = {'identityId': account.get('identity_id', ''), 'email': account.get('address', ''), 'to': [recipient], 'cc': list(draft.cc),
               'bcc': list(getattr(draft, 'bcc', [])), 'subject': subject, 'plain': body,
               'html': formatted_body(draft), 'plainOnly': False}  # Thunderbird keeps an account set to plain text
+    # Importance and a read receipt, only when asked for (the account's own settings stay otherwise).
+    if getattr(draft, 'importance', '') in ('high', 'low'):
+        params['priority'] = draft.importance
+    if getattr(draft, 'read_receipt', False) is True:
+        params['returnReceipt'] = True
     if context.get('action') in ('reply', 'reply_all') and context.get('source_id') is not None:
         params['reply'] = {'messageId': ThunderbirdMailbox._message(context['source_id']),
                            'type': 'replyToAll' if context['action'] == 'reply_all' else 'replyToSender'}

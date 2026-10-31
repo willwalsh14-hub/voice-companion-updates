@@ -60,6 +60,50 @@ HEADER_REQUESTS = {
 }
 HEADER_COMMANDS = {phrase: name for name, phrases in HEADER_REQUESTS.items() for phrase in phrases}
 
+# Read, unread and flags (Will, October 30, 2026). "Mark" alone and "mark message 3" select
+# messages; these name what to mark them as. Q and X are their keys (input_parity.SCREEN_KEYS).
+STATUS_PHRASES = {
+    ('read', True): ('mark as read', 'mark read', 'mark message as read', 'mark this message as read', 'mark it as read',
+                     'mark it read', 'mark email as read', 'mark this email as read', 'mark messages as read',
+                     'mark selected as read', 'mark the message as read'),
+    ('read', False): ('mark as unread', 'mark unread', 'mark message as unread', 'mark this message as unread',
+                      'mark it as unread', 'mark it unread', 'mark email as unread', 'mark this email as unread',
+                      'mark messages as unread', 'mark selected as unread', 'mark the message as unread',
+                      'mark as not read', 'keep as unread', 'keep unread'),
+    ('read', None): ('mark as read or unread', 'mark read or unread', 'toggle read', 'read or unread', 'toggle read status'),
+    ('flagged', True): ('flag', 'flag message', 'flag this message', 'flag it', 'flag email', 'flag this email',
+                        'flag messages', 'flag the message', 'star', 'star message', 'star this message', 'add a flag', 'add flag'),
+    ('flagged', False): ('unflag', 'unflag message', 'unflag this message', 'unflag it', 'remove flag', 'remove the flag',
+                         'clear flag', 'clear the flag', 'unstar', 'unstar message', 'remove star'),
+    ('flagged', None): ('flag or unflag', 'flag or unflag message', 'toggle flag', 'toggle the flag'),
+}
+STATUS_CHANGES = {phrase: key for key, phrases in STATUS_PHRASES.items() for phrase in phrases}
+STATUS_QUESTIONS = ('message status', 'what is the status', "what's the status", 'read the status', 'read status',
+                    'is it read', 'is this read', 'is it unread', 'is it flagged', 'is this flagged', 'status')
+MARK_NEEDS_THUNDERBIRD = ('This account cannot mark messages in Voice Companion yet. '
+                          'Add it in Thunderbird to mark messages read, unread or flagged.')
+IMPORTANCE_WORDS = {'highest': 'highest importance', 'high': 'high importance', 'low': 'low importance',
+                    'lowest': 'lowest importance'}
+
+
+def status_words(row, full=False):
+    """'Unread, flagged, replied, high importance' for a message row; '' when there is nothing to say.
+    full: also says Read, so a question about the message always has an answer."""
+    words = []
+    if row.get('unread'):
+        words.append('unread')
+    elif full:
+        words.append('read')
+    for name in ('flagged', 'replied', 'forwarded'):
+        if row.get(name):
+            words.append(name)
+    if row.get('priority') in IMPORTANCE_WORDS:
+        words.append(IMPORTANCE_WORDS[row['priority']])
+    if full and not row.get('flagged'):
+        words.append('not flagged')
+    text = ', '.join(words)
+    return text[:1].upper() + text[1:]
+
 # Everyday words for the inbox's own commands (sweep, October 2026): a new user says
 # "next email", "close message" or "check my email", not the command names.
 EVERYDAY_COMMANDS = {
@@ -413,6 +457,9 @@ class MailSession:
         except (OSError,ValueError,TypeError):preferences={}
         order=preferences.get('email_header_order','from, subject, date').split(',')
         parts=[]
+        status = status_words(row) if preferences.get('email_status_words', True) else ''
+        if status:
+            parts.append(status)
         for header in order:
             header=header.strip().lower()
             if header not in ('from','subject','date','size'):continue
@@ -427,6 +474,45 @@ class MailSession:
             parts.append((header.capitalize()+' ' if preferences.get('email_header_names',False) else '')+str(value))
         boundary=self._message_boundary(number) if announce_boundary else ''
         return '. '.join(parts)+'. '+str(number)+' of '+str(len(self.rows))+'.'
+
+    def message_status(self):
+        """Read or unread, and flagged, replied, forwarded and importance when they apply."""
+        row = self.rows[self.current - 1]
+        return status_words(row, full=True) + '.'
+
+    def change_status(self, name, value):
+        """Mark the selected messages, or the one you are on: read or unread, flagged or not.
+        value None turns it over: on if any of them is off, else off."""
+        ids = self._action_ids()
+        rows = [row for row in self.rows if row['id'] in ids]
+        marker = getattr(self.client(), 'mark', None)
+        if marker is None:
+            return MARK_NEEDS_THUNDERBIRD
+        now = {'read': lambda row: not row.get('unread'), 'flagged': lambda row: bool(row.get('flagged'))}[name]
+        if value is None:
+            value = not all(now(row) for row in rows) if rows else True
+        result = marker(ids, **{name: value})
+        for number, row in enumerate(self.rows, 1):
+            if row['id'] in ids:
+                if name == 'read':
+                    row['unread'] = not value
+                else:
+                    row['flagged'] = value
+                if row['id'] in self.marked_ids:
+                    self.marked_ids[row['id']] = self._summary(number)
+        words = {('read', True): 'marked as read', ('read', False): 'marked as unread',
+                 ('flagged', True): 'flagged', ('flagged', False): 'not flagged now'}[(name, value)]
+        done = result.get('changed', len(ids))
+        if len(ids) == 1:
+            said = {('read', True): 'Marked as read.', ('read', False): 'Marked as unread.',
+                    ('flagged', True): 'Flagged.', ('flagged', False): 'Flag removed.'}[(name, value)]
+        else:
+            said = str(done) + ' ' + ('message' if done == 1 else 'messages') + ' ' + words + '.'
+        missing = result.get('missing', 0)
+        if missing:
+            said += ' ' + str(missing) + (' message was' if missing == 1 else ' messages were') + \
+                    ' not changed. It may have been moved or deleted. Say list messages to refresh.'
+        return said
 
     def _message_boundary(self,number):
         first=number==1 and self.page_cursor is None
@@ -522,6 +608,10 @@ class MailSession:
         number = self._number(n)
         row = self.rows[number - 1]
         body = self.client().read_message(row['id'], self.folder_id)
+        if getattr(body, 'marked_read', False):
+            row['unread'] = False   # Thunderbird marked it read, as when it is opened there
+            if row['id'] in self.marked_ids:
+                self.marked_ids[row['id']] = self._summary(number)
         self.current = number
         self.view = 'message'
         found = getattr(body, 'attachments', None)
@@ -723,6 +813,12 @@ class MailSession:
                 return self.page_edge(command in ('last message','end of list'))
             if command in ('next','previous') and self.rows:
                 command += ' message'
+            if (command in STATUS_CHANGES or command in STATUS_QUESTIONS) and not self.rows:
+                return self._empty_list()
+            if command in STATUS_QUESTIONS and self.rows and self.current:
+                return self.message_status()
+            if command in STATUS_CHANGES and self.rows:
+                return self.change_status(*STATUS_CHANGES[command])
             if command in ('message details','who is this from','read message details') and (self.view == 'message' or self.rows and self.current):
                 # In the list this repeats the summary of the message you are on.
                 from mail_attachments import summary

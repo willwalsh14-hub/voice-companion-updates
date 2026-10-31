@@ -36,7 +36,8 @@ class MailBridge {
       return {id: Number.isInteger(id) ? id : -1, error: {code: 'invalid', message: 'Unsupported mail request.'}};
     }
     // Anything that changes mail or folders makes the kept list out of date.
-    if (!MailBridge.READ_ONLY.includes(message.method)) this.listCache = null;
+    // Marking changes the kept list itself (keepMarks), so it is kept.
+    if (!MailBridge.READ_ONLY.includes(message.method) && message.method !== 'mark') this.listCache = null;
     try {
       const result = await this[message.method](message.params || {});
       return {id, result: result === undefined ? null : result};
@@ -164,14 +165,64 @@ class MailBridge {
     }
     if (!headers) headers = await this.allHeaders(folderId);
     if (last) offset = headers.length ? Math.floor((headers.length - 1) / limit) * limit : 0;
-    const rows = headers.slice(offset, offset + limit).map(({header}) => ({
+    const page = headers.slice(offset, offset + limit);
+    const status = await this.status(page.map(({header}) => header.id));
+    const rows = page.map(({header}) => Object.assign({
       id: header.id, from: header.author || '', subject: header.subject || '',
-      date: header.date ? new Date(header.date).toISOString() : '', size: header.size, unread: header.read === false
-    }));
+      date: header.date ? new Date(header.date).toISOString() : '', size: header.size, unread: header.read === false,
+      flagged: header.flagged === true, junk: header.junk === true
+    }, status[header.id] || {}));
     const answer = {rows, offset, next: headers.length > offset + limit ? offset + limit : null};
     if (headers === (this.listCache && this.listCache.headers)) answer.total = headers.length;
     if (mailCheck) answer.mailCheck = mailCheck;
     return answer;
+  }
+
+  // Replied, forwarded and importance: Thunderbird's add-on interface does not give them, so the
+  // Experiment reads them from Thunderbird's own message list. {id: {replied, forwarded, priority}};
+  // empty when the Experiment is older or cannot read them (nothing is then said about them).
+  async status(ids) {
+    const setup = this.api.voiceCompanionSetup;
+    if (!ids.length || !setup || typeof setup.messageStatus !== 'function') return {};
+    try {
+      const found = await setup.messageStatus(ids);
+      const status = {};
+      for (const id of ids) {
+        const item = found && found[String(id)];
+        if (!item) continue;
+        status[id] = {replied: item.replied === true, forwarded: item.forwarded === true,
+          priority: MailBridge.PRIORITIES.includes(item.priority) ? item.priority : ''};
+      }
+      return status;
+    } catch (error) {
+      return {};
+    }
+  }
+
+  // Mark messages read or unread, flagged or not, as Thunderbird's own Mark menu does.
+  // The kept list is changed to match, so the next page says the new state.
+  async mark({ids, read, flagged}) {
+    if (!Array.isArray(ids) || !ids.length || !ids.every(Number.isInteger)) throw MailBridge.fail('message', 'Choose a message first.');
+    const changes = {};
+    if (typeof read === 'boolean') changes.read = read;
+    if (typeof flagged === 'boolean') changes.flagged = flagged;
+    if (!Object.keys(changes).length) throw MailBridge.fail('mark', 'Nothing to change.');
+    const done = [];
+    for (const id of ids) {
+      try {
+        await this.api.messages.update(id, changes);
+        done.push(id);
+      } catch (error) { /* a message that is gone: counted below */ }
+    }
+    this.keepMarks(done, changes);
+    if (!done.length) throw MailBridge.fail('mark', 'Thunderbird could not change that message. It may have been moved or deleted. Say list messages to refresh.');
+    return {changed: done.length, missing: ids.length - done.length};
+  }
+
+  keepMarks(ids, changes) {
+    const kept = this.listCache;
+    if (!kept) return;
+    for (const item of kept.headers) if (ids.includes(item.id)) Object.assign(item.header, changes);
   }
 
   static textOf(part, type, found = []) {
@@ -196,7 +247,10 @@ class MailBridge {
     // The message's files, said when it is read. null: Thunderbird could not list them.
     let attachments = null;
     try { attachments = await this.listFiles(messageId); } catch (error) { attachments = null; }
-    return {html, plain, attachments};
+    // Opening a message marks it read, as it does in Thunderbird.
+    let read = false;
+    try { await this.api.messages.update(messageId, {read: true}); read = true; this.keepMarks([messageId], {read: true}); } catch (error) { read = false; }
+    return {html, plain, attachments, read};
   }
 
   async context({messageId}) {
@@ -548,6 +602,8 @@ class MailBridge {
 
   async sendWith(params, files) {
     const {identityId, email = '', to = [], cc = [], bcc = [], subject = '', html = '', plain = '', plainOnly = false, reply, forward} = params;
+    const priority = MailBridge.PRIORITIES.includes(params.priority) ? params.priority : '';
+    const returnReceipt = params.returnReceipt === true;
     const choices = await this.sendingIdentities(identityId, email);
     if (!choices.length) {
       throw MailBridge.fail('identity', 'This address is no longer in Thunderbird. Say add Thunderbird account to set it up again.');
@@ -555,7 +611,7 @@ class MailBridge {
     let failure = null, spare = null;
     for (let index = 0; index < choices.length; index++) {
       const {account, identity} = choices[index];
-      const tab = await this.compose(identity.id, {to, cc, bcc, subject, html, plain, plainOnly, reply, forward});
+      const tab = await this.compose(identity.id, {to, cc, bcc, subject, html, plain, plainOnly, reply, forward, priority, returnReceipt});
       try {
         await this.attachFiles(tab, files, forward);
       } catch (error) {
@@ -593,7 +649,7 @@ class MailBridge {
   }
 
   // A compose window for this identity, minimized and filled in.
-  async compose(identityId, {to, cc, bcc, subject, html, plain, plainOnly, reply, forward}) {
+  async compose(identityId, {to, cc, bcc, subject, html, plain, plainOnly, reply, forward, priority = '', returnReceipt = false}) {
     let tab;
     if (reply) {
       tab = await this.api.compose.beginReply(reply.messageId, reply.type === 'replyToAll' ? 'replyToAll' : 'replyToSender', {identityId});
@@ -608,6 +664,10 @@ class MailBridge {
     } catch (error) { /* minimizing is only a courtesy */ }
     const current = await this.api.compose.getComposeDetails(tab.id);
     const details = {to, cc, bcc, subject};
+    // Importance and a read receipt, as in Thunderbird's own Options menu while writing.
+    // Left alone unless asked, so the account's own settings stay.
+    if (priority) details.priority = priority;
+    if (returnReceipt) details.returnReceipt = true;
     if (current.isPlainText || plainOnly) {
       details.isPlainText = true;
       details.plainTextBody = plain + (reply || forward ? '\n\n' + (current.plainTextBody || '') : '');
@@ -717,10 +777,11 @@ MailBridge.LIST_KEEP_MS = 120000;   // how long a folder's list is reused for it
 MailBridge.CHUNK = 1024 * 1024;              // largest piece of an attachment sent to Voice Companion
 MailBridge.MAX_UPLOAD = 60 * 1024 * 1024;    // largest file Voice Companion may attach
 MailBridge.UPLOAD_KEEP_MS = 10 * 60 * 1000;  // an unfinished file to send is dropped after this long
+MailBridge.PRIORITIES = ['highest', 'high', 'normal', 'low', 'lowest'];
 MailBridge.READ_ONLY = ['about', 'accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn', 'background',
   'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
 MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'move', 'trash',
-  'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'send', 'openAccountSetup', 'setupPage', 'setupContinue', 'fillPassword', 'showSetup',
+  'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'mark', 'send', 'openAccountSetup', 'setupPage', 'setupContinue', 'fillPassword', 'showSetup',
   'captureSignIn', 'takeSignIn', 'minimize', 'background', 'quit', 'about', 'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
 globalThis.MailBridge = MailBridge;
 
