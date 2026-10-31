@@ -45,15 +45,23 @@ def read_saved_list(path, empty):
 
     A missing file is empty. A file that cannot be read now (Windows: an antivirus
     scan or OneDrive holds it) raises OSError, so a caller never writes over it with
-    a short list. A damaged file gives `empty` and its text, for keep_damaged."""
+    a short list. A damaged file gives `empty` and its text, for keep_damaged.
+
+    Bytes that are not UTF-8 (a disk error, or another program wrote the file) make
+    the file damaged; they are kept exactly as they were, never raised as an error."""
     import json
     path = Path(path)
     try:
-        text = path.read_text(encoding='utf-8')
+        text = path.read_text(encoding='utf-8', errors='surrogateescape')
     except FileNotFoundError:
         return empty, None
     try:
-        return json.loads(text), None
+        text.encode('utf-8')
+    except UnicodeEncodeError:
+        return empty, text
+    try:
+        # Notepad may save the file with a byte order mark; it is not damage.
+        return json.loads(text[1:] if text.startswith('\ufeff') else text), None
     except ValueError:
         return empty, text
 
@@ -61,4 +69,4 @@ def read_saved_list(path, empty):
 def keep_damaged(path, text):
     """Keep a damaged saved list beside it ("web-history.damaged.json") before it is replaced."""
     path = Path(path)
-    write_text_atomic(path.with_name(path.stem + '.damaged' + path.suffix), text)
+    write_text_atomic(path.with_name(path.stem + '.damaged' + path.suffix), text, encoding_errors='surrogateescape')

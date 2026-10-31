@@ -217,6 +217,33 @@ class SavedListsKeptTests(unittest.TestCase):
                 kept = self.root / name.replace('.json', '.damaged.json')
                 self.assertEqual(kept.read_text(encoding='utf-8'), damaged)
 
+    def test_a_file_with_bytes_that_are_not_text_is_damaged_not_an_error(self):
+        # A disk error or another program left bytes that are not UTF-8. Opening the web
+        # browser stopped with UnicodeDecodeError, and favorites could not be listed.
+        from browser_menu import BrowserMenu
+        from web_assistant import Favorites
+        for name in ('web-favorites.json', 'web-history.json'):
+            garbled = (self.root / name).read_bytes()[:30] + b'\xff\xfe broken'
+            (self.root / name).write_bytes(garbled)
+        self.assertEqual(Favorites(self.root).all(), {})
+        menu = BrowserMenu(self.root)
+        self.assertEqual(menu.history(), [])
+        self.favorites.add('New one', 'https://new.example/')
+        menu.record({'url': 'https://new.example/', 'title': 'New'})
+        for name in ('web-favorites.json', 'web-history.json'):
+            with self.subTest(name=name):
+                # The damaged bytes are kept exactly, and the new list is good text.
+                self.assertTrue((self.root / name.replace('.json', '.damaged.json')).read_bytes().endswith(b'\xff\xfe broken'))
+                (self.root / name).read_text(encoding='utf-8')
+        self.assertEqual([x['name'] for x in self.favorites.all().values()], ['New one'])
+
+    def test_a_file_saved_by_notepad_with_a_byte_order_mark_still_lists_everything(self):
+        for name in ('web-favorites.json', 'web-history.json'):
+            path = self.root / name
+            path.write_bytes(b'\xef\xbb\xbf' + path.read_bytes())
+        self.assertEqual(len(self.favorites.all()), 5)
+        self.assertEqual(len(self.menu.history()), 5)
+
     def test_cleaning_that_cannot_be_written_still_lists_every_favorite(self):
         import json
         data = json.loads((self.root / 'web-favorites.json').read_text(encoding='utf-8'))
