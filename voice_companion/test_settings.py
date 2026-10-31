@@ -251,6 +251,8 @@ class SettingNotSavedTests(CompanionTestCase):
         super().setUp()
         for name, value in dict(PREFERENCES=dict(DEFAULTS), VERBOSITY='high', SPEECH_RATE=0, SPEECH_PITCH=0,
                                 SPEECH_VOLUME=100, PUNCTUATION_LEVEL='some', KEYBOARD_SPEECH=None, web_session=None,
+                                MICROPHONE_OFF=False, MICROPHONE_FAILED=False, MICROPHONE_ANNOUNCED=False,
+                                TRANSCRIPT=__import__('speech_transcript').Transcript(),
                                 save_speech_settings=REAL_SAVE_SPEECH_SETTINGS).items():
             p = patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
         for target in ('storage.write_text_atomic', 'app_settings.save_preferences'):
@@ -262,7 +264,9 @@ class SettingNotSavedTests(CompanionTestCase):
                   ('punctuation all', lambda: companion.PUNCTUATION_LEVEL == 'all', 'Punctuation all.'),
                   ('commands only', lambda: companion.INPUT_MODE == 'commands', 'Commands only.'),
                   ('keep audio playing in the background on', lambda: companion.PREFERENCES['keep_audio_playing'], 'Keep audio playing in the background on.'),
-                  ('capital letters raise pitch', lambda: companion.PREFERENCES['capital_letters'] == 'raise pitch', 'raise pitch'))
+                  ('capital letters raise pitch', lambda: companion.PREFERENCES['capital_letters'] == 'raise pitch', 'raise pitch'),
+                  ('start transcript', lambda: companion.PREFERENCES['speech_transcript'], 'Transcript on.'),
+                  ('turn off the microphone', lambda: companion.MICROPHONE_OFF, 'Microphone off.'))
         for command, changed, words in checks:
             with self.subTest(command=command):
                 self.said.clear()

@@ -2560,11 +2560,10 @@ def apply_transcript():
 
 def set_transcript(on, mode):
     PREFERENCES['speech_transcript'] = bool(on)
-    try:save_preferences()
-    except OSError:pass   # it still works now; it is only not remembered
+    unsaved = remembered(save_preferences)   # it still works now; it is only not remembered
     apply_transcript()
-    speak('Transcript on. I will write everything I say, and every key you press, to a file named speech-transcript in the Voice Companion data folder. Say stop transcript to turn it off.'
-          if on else 'Transcript off.')
+    speak(('Transcript on. I will write everything I say, and every key you press, to a file named speech-transcript in the Voice Companion data folder. Say stop transcript to turn it off.'
+           if on else 'Transcript off.') + unsaved)
     return mode
 
 
@@ -2608,17 +2607,16 @@ def set_microphone(on, mode):
     # Not when it still cannot open: "The microphone is on." is said once it really works.
     MICROPHONE_ANNOUNCED = on and not MICROPHONE_FAILED
     PREFERENCES['microphone_off'] = not on
-    try:save_preferences()
-    except OSError:pass   # The switch still works now; it is only not remembered.
+    unsaved = remembered(save_preferences)   # The switch still works now; it is only not remembered.
     if on:
         if MICROPHONE_FAILED:
             # Never "Voice commands are on" when the microphone could not open.
-            speak('Microphone on. It could not start yet, so use the keys. Voice commands start by themselves when it works.')
+            speak('Microphone on. It could not start yet, so use the keys. Voice commands start by themselves when it works.' + unsaved)
         else:
             speak('Microphone on. ' + ('Say wake up, or press Control+F12, to give voice commands.' if mode == 'sleep'
-                                       else 'Voice commands are on.'))
+                                       else 'Voice commands are on.') + unsaved)
     else:
-        speak('Microphone off. Voice Companion is not listening at all. Press F9 to turn it back on.')
+        speak('Microphone off. Voice Companion is not listening at all. Press F9 to turn it back on.' + unsaved)
     return mode
 
 
