@@ -554,7 +554,12 @@ def apply_keyboard_edit(payload,mode):
     else:
         logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
         editor=document if logical=='document' else email_draft
-        replace_keyboard_text(editor,payload['before'],payload['after'],payload['caret'],payload.get('selection'))
+        try:replace_keyboard_text(editor,payload['before'],payload['after'],payload['caret'],payload.get('selection'))
+        except ValueError:
+            # Refused (it would join table cells): the window gets the unchanged text back.
+            EDIT_ACK[payload['source']]=max(EDIT_ACK.get(payload['source'],0),payload['seq'])
+            sync_app_context(mode,True)
+            raise
         if payload['before']!=payload['after']:KEYBOARD_DIRTY[id(editor)]=(editor,time.monotonic())
     EDIT_ACK[payload['source']]=payload['seq']
     sync_app_context(mode)

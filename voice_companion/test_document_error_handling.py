@@ -167,5 +167,49 @@ class RecentDocumentsOnAFullDisk(DocumentFlowCase):
         self.assertEqual(sorted(p.name for p in self.root.iterdir() if p.name.startswith('recent')), ['recent-documents.json'])
 
 
+class KeyboardEditsInATable(DocumentFlowCase):
+    """Backspace at the start of a cell, or Delete at the end of one, in the typing window.
+    Joining or splitting cells broke the table, so every later save failed and the app stopped."""
+    def make_table(self):
+        import queue
+        from unittest.mock import Mock
+        app.document = VoiceDocument(self.default, title='Table')
+        app.handle('Intro.', 'document')
+        app.handle('create table with two rows and two columns', 'document')
+        app.handle('A1', 'document')
+        app.document.save()
+        self.window = Mock(commands=queue.Queue())
+        self.stack.enter_context(patch.object(app, 'APP_WINDOW', self.window))
+        self.saved = self.default / 'Table.docx'
+        self.before_bytes = self.saved.read_bytes()
+        self.said.clear()
+
+    def edit(self, after):
+        context = app.app_context('document')
+        before = context['text']
+        self.window.commands.put(('text_edit', {'source': context['source'], 'before': before, 'after': after(before),
+                                                'caret': 0, 'seq': 1}))
+        return app.handle('read document', 'document')
+
+    def test_joining_or_splitting_cells_is_refused_and_the_app_keeps_running(self):
+        for name, after in (('Backspace at the start of the second cell', lambda text: text.replace('A1\n', 'A1', 1)),
+                            ('Delete at the end of the line before the table', lambda text: text.replace('Intro.\n', 'Intro.', 1)),
+                            ('Enter inside a cell', lambda text: text.replace('A1', 'A\n1', 1)),
+                            ('a selection across cells, deleted', lambda text: text.replace('Intro.\nA1\n', 'Intro.', 1))):
+            with self.subTest(name):
+                self.make_table()
+                cells = [(p.text, p.table_id, p.row, p.column) for p in app.document.paragraphs]
+                self.assertEqual(self.edit(after), 'document')
+                self.assertEqual([(p.text, p.table_id, p.row, p.column) for p in app.document.paragraphs], cells)
+                self.assertIn('table', ' '.join(self.said).lower())
+                app.document.save()   # the table can still be saved
+                self.assertEqual(app.document.path, self.saved)
+
+    def test_typing_inside_a_cell_still_works(self):
+        self.make_table()
+        self.assertEqual(self.edit(lambda text: text.replace('A1', 'A1 and more', 1)), 'document')
+        self.assertIn('A1 and more', [p.text for p in app.document.paragraphs])
+
+
 if __name__ == '__main__':
     unittest.main()
