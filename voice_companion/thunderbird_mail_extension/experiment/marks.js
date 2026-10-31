@@ -35,7 +35,7 @@ function mailServices() {
 const READ = 0x0001, FLAGGED = 0x0004;              // nsMsgMessageFlags, and IMAP \Seen, \Flagged
 const MDN_NEEDED = 0x00400000, MDN_SENT = 0x00800000;  // nsMsgMessageFlags.MDNReportNeeded / Sent
 const SENT_FOLDER = 0x00000200;                      // nsMsgFolderFlags.SentMail
-const SERVER_WAIT_MS = 30000, RETRY_WAIT_MS = 1500;
+const SERVER_WAIT_MS = 12000, RETRY_WAIT_MS = 1500;   // 3 tries stay under Voice Companion's 60-second wait
 const CONVERSATION_LIMIT = 500, CONVERSATION_MS = 3000;
 const IMPORTANT = /^\[(?:gmail|google mail)\]\/important$/i;
 const SENT_MAIL = /^\[(?:gmail|google mail)\]\/sent mail$/i;
@@ -101,20 +101,23 @@ function conversation(folder, header) {
   return found;
 }
 
-// Ask the IMAP server to store one flag, and wait for its answer. If it does not answer yes,
-// try again; then drop Thunderbird's open connections to that server and try a third time on a
-// fresh one. Will, October 31, 2026: a mark stayed in Thunderbird until Thunderbird was
-// restarted; a fresh connection is what the restart gave.
+// Ask the IMAP server to store one flag, and wait for its answer. Will, October 31, 2026: a
+// mark stayed in Thunderbird until Thunderbird was restarted; a fresh connection is what the
+// restart gave. So: no answer at all means the connection is stuck, and Thunderbird's open
+// connections to that server are dropped at once; a "no" is tried again on the same connection,
+// then on a fresh one. Three tries.
 async function storeOnServer(folder, flag, on, keys) {
   const imap = imapFolder(folder);
   if (!imap) return null;
+  let refused = 0;
   for (let attempt = 0; attempt < 3; attempt++) {
     const answer = await urlDone(listener => imap.storeImapFlags(flag, on, keys, listener));
     if (answer === true) return true;
-    if (attempt === 1) {
+    if (attempt === 2) break;
+    if (answer === null || ++refused === 2) {
       try { folder.server.closeCachedConnections(); } catch (error) { /* a new connection is made anyway */ }
     }
-    if (attempt < 2) await wait(RETRY_WAIT_MS);
+    await wait(RETRY_WAIT_MS);
   }
   return false;
 }
