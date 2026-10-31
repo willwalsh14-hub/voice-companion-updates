@@ -142,23 +142,39 @@ class ScreenWordTests(NoBrowser):
         self.started.assert_not_called()
 
     def test_video_keys_without_a_video_say_what_to_do(self):
-        for key in ('K', 'Space', 'Right', '5', 'C', 'R', 'Q', 'N', 'P', 'A', 'F', 'H', 'S', 'I', 'D', 'O', 'T', 'U', 'W',
+        for key in ('Space', 'Right', '5', 'C', 'R', 'Q', 'N', 'P', 'A', 'F', 'H', 'S', 'I', 'D', 'O', 'T', 'U', 'W',
                     'Ctrl+Up', 'comma', 'M'):
             with self.subTest(key=key):
                 self.said.clear()
                 self.assertEqual(self.press(key), 'youtube')
                 self.assertEqual(self.said[-1], ys.NO_VIDEO)
 
+    def test_k_is_no_longer_play_or_pause(self):
+        # Will, October 30, 2026: Space and Enter play and pause; K is gone.
+        self.assertNotIn('K', ys.KEYS)
+        self.assertEqual(ys.KEYS['Space'], 'play or pause video')
+        self.said.clear()
+        self.assertEqual(self.press('K'), 'youtube')
+        self.assertNotIn(ys.NO_VIDEO, self.said)
+        screen = ys.screen(self.app)
+        screen.push_player()
+        from input_parity import screen_command
+        self.assertIsNone(screen_command('K', 'youtube'))
+        self.assertEqual(ys.navigation_key(self.app, 'Enter'), 'play or pause video')
+        self.assertEqual(ys.navigation_key(self.app, 'Space'), 'play or pause video')
+        self.assertIsNone(ys.navigation_key(self.app, 'K'))
+        self.assertNotIn(' K', ys.HELP)
+
     def test_the_window_gives_letters_to_the_screen_not_to_first_letter_search(self):
         context = self.app.app_context('youtube')
         self.assertFalse(context['menu_letters'])
         from input_parity import screen_key
-        self.assertEqual(screen_key('youtube', 'k', 0, context), 'K')
+        self.assertEqual(screen_key('youtube', 'm', 0, context), 'M')
         self.assertEqual(screen_key('youtube', 'comma', 0, context), 'comma')
         # Some keyboards name the key by its character (seen with Tk on X11).
         self.assertEqual(screen_key('youtube', ',', 0, context), 'comma')
         self.assertEqual(screen_key('youtube', '.', 0, context), 'period')
-        self.assertIsNone(screen_key('youtube', 'k', 0, context, typed_text='search'))   # a typed command keeps its letters
+        self.assertIsNone(screen_key('youtube', 'm', 0, context, typed_text='search'))   # a typed command keeps its letters
         self.assertEqual(screen_key('youtube', 'f', 4, context, typed_text='search'), 'Ctrl+F')
 
     def test_a_question_owns_the_keys_until_it_is_answered(self):

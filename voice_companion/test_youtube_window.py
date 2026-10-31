@@ -71,7 +71,7 @@ class YouTubeWindowKeyTests(unittest.TestCase):
 
     def test_action_keys_reach_the_screen_and_are_never_typed(self):
         self.screen()
-        keys = (('k', 0, 'K'), ('space', 0, 'Space'), ('5', 0, '5'), ('0', 0, '0'),
+        keys = (('m', 0, 'M'), ('space', 0, 'Space'), ('5', 0, '5'), ('0', 0, '0'),
                 ('comma', 0, 'comma'), ('period', 0, 'period'), ('Up', 4, 'Ctrl+Up'), ('Down', 4, 'Ctrl+Down'),
                 ('Right', 4, 'Ctrl+Right'), ('c', 0, 'C'), ('s', 0, 'S'), ('t', 0, 'T'), ('f', 4, 'Ctrl+F'),
                 ('F5', 0, 'F5'), ('F1', 0, 'F1'), ('Left', 0, 'Left'), ('Right', 0, 'Right'), ('Down', 0, 'Down'),
@@ -117,9 +117,9 @@ class YouTubeWindowKeyTests(unittest.TestCase):
         self.screen(entry_request=(4, ''))
         if not self.wait(lambda: self.typed() == ''):
             self.fail('The box kept: ' + repr(self.typed()))
-        self.press('k')
-        if not self.wait(lambda: 'K' in self.requests()):
-            self.fail('K did not arrive. ' + str(self.window.debug_state()))
+        self.press('m')
+        if not self.wait(lambda: 'M' in self.requests()):
+            self.fail('M did not arrive. ' + str(self.window.debug_state()))
 
     def test_a_letter_after_typed_letters_is_typed_not_a_video_key(self):
         # B is no video key, so it starts a typed command; then F must be typed, not full screen.

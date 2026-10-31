@@ -82,7 +82,7 @@ class EmbeddedScreenTests(EmbeddedEdge, base.ScreenTests):
         self.assertTrue(self.last().startswith('Back to Home.'), self.last())
         self.press('Down')
         self.assertTrue(self.last().startswith('How to bake bread'), self.last())
-        self.press('K')
+        self.press('Space')
         self.assertEqual(self.last(), 'Paused.')
         self.press('T')
         self.assertTrue(self.last().startswith('Google does not allow signing in inside embedded Edge'), self.last())
