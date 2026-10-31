@@ -310,7 +310,11 @@ def command_here(m, raw, command):
                 BOOK.delete(contact)
             except ValueError as exc:
                 if not thunderbird_pim.gone(exc):
-                    raise
+                    text = str(exc)
+                    if not thunderbird_pim.unsure(exc) and 'not deleted' not in text:
+                        text += ' ' + contact.name + ' was not deleted.'
+                    m.speak(text)
+                    return MODE
                 VIEW = 'list'       # removed meanwhile: read the list again, so it is not said any more
                 reload(m)
                 m.speak(str(exc) + ' ' + describe())

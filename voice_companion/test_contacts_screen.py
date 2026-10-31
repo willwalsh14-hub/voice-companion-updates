@@ -243,6 +243,31 @@ class ContactsScreenTests(CompanionHarness):
         self.assertEqual((mode, self.said()), ('contacts', 'Canceled. Back to contacts.'))
         self.assertNotIn('Sam', [c.name for c in contacts_screen.CONTACTS])
 
+    def test_a_change_thunderbird_could_not_make_says_so_and_what_to_do(self):
+        # Thunderbird's general answer ("could not complete that request") said neither that nothing
+        # changed nor what to do next.
+        from mailbox_access import MailboxError
+        real = thunderbird_mailbox.call
+
+        def failing(method, **params):
+            if method in ('deleteContact', 'updateContact', 'addContact'):
+                raise MailboxError('Thunderbird could not complete that request.')
+            return real(method, **params)
+        mode = self.open()
+        self.press('Letter:p', mode)
+        with mock.patch.object(thunderbird_mailbox, 'call', failing):
+            self.press('Delete', mode)
+            mode = app.handle('yes', mode)
+            self.assertEqual(self.said(), 'Thunderbird could not complete that request. Close Thunderbird, then try again. '
+                                          'Plumber was not deleted.')
+            self.assertEqual(contacts_screen.current().name, 'Plumber')
+            mode = self.press('Ctrl+N', mode)
+            mode = app.handle('Pat Doe', mode)
+            mode = app.handle('skip', mode)
+            mode = app.handle('555-0100', mode)
+            self.assertEqual(self.said(), 'Thunderbird could not complete that request. Close Thunderbird, then try again. '
+                                          'The contact was not saved.')
+
     def test_delete_asks_first_and_read_only_books_are_protected(self):
         mode = self.open()
         self.press('Letter:p', mode)

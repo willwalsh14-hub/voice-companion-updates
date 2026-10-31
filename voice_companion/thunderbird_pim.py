@@ -24,6 +24,8 @@ NEXT_STEPS = {
     'Thunderbird could not save the event.': 'Close Thunderbird, then try again.',
     'Thunderbird could not save the change.': 'Close Thunderbird, then try again.',
     'Thunderbird could not delete the event.': 'Close Thunderbird, then try again.',
+    # The add-on's answer when Thunderbird itself failed in a way it does not name.
+    'Thunderbird could not complete that request.': 'Close Thunderbird, then try again.',
 }
 
 

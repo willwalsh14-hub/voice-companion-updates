@@ -920,7 +920,12 @@ def answer(m, command):
         try:
             thunderbird_pim.delete_event(event.calendar_id, event.id, event.occurrence if one else '', all_of_them=every or not event.recurring)
         except thunderbird_pim.PimError as exc:
-            m.speak(str(exc) + (' ' + read_again(m) if thunderbird_pim.gone(exc) else ''))
+            text = str(exc)
+            if thunderbird_pim.gone(exc):
+                text += ' ' + read_again(m)
+            elif not thunderbird_pim.unsure(exc) and 'not delete' not in text:
+                text += ' The event was not deleted.'
+            m.speak(text)
             return MODE
         what =('Deleted all of ' + event.name + '. ') if every else ('Deleted ' + event.name + ' on this day. ') if one else ('Deleted ' + event.name + '. ')
         keep = INDEX

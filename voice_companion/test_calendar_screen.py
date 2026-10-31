@@ -190,6 +190,26 @@ class CalendarScreenTests(CalendarHarness):
                 app.handle('yes', mode)
             self.assertEqual(self.said(), 'That calendar cannot be changed. Choose another calendar. The event was not saved.')
 
+    def test_thunderbirds_general_failure_says_nothing_changed_and_what_to_do(self):
+        import thunderbird_mailbox
+        from mailbox_access import MailboxError
+        real = thunderbird_mailbox.call
+
+        def failing(method, **params):
+            if method in ('addEvent', 'modifyEvent', 'deleteEvent'):
+                raise MailboxError('Thunderbird could not complete that request.')
+            return real(method, **params)
+        mode = self.open()
+        with mock.patch.object(thunderbird_mailbox, 'call', failing):
+            app.handle('delete event', mode)
+            app.handle('yes', mode)
+            self.assertEqual(self.said(), 'Thunderbird could not complete that request. Close Thunderbird, then try again. '
+                                          'The event was not deleted.')
+            app.handle('add event tomorrow at 3 PM called Lunch', mode)
+            app.handle('yes', mode)
+            self.assertEqual(self.said(), 'Thunderbird could not complete that request. Close Thunderbird, then try again. '
+                                          'The event was not saved.')
+
     def test_an_event_removed_in_thunderbird_meanwhile_leaves_the_list(self):
         # Deleted on the phone or in Thunderbird while Calendar was open: the day is read again,
         # so Down and F2 never reach an event that is gone.
