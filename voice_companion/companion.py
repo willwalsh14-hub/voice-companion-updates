@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.187-test'
+APP_VERSION = '0.2.188-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -3108,10 +3108,76 @@ def poll_thunderbird_accounts():
         speak_status(words.also_connected_message(added))
 
 
+# An older Voice Companion connection in Thunderbird is replaced by itself (Will, October 30, 2026):
+# Thunderbird restarts once, when nothing is waiting on it and no message is being written.
+ADDON_REFRESH = __import__('types').SimpleNamespace(connection=None, retry_at=0.0, thread=None, results=queue.Queue())
+ADDON_RETRY_SECONDS = 60
+
+
+def poll_thunderbird_addon(system=None):
+    """On the main loop: start the add-on update on a thread when it is safe, and say how it went."""
+    import thunderbird_setup
+    try:
+        result = ADDON_REFRESH.results.get_nowait()
+    except queue.Empty:
+        result = None
+    if result == 'updated':
+        speak_status(thunderbird_setup.ADDON_UPDATED)
+    elif result == 'not started':
+        speak_status(thunderbird_setup.ADDON_UPDATE_SLOW)
+    elif result == 'composing':
+        ADDON_REFRESH.connection = None; ADDON_REFRESH.retry_at = time.monotonic() + ADDON_RETRY_SECONDS
+    if ADDON_REFRESH.thread is not None and ADDON_REFRESH.thread.is_alive():
+        return
+    try:
+        import thunderbird_bridge
+        relay = thunderbird_bridge.current()
+    except Exception:
+        return
+    if relay is None or not relay.connected.is_set():
+        return
+    connection = id(getattr(relay, 'pipe', None))
+    if ADDON_REFRESH.connection == connection or time.monotonic() < ADDON_REFRESH.retry_at:
+        return
+    # Never while Thunderbird is being set up or signed in to, while a command runs, or while
+    # a request (a list, a send) waits for Thunderbird.
+    if thunderbird_busy() or _HANDLE_DEPTH or getattr(relay, 'pending', None):
+        return
+    package = addon_package()
+    if not thunderbird_setup.addon_behind(relay, package):
+        ADDON_REFRESH.connection = connection
+        return
+    ours = THUNDERBIRD_STARTED
+    if not ours:
+        # A Thunderbird the person opened restarts only while they are in Voice Companion, not in Thunderbird.
+        desktop = thunderbird_desktop()
+        try:
+            in_front = desktop is None or desktop.own_foreground()
+        except Exception:
+            in_front = False
+        if not in_front:
+            ADDON_REFRESH.retry_at = time.monotonic() + 30
+            return
+    ADDON_REFRESH.connection = connection
+    def update():
+        try:
+            outcome = thunderbird_setup.refresh_running_addon(system or thunderbird_setup.WindowsSystem(), package, relay,
+                                                              speak_status, background=ours, note=mail_log)
+            if outcome == 'updated' and ours:
+                quiet_thunderbird(relay)   # out of the way again, keyboard in Voice Companion
+        except Exception as exc:
+            mail_log('[thunderbird] add-on update failed: %s' % exc)
+            outcome = 'failed'
+        ADDON_REFRESH.results.put(outcome)
+    ADDON_REFRESH.thread = threading.Thread(target=update, name='Thunderbird add-on update', daemon=True)
+    ADDON_REFRESH.thread.start()
+
+
 def poll_thunderbird_watch(mode):
     """On the main loop: read Thunderbird's page, open its sign-in page, and say when the account is ready."""
     global THUNDERBIRD_WATCH, THUNDERBIRD_SIGN_IN, mail_session, pending_send
     poll_thunderbird_accounts()
+    poll_thunderbird_addon()
     shown = THUNDERBIRD_WINDOWS.take_message() if THUNDERBIRD_WINDOWS is not None else None
     if shown:
         speak_status(shown)   # a Thunderbird window came up while it was out of the way

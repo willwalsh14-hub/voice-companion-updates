@@ -506,9 +506,9 @@ class OldAddonContactsTests(CompanionHarness):
     def test_an_old_add_on_copy_asks_for_an_update_and_keeps_local_contacts(self):
         AddressBook(self.root, 'me@gmail.com').save('Zed Local', 'zed@example.com')
         self.assertEqual(app.handle('contacts', 'awake'), 'contacts')
-        self.assertEqual(self.said(), 'Contacts. 1 contact. Zed Local, zed@example.com, 1 of 1. '
-                         'The Voice Companion connection in Thunderbird must be updated first. Close Thunderbird, '
-                         'then try again. Voice Companion updates the connection and starts Thunderbird again.')
+        from thunderbird_pim import UPDATE_NEEDED
+        self.assertEqual(self.said(), 'Contacts. 1 contact. Zed Local, zed@example.com, 1 of 1. ' + UPDATE_NEEDED)
+        self.assertNotIn('Close Thunderbird', UPDATE_NEEDED)   # it updates by itself (Will, October 30, 2026)
 
 
 class NoThunderbirdContactsTests(CompanionHarness):

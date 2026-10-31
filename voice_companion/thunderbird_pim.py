@@ -11,8 +11,8 @@ from mailbox_access import MailboxError
 
 # An add-on copy from before contacts and calendars (1.2 and older) answers this.
 UNSUPPORTED = 'Unsupported mail request.'
-UPDATE_NEEDED = ('The Voice Companion connection in Thunderbird must be updated first. Close Thunderbird, '
-                 'then try again. Voice Companion updates the connection and starts Thunderbird again.')
+UPDATE_NEEDED = ('The Voice Companion connection in Thunderbird must be updated first. '
+                 'Voice Companion updates it by itself in a moment. Thunderbird restarts once. If you are writing a message in Thunderbird, finish it first. Then try again.')
 NO_THUNDERBIRD = ('Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. '
                   'Say add Thunderbird account to set it up.')
 

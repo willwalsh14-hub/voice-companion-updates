@@ -35,10 +35,10 @@ class SignInNeeded(Exception):
         self.url = url
 # Said when the add-on in Thunderbird is older than attachments (it answers "Unsupported mail request.").
 UNSUPPORTED = 'Unsupported mail request.'
-NEEDS_NEWER_ADDON = ('Attachments need the newer Voice Companion connection in Thunderbird. Close Thunderbird, '
-                     'then try again. Voice Companion updates the connection when it starts Thunderbird.')
-OLD_ADDON_MARK = ('Marking messages needs the newer Voice Companion connection in Thunderbird. Close Thunderbird, '
-                  'then try again. Voice Companion updates the connection when it starts Thunderbird.')
+NEEDS_NEWER_ADDON = ('Attachments need the newer Voice Companion connection in Thunderbird. '
+                     'Voice Companion updates it by itself in a moment. Thunderbird restarts once. If you are writing a message in Thunderbird, finish it first. Then try again.')
+OLD_ADDON_MARK = ('Marking messages needs the newer Voice Companion connection in Thunderbird. '
+                  'Voice Companion updates it by itself in a moment. Thunderbird restarts once. If you are writing a message in Thunderbird, finish it first. Then try again.')
 # Thunderbird's importance names, highest first (the add-on passes them as they are).
 PRIORITIES = ('highest', 'high', 'normal', 'low', 'lowest')
 UPLOAD_PIECE = 512 * 1024      # a file to send goes to Thunderbird in pieces this size (1 MB message limit)

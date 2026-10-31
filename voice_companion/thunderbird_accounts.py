@@ -71,8 +71,9 @@ EMPTY = 'The box is empty. Type the email address to add to Thunderbird, then pr
 STOPPED_WAITING = ('Voice Companion stopped waiting for Thunderbird. If you finish adding the account in Thunderbird, '
                    'say add account and choose Thunderbird to connect it.')
 NOT_WAITING = 'Voice Companion is not waiting for a Thunderbird account.'
-NEEDS_UPDATE = ('The Voice Companion connection in Thunderbird must be updated first. Close Thunderbird, '
-                'then say add Thunderbird account. Voice Companion updates the connection and starts Thunderbird again.')
+NEEDS_UPDATE = ('The Voice Companion connection in Thunderbird must be updated first. '
+                'Voice Companion updates it by itself in a moment. Thunderbird restarts once. '
+                'If you are writing a message in Thunderbird, finish it first. Then say add Thunderbird account.')
 STOP_WAITING_COMMANDS = ('stop waiting for thunderbird', 'cancel thunderbird account', 'cancel adding thunderbird account',
                          'stop adding thunderbird account', 'cancel adding the thunderbird account')
 ADD_COMMANDS = ('add thunderbird account', 'add a thunderbird account', 'add another thunderbird account',

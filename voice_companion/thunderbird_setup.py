@@ -573,6 +573,82 @@ def settle(system, handles, note=None):
         if note: note('[thunderbird] could not put the windows back: %s' % exc)
 
 
+# The add-on running in Thunderbird is older than the one Voice Companion carries (Will, October 30,
+# 2026: "nothing on the user's end"). Thunderbird loads a new add-on only when it starts, so it is
+# restarted once, the normal way, and never while a message is being written.
+ADDON_UPDATING = 'Updating the Voice Companion connection in Thunderbird. Thunderbird restarts for a moment.'
+ADDON_UPDATED = 'The Voice Companion connection in Thunderbird is updated.'
+ADDON_UPDATE_SLOW = ('Thunderbird has not started again yet. Your email is safe. '
+                     'Say check email, and Voice Companion starts it.')
+DISCONNECT_SECONDS = 15
+
+
+def addon_behind(relay, package):
+    """True when the connected add-on is older than the one in this copy of Voice Companion."""
+    bundled = package_version(package)
+    if relay is None or not relay.connected.is_set() or not bundled:
+        return False
+    return version_tuple(getattr(relay, 'version', '')) < version_tuple(bundled)
+
+
+def refresh_running_addon(system, package, relay, progress=None, background=True, note=None):
+    """Close Thunderbird the normal way, put the new add-on in its profile, and start it again:
+    in the background when Voice Companion had started it, else as the person opens it.
+
+    Returns 'current' (nothing to do or nothing possible), 'composing' (a message is being
+    written: try later), 'not closed' (Thunderbird did not close; nothing changed),
+    'not started', or 'updated'."""
+    if not addon_behind(relay, package):
+        return 'current'
+    def log(text):
+        if note: note('[thunderbird] ' + text)
+    def wait(check, seconds):
+        until = system.clock() + seconds
+        while not check():
+            if system.clock() >= until:
+                return False
+            system.sleep(0.5)
+        return True
+    with _START_LOCK:
+        try:
+            about = relay.request('about', {}, timeout=10) or {}
+        except Exception:
+            about = {}
+        if about.get('composing'):
+            log('add-on update waits: a message is being written')
+            return 'composing'
+        profile = Path(about['profile']) if about.get('profile') and Path(about['profile']).is_dir() else choose_profile(system)[0]
+        program, _ = find_program(system)
+        if profile is None or not program:
+            log('add-on update skipped: no profile or program found')
+            return 'current'
+        if progress: progress(ADDON_UPDATING)
+        log('updating the add-on from %s' % getattr(relay, 'version', ''))
+        try:
+            answer = relay.request('quit', {}, timeout=10) or {}
+        except Exception:
+            answer = {}
+        if answer.get('reason') == 'composing':
+            return 'composing'
+        # Never forced: only Thunderbird's own normal close, which keeps every window's work.
+        if not answer.get('quit') or not wait(lambda: not system.running(), CLOSE_SECONDS):
+            log('add-on update stopped: Thunderbird did not close')
+            return 'not closed'
+        wait(lambda: not relay.connected.is_set(), DISCONNECT_SECONDS)
+        refresh_addon(profile, package)
+        start_addons_promptly(profile)
+        try:
+            (system.launch_background if background else system.launch)(program)
+        except OSError:
+            log('add-on update: Thunderbird did not start again')
+            return 'not started'
+    if not wait(lambda: relay.connected.is_set() and not addon_behind(relay, package), WAIT_SECONDS):
+        log('add-on update: no connection after the restart')
+        return 'not started'
+    log('add-on updated to %s' % getattr(relay, 'version', ''))
+    return 'updated'
+
+
 def start_in_background(system, package, relay, progress, limit=WAIT_SECONDS, note=None):
     """Connect Thunderbird's add-on without asking. Returns True when Voice Companion started Thunderbird.
 
