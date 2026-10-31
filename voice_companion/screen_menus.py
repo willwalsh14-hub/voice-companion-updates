@@ -134,10 +134,14 @@ MENUS = {
             ('Save and close note', 'Ctrl+S', 'save note'),
             ('Read note', 'Ctrl+R', 'read from top'),
             ('Saved notes', 'Ctrl+O', 'list notes'),
-            ('New line', '', 'new line'),
             ('Notepad options', '', '@options:Notepad'),
             ('Notepad help', 'F1', 'help with notepad'),
             ('Main menu', '', 'main menu')]),
+        ('Edit', [
+            ('New line', '', 'new line'),
+            ('Undo', 'Ctrl+Z', 'undo'),
+            ('Redo', 'Ctrl+Y', 'redo'),
+            ('Remove last words', '', 'scratch that')]),
     ]),
     'web': ('Web page menu', [
         ('Page', [

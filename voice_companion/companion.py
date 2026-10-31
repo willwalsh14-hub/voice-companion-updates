@@ -18,7 +18,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from vosk import KaldiRecognizer, Model, SetLogLevel
-from document_editor import VoiceDocument, structural_selection_request, document_control_request, LINE_BREAK_COMMANDS, checked_document_name, existing_document
+from document_editor import VoiceDocument, structural_selection_request, document_control_request, LINE_BREAK_COMMANDS, checked_document_name, existing_document, UNDO_REQUESTS
 from field_selection import FieldSelection, selection_command
 from email_draft import VoiceEmail, normalize_recipient, email_field_destination
 from address_book import AddressBook
@@ -191,7 +191,69 @@ THROUGH_THUNDERBIRD = {'gmail': 'Gmail', 'google': 'Gmail', 'google mail': 'Gmai
 help_session = None
 help_return_mode = 'awake'
 TEXT_MODE = False
-note_buffer = []
+class NoteBuffer(list):
+    """The note being written, one entry per dictation. It keeps its changes, so Undo, Redo and
+    Scratch that work in notes as in documents (Will, October 31, 2026)."""
+    LIMIT = 100
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.undo, self.redo = [], []
+
+    def _mark(self, kind, text=''):
+        self.undo.append((list(self), kind, text))
+        del self.undo[:-self.LIMIT]
+        self.redo.clear()
+
+    def append(self, item):
+        self._mark('add', item)
+        super().append(item)
+
+    def __setitem__(self, key, value):
+        self._mark('edit')
+        super().__setitem__(key, value)
+
+    def clear(self):
+        """A new, opened or saved note starts with no changes to undo."""
+        super().clear()
+        self.undo.clear(); self.redo.clear()
+
+    def forget(self):
+        self.undo.clear(); self.redo.clear()
+
+    def step(self, back):
+        """Undo (back) or redo one change. Returns (kind, text), or None when there is none."""
+        source, target = (self.undo, self.redo) if back else (self.redo, self.undo)
+        if not source:
+            return None
+        snapshot, kind, text = source.pop()
+        target.append((list(self), kind, text))
+        list.__setitem__(self, slice(None), snapshot)
+        return kind, text
+
+
+def note_history(command):
+    """Undo, Redo and Scratch that in a note. Returns what to say."""
+    buffer = note_buffer
+    if not isinstance(buffer, NoteBuffer):
+        return 'Nothing to undo.'
+    note_selection.text = None
+    if command in ('scratch', 'scratch that'):
+        if not buffer.undo or buffer.undo[-1][1] != 'add':
+            return 'Nothing to scratch. Say undo to undo the last change.'
+        return 'Removed: ' + buffer.step(True)[1]
+    from document_editor import UNDO_REQUESTS
+    back = UNDO_REQUESTS.get(command) == 'undo'
+    done = buffer.step(back)
+    if done is None:
+        return 'Nothing to undo.' if back else 'Nothing to redo.'
+    kind, text = done
+    if kind == 'add':
+        return ('Undid: ' if back else 'Redid: ') + text
+    return 'Undid the last change.' if back else 'Redid the last change.'
+
+
+note_buffer = NoteBuffer()
 note_selection = FieldSelection()
 note_reading = ReadingCursor()
 OPEN_NOTE = None  # The saved note being changed, so saving updates it instead of adding a copy.
@@ -2307,6 +2369,7 @@ def open_saved_note(spoken, mode):
     note = notes[number - 1]
     OPEN_NOTE = note
     note_buffer[:] = [note.text] if note.text else []
+    if isinstance(note_buffer, NoteBuffer): note_buffer.forget()   # opening is not a change to undo
     note_selection.text = None
     speak('Opened the note from ' + notepad.spoken_date(note.stamp) + '. ' + (note.text.strip() or 'It is empty.'))
     speak_prompt('Speak to add to it. Say save note when finished.')
@@ -4792,6 +4855,11 @@ def _handle(text, mode, typed=False):
         except (OSError,ValueError,IndexError,ET.ParseError) as exc:
             speak('I could not complete that media request. ' + __import__('media_navigation').spoken_error(exc))
         return 'media'
+    if mode == 'note' and (command in UNDO_REQUESTS or command in ('scratch', 'scratch that') and not (
+            note_selection.text == ' '.join(note_buffer) and note_selection.editor.selection)):
+        # Scratch that with words selected deletes them (below); without, it removes the last dictation.
+        speak(note_history(command))
+        return mode
     literal = re.fullmatch(r'(?:type|dictate) literally\s+(.+)', text, re.I | re.S)
     if command == 'type new line': literal_text = 'new line'
     else: literal_text = literal[1] if literal else None

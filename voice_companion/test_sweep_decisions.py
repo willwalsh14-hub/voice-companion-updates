@@ -221,5 +221,39 @@ class FailedNewEventTests(CalendarHarness):
         self.assertIn('did not answer in time', self.said())
 
 
+
+class NoteUndoTests(CompanionCase):
+    def setUp(self):
+        super().setUp()
+        p = patch.object(companion, 'note_buffer', companion.NoteBuffer()); p.start(); self.addCleanup(p.stop)
+        p = patch.object(companion, 'OPEN_NOTE', None); p.start(); self.addCleanup(p.stop)
+
+    def test_undo_redo_and_scratch_that_in_a_note(self):
+        for words in ('Buy milk.', 'Call the VA.', 'Pick up the car.'):
+            companion.handle(words, 'note')
+        companion.handle('Scratch that.', 'note')
+        self.assertEqual(self.last(), 'Removed: Pick up the car.')
+        self.assertEqual(list(companion.note_buffer), ['Buy milk.', 'Call the VA.'])
+        companion.handle('Undo.', 'note')
+        self.assertEqual(self.last(), 'Undid: Call the VA.')
+        self.assertEqual(list(companion.note_buffer), ['Buy milk.'])
+        companion.handle('redo', 'note')
+        self.assertEqual(list(companion.note_buffer), ['Buy milk.', 'Call the VA.'])
+        companion.handle('undo', 'note'); companion.handle('undo', 'note')
+        self.assertEqual(list(companion.note_buffer), [])
+        companion.handle('undo', 'note')
+        self.assertEqual(self.last(), 'Nothing to undo.')
+        companion.handle('new line', 'note')
+        companion.handle('scratch that', 'note')
+        self.assertIn('Nothing to scratch', self.last())
+
+    def test_undo_is_not_written_into_the_note_and_keys_work(self):
+        from input_parity import SCREEN_KEYS
+        self.assertEqual(SCREEN_KEYS['note']['Ctrl+Z'], 'undo')
+        companion.handle('Hello.', 'note')
+        companion.handle('undo', 'note')
+        self.assertNotIn('undo', ' '.join(companion.note_buffer))
+
+
 if __name__ == '__main__':
     unittest.main()
