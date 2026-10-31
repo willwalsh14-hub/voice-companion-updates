@@ -5160,6 +5160,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | youtube": {
+"said": [
+"YouTube menu. Search (S), 1 of 9. Control+F."
+],
+"screen_after": "youtube"
+},
 "document | Add appointment tomorrow at 3 PM called doctor": {
 "said": [
 "Add appointment tomorrow at 3 PM called doctor"
@@ -12694,6 +12700,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. yes send that"
+]
+},
+"document | youtube": {
+"said": [
+"youtube"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. youtube"
 ]
 },
 "email_draft | Add appointment tomorrow at 3 PM called doctor": {
@@ -20393,6 +20408,15 @@
 "Hello world."
 ]
 },
+"email_draft | youtube": {
+"said": [
+"youtube"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. youtube"
+]
+},
 "help | Add appointment tomorrow at 3 PM called doctor": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -25417,6 +25441,12 @@
 "screen_after": "help"
 },
 "help | yes send that": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | youtube": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -32199,6 +32229,12 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | youtube": {
+"said": [
+"YouTube menu. Search (S), 1 of 9. Control+F."
+],
+"screen_after": "youtube"
+},
 "note | Add appointment tomorrow at 3 PM called doctor": {
 "said": [
 "Add appointment tomorrow at 3 PM called doctor"
@@ -37226,6 +37262,12 @@
 "note | yes send that": {
 "said": [
 "yes send that"
+],
+"screen_after": "note"
+},
+"note | youtube": {
+"said": [
+"youtube"
 ],
 "screen_after": "note"
 },
@@ -44624,6 +44666,16 @@
 ],
 "said": [
 "session handled: yes send that"
+],
+"screen_after": "web"
+},
+"web | youtube": {
+"calls": [
+"call.command('youtube')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: youtube"
 ],
 "screen_after": "web"
 }
