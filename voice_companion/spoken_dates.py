@@ -168,8 +168,10 @@ def _day_from(kind, match, today, future):
         if (match['which'] or '').strip() in ('last', 'previous', 'past', 'this past'):
             return today - timedelta(days=(today.weekday() - wanted) % 7 or 7)     # "last Friday": the one before today
         ahead = (wanted - today.weekday()) % 7
-        if (match['which'] or '').strip() == 'next' and ahead == 0:
-            ahead = 7
+        if (match['which'] or '').strip() == 'next' and (ahead == 0 or today.weekday() + ahead <= 6):
+            # "Next Tuesday" is the Tuesday of next week: said on a Monday, a week from tomorrow.
+            # "Tuesday" or "this coming Tuesday" is the nearest one (Will, October 31, 2026).
+            ahead += 7
         return today + timedelta(days=ahead)
     month = _month(kind, match)
     day = number(match['day'])
@@ -281,6 +283,9 @@ TIME_RANGE = (r'\b(?:from\s|between\s)?(?:at\s)?' + CLOCK.replace('{p}', 'a') + 
 TIME_ONE = r'\b(?:at\s|by\s|around\s|starting\sat\s)?(?:(?P<named>noon|midday|midnight)|' + CLOCK.replace('{p}', 'a') + r')\b'
 LENGTH = (r'\bfor\s(?:(?P<half>half\san\shour)|(?P<n>' + NUM + r'|a|an)\s(?P<unit>hours?|hrs?|minutes?|mins?)'
           r'(?:\s(?:and\s)?(?:(?P<andhalf>a\shalf)|(?P<m>' + NUM + r')\s(?:minutes?|mins?)))?)\b')
+# "Half past two", "quarter to three", "a quarter after 4 PM" (Will, October 31, 2026).
+QUARTER_TIME = (r'\b(?:at\s|by\s|around\s|starting\sat\s)?(?P<qa>half|(?:a\s)?quarter)\s(?P<qrel>past|after|to|till|before)\s'
+                r'(?P<qh>' + NUM + r')(?:\s?o\'?clock)?(?:\s?(?P<qx>' + MERIDIEM + r'))?\b')
 ALL_DAY = r'\b(?:all\sday|all-day|the\swhole\sday)(?:\slong)?\b'
 # The part of the day: it sets AM or PM (see _hint) and is not part of an event's name.
 # "Friday evening" and "today morning" too; "Morning walk" keeps its word.
@@ -340,6 +345,20 @@ def parse_when(text, now, future=True, base=None):
         result.start, result.end = start, end
         result.spans.append(match.span())
         break
+    if result.start is None:
+        for match in re.finditer(QUARTER_TIME, low):
+            if _taken(result.spans, *match.span()):
+                continue
+            hour = number(match['qh'])
+            if hour is None or not 1 <= hour <= 12:
+                continue
+            minute = 30 if match['qa'] == 'half' else 15
+            if match['qrel'] in ('to', 'till', 'before'):
+                hour, minute = (hour - 1) or 12, 60 - minute
+            meridiem = (match['qx'] or '').replace('.', '').replace(' ', '')
+            result.start = _resolve(hour, minute, meridiem, hint)
+            result.spans.append(match.span())
+            break
     if result.start is None:
         for match in re.finditer(TIME_ONE, low):
             if _taken(result.spans, *match.span()):

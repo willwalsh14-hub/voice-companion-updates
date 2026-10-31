@@ -227,7 +227,7 @@ class FileActionWordsTests(unittest.TestCase):
         self.assertEqual(self.manager.command('rename'), 'Rename Photos. Type or say the new name, then press Enter.')
         self.manager.command('cancel'); self.manager.index = 1
         self.assertEqual(self.manager.command('rename'),
-                         'Rename a.txt. Type or say the new name, including the extension, then press Enter.')
+                         'Rename a.txt. Type or say the new name, then press Enter. A name you say keeps the file type.')
 
 
 class FileManagerUnknownWordsTests(FileActionWordsTests):

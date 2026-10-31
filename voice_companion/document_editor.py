@@ -417,7 +417,8 @@ class VoiceDocument:
                 root = ET.fromstring(archive.read('word/document.xml'))
         except (zipfile.BadZipFile, KeyError, ET.ParseError, EOFError) as error:
             # An empty "New Microsoft Word Document" or a damaged file is not a crash.
-            raise ValueError('This document is empty or damaged, so it could not be opened.') from error
+            from document_reader import damaged_words
+            raise ValueError(damaged_words(path, 'This document is empty or damaged, so it could not be opened.')) from error
         ns = '{' + XMLNS + '}'
         allowed = {ns + tag for tag in ('document', 'body', 'p', 'pPr', 'pStyle', 'r', 'rPr', 'b', 'i', 'u', 'highlight',
                    'rFonts', 'sz', 't', 'sectPr', 'numPr', 'ilvl', 'numId', 'tbl', 'tblPr', 'tblGrid',
@@ -631,16 +632,23 @@ class VoiceDocument:
         old_path = self.path
         current_title = self.title
         self.title = step.title
-        if self.path != old_path and self.path.exists():
+        case_only = self.path != old_path and self.path.name.casefold() == old_path.name.casefold()
+        if self.path != old_path and not case_only and self.path.exists():
             self.title = current_title
             return False
+        if case_only and old_path.exists():
+            # Undo of a change in capitals only: the same file, named back in place, never removed.
+            try: old_path.rename(self.path)
+            except OSError:
+                self.title = current_title
+                return False
         self.paragraphs, self.cursor = step.paragraphs, min(step.cursor, max(0, len(step.paragraphs) - 1))
         self._restore_extra(step.extra)
         self.selection = None
         self.insertion_position = None
         self.navigation_position = None
         self.changed()
-        if self.path != old_path:
+        if self.path != old_path and not case_only:
             old_path.unlink(missing_ok=True)
         return True
 
@@ -1140,12 +1148,21 @@ class VoiceDocument:
             if problem: return problem
             old_path, previous_title = self.path, self.title
             new_path = self.folder / (proposed + '.docx')
-            if new_path != old_path and any(p.name.casefold() == new_path.name.casefold() for p in self.folder.glob('*.docx')):
+            # Only the capitals change ("budget" to "Budget"): the same file, renamed in place
+            # (Will, October 31, 2026). Windows sees both names as one file, so the old one is never removed.
+            case_only = new_path != old_path and new_path.name.casefold() == old_path.name.casefold()
+            if new_path != old_path and not case_only and any(p.name.casefold() == new_path.name.casefold() for p in self.folder.glob('*.docx')):
                 return 'A document with that name already exists. Please choose another name.'
+            if case_only and old_path.exists():
+                try: old_path.rename(new_path)
+                except OSError: return 'I could not change the name. Close the document in any other program, then try again.'
             self.title = proposed
             try: self.save()
             except OSError:
                 self.title = previous_title
+                if case_only and new_path.exists():
+                    try: new_path.rename(old_path)
+                    except OSError: pass
                 return 'I could not save that file name. Your document remains open under its previous name.'
             save_as = command.startswith('save ')
             if save_as:
@@ -1153,7 +1170,7 @@ class VoiceDocument:
             else:
                 self._push_undo(self._snapshot('the new name', title=previous_title))
             self.last_change_type = 'edit'
-            if not save_as and new_path != old_path:
+            if not save_as and new_path != old_path and not case_only:
                 try: old_path.unlink(missing_ok=True)
                 except OSError: return 'Document named ' + new_path.name + '. The previous file could not be removed and remains on this computer.'
             return ('Saved document as ' if save_as else 'Document named ') + self.path.name + '.'

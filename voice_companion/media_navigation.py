@@ -371,6 +371,9 @@ class MediaNavigation:
             return result
         if cmd in ('radio menu','podcasts menu','podcast menu','actions','media actions','back to actions'):self.focus='actions';return self.announce()
         if cmd in ('results','media results','back to results'):self.focus='items';return self.announce()
+        # "Go back" goes back where you came from, as Escape does; in results it is not
+        # "previous station" (Will, October 31, 2026).
+        if cmd in ('go back','back') and not self.form:return self.voice_key('Escape')
         if cmd in ('next action','previous action'):self.focus='actions';return self.voice_key('Down' if cmd.startswith('next') else 'Up')
         if cmd in ('next','previous','ok','okay','that one','confirm'):
             return self.voice_key('Enter' if cmd in ('ok','okay','that one','confirm') else 'Down' if cmd=='next' else 'Up')

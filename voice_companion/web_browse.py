@@ -195,7 +195,8 @@ class BrowseCursor:
         else:
             candidates=range(self.index-1,-1,-1) if backward else range(self.index+1,len(self.elements))
             index=next((i for i in candidates if match(self.elements[i])),None)
-        if index is None:return ('Start of list. ' if backward else 'End of list. ')+'No '+('previous ' if backward else 'next ')+('heading level '+str(level) if level else SPOKEN_NAMES.get(wanted,wanted))+'.'
+        # Just "No next heading." (Will, October 31, 2026): "End of list" said nothing more.
+        if index is None:return 'No '+('previous ' if backward else 'next ')+('heading level '+str(level) if level else SPOKEN_NAMES.get(wanted,wanted))+'.'
         self.index=index;item=self.current();self.position=item.get('start',0)
         if kind(item)=='table':self.table=item['key'];self.row=self.column=0
         elif kind(item)=='cell':self.table=item.get('table');self.row=item.get('row',0);self.column=item.get('column',0)

@@ -181,10 +181,21 @@ class DraftFieldTests(CompanionCase):
         companion.handle('Lunch plans.', 'email_draft')
         self.assertEqual(draft.subject, 'Lunch plans')
         self.assertIn('Subject recorded as Lunch plans. ', self.last())
+        companion.handle('go to subject', 'email_draft')
         companion.handle('subject is Dinner, tonight?', 'email_draft')
         self.assertEqual(draft.subject, 'Dinner, tonight?')
+        companion.handle('go to subject', 'email_draft')
         companion.handle('subject is More to come...', 'email_draft')
         self.assertEqual(draft.subject, 'More to come...')
+
+    def test_new_email_body_sentence_that_starts_with_subject_is_is_written(self):
+        # Sweep, October 31, 2026 (Will): in the message, "Subject is ..." is words.
+        draft = self.new_email()
+        companion.handle('bob at example dot com.', 'email_draft')
+        companion.handle('Lunch plans.', 'email_draft')
+        companion.handle('Subject is on my mind.', 'email_draft')
+        self.assertEqual(draft.subject, 'Lunch plans')
+        self.assertEqual([p.text for p in draft.paragraphs if p.text], ['Subject is on my mind.'])
 
     def reply(self):
         companion.email_draft = VoiceEmail(self.folder / 'Email Drafts', provider='thunderbird', recipient='sam@example.com',

@@ -277,8 +277,18 @@ class MailBridge {
   }
 
   async trash({messageIds}) {
+    const ids = MailBridge.ids(messageIds);
+    // In Trash, Thunderbird deletes for good, with no way back. Voice Companion never does that
+    // (a message may have been moved to Trash after it was listed elsewhere).
+    for (const id of ids) {
+      const header = await this.api.messages.get(id);
+      const folder = header && header.folder;
+      if (folder && ((folder.specialUse || []).includes('trash') || folder.type === 'trash')) {
+        throw MailBridge.fail('trash', MailBridge.ALREADY_IN_TRASH);
+      }
+    }
     // skipTrash false: Thunderbird moves the messages to the account's Trash.
-    await this.api.messages.delete(MailBridge.ids(messageIds), false);
+    await this.api.messages.delete(ids, false);
     return true;
   }
 
@@ -778,6 +788,7 @@ MailBridge.CHUNK = 1024 * 1024;              // largest piece of an attachment s
 MailBridge.MAX_UPLOAD = 60 * 1024 * 1024;    // largest file Voice Companion may attach
 MailBridge.UPLOAD_KEEP_MS = 10 * 60 * 1000;  // an unfinished file to send is dropped after this long
 MailBridge.PRIORITIES = ['highest', 'high', 'normal', 'low', 'lowest'];
+MailBridge.ALREADY_IN_TRASH = 'This is already in Trash. Deleting it there would remove it for good, so nothing was changed.';
 MailBridge.READ_ONLY = ['about', 'accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn', 'background',
   'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
 MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'move', 'trash',

@@ -18,7 +18,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from vosk import KaldiRecognizer, Model, SetLogLevel
-from document_editor import VoiceDocument, structural_selection_request, document_control_request, LINE_BREAK_COMMANDS, checked_document_name, existing_document
+from document_editor import VoiceDocument, structural_selection_request, document_control_request, LINE_BREAK_COMMANDS, checked_document_name, existing_document, UNDO_REQUESTS
 from field_selection import FieldSelection, selection_command
 from email_draft import VoiceEmail, normalize_recipient, email_field_destination
 from address_book import AddressBook
@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.189-test'
+APP_VERSION = '0.2.190-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -143,6 +143,7 @@ INPUT_MODE = 'mixed'
 VOICE_PICK_INDEX = None
 VOICE_PICK_ORIGINAL = None
 VOICE_PICK_CONFIRM = False
+LAST_YES_NO = ''   # the last yes or no question said; F1 repeats it while it is open
 SILENCE = ('be quiet', 'quiet', 'stop talking', 'stop speaking', 'stop reading',
            'shut up', 'shut the fuck up', 'shut the f up', 'shut the hell up',
            'hush', 'hush up', 'silence', 'stop')
@@ -190,7 +191,69 @@ THROUGH_THUNDERBIRD = {'gmail': 'Gmail', 'google': 'Gmail', 'google mail': 'Gmai
 help_session = None
 help_return_mode = 'awake'
 TEXT_MODE = False
-note_buffer = []
+class NoteBuffer(list):
+    """The note being written, one entry per dictation. It keeps its changes, so Undo, Redo and
+    Scratch that work in notes as in documents (Will, October 31, 2026)."""
+    LIMIT = 100
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.undo, self.redo = [], []
+
+    def _mark(self, kind, text=''):
+        self.undo.append((list(self), kind, text))
+        del self.undo[:-self.LIMIT]
+        self.redo.clear()
+
+    def append(self, item):
+        self._mark('add', item)
+        super().append(item)
+
+    def __setitem__(self, key, value):
+        self._mark('edit')
+        super().__setitem__(key, value)
+
+    def clear(self):
+        """A new, opened or saved note starts with no changes to undo."""
+        super().clear()
+        self.undo.clear(); self.redo.clear()
+
+    def forget(self):
+        self.undo.clear(); self.redo.clear()
+
+    def step(self, back):
+        """Undo (back) or redo one change. Returns (kind, text), or None when there is none."""
+        source, target = (self.undo, self.redo) if back else (self.redo, self.undo)
+        if not source:
+            return None
+        snapshot, kind, text = source.pop()
+        target.append((list(self), kind, text))
+        list.__setitem__(self, slice(None), snapshot)
+        return kind, text
+
+
+def note_history(command):
+    """Undo, Redo and Scratch that in a note. Returns what to say."""
+    buffer = note_buffer
+    if not isinstance(buffer, NoteBuffer):
+        return 'Nothing to undo.'
+    note_selection.text = None
+    if command in ('scratch', 'scratch that'):
+        if not buffer.undo or buffer.undo[-1][1] != 'add':
+            return 'Nothing to scratch. Say undo to undo the last change.'
+        return 'Removed: ' + buffer.step(True)[1]
+    from document_editor import UNDO_REQUESTS
+    back = UNDO_REQUESTS.get(command) == 'undo'
+    done = buffer.step(back)
+    if done is None:
+        return 'Nothing to undo.' if back else 'Nothing to redo.'
+    kind, text = done
+    if kind == 'add':
+        return ('Undid: ' if back else 'Redid: ') + text
+    return 'Undid the last change.' if back else 'Redid the last change.'
+
+
+note_buffer = NoteBuffer()
 note_selection = FieldSelection()
 note_reading = ReadingCursor()
 OPEN_NOTE = None  # The saved note being changed, so saving updates it instead of adding a copy.
@@ -680,7 +743,10 @@ def process_keyboard_batch(mode):
                     if key=='Control':KEYBOARD_BATCH_TEXT=None
                     # Control+F12 wakes the microphone; other keys work in the screen behind sleep.
                     asleep=mode=='sleep' and key in __import__('input_parity').SCREEN_KEYS['sleep']
-                    command='open options' if key=='settings' else navigation_key(key,'sleep' if asleep else SLEEP_RETURN_MODE if mode=='sleep' else mode)
+                    try:command='open options' if key=='settings' else navigation_key(key,'sleep' if asleep else SLEEP_RETURN_MODE if mode=='sleep' else mode)
+                    except Exception as exc:
+                        if isinstance(exc,user_stop.Stopped) or not safety_net_on():raise
+                        command_failed(exc,mode);command=None
                 if command is None:continue
             mode=resume_from_sleep() if mode=='sleep' and command.lower() in ('wake up','wake companion') else handle_keyboard(command,mode)
             if mode=='exit':break
@@ -695,6 +761,9 @@ def process_keyboard_batch(mode):
     return mode
 
 SLEEP_RETURN_MODE = 'awake'
+MAIN_MENU_HELP = ('help me', 'what can i say', 'what can i do', 'what do i say', 'i need help', 'please help',
+                  'help me please', 'what are my choices', 'what are my options')
+MAIN_MENU_FIRST = 'You are on the main menu. It is the first screen, so there is nothing to go back to. Say a choice, or say help.'
 MAIN_MENU_NOT_UNDERSTOOD = 'I did not understand that. You are on the main menu. Press F1 for help.'
 MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.'
 
@@ -894,7 +963,7 @@ def change_display(request,mode):
     """Change the text size, colors or full screen, save it, say it, and show it at once."""
     import display_options
     values,words=display_options.apply_request(PREFERENCES,request)
-    if request[0]!='status':
+    if request[0] not in ('status','size_invalid'):
         PREFERENCES.update(values)
         try:__import__('app_settings').save_preferences(sys.modules[__name__])
         except OSError:words+=NOT_SAVED
@@ -1037,9 +1106,17 @@ def navigation_key(key,mode):
     try:return _navigation_key(key,mode)
     finally:KEYBOARD_NAVIGATION=previous
 
+def yes_no_open(mode):
+    """True while a yes or no question waits for its answer on this screen."""
+    return bool(THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or mode=='browser_menu' and web_session is not None and web_session.menu.level=='confirm' or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending)))
+
+
 def _navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
     interrupt_speech()
+    if key=='F1' and LAST_YES_NO and yes_no_open(mode):
+        # F1 in a yes or no question says the question again (Will, October 31, 2026).
+        speak(LAST_YES_NO);return None
     if key=='Ctrl+P':return 'toggle audio'
     if key=='Control':return None
     menu_key=screen_menu().keyboard(key,mode)
@@ -1097,7 +1174,7 @@ def _navigation_key(key,mode):
     if key=='Alt+F4':return 'exit companion'
     if mode=='chrome_setup' and not chrome_confirming(mode):
         return {'Escape':'cancel','F5':'status','F1':'status'}.get(key)
-    confirming=THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or mode=='browser_menu' and web_session is not None and web_session.menu.level=='confirm' or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
+    confirming=yes_no_open(mode)
     if confirming:
         if key.lower() in ('y','n','alt+y','alt+n','letter:y','letter:n'):return 'yes' if key.lower() in ('y','alt+y','letter:y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
@@ -1953,8 +2030,17 @@ def discard_feedback_events(cloud):
     for event in remaining:cloud.events.put(event)
 
 
+def remember_question(text):
+    """F1 says the open yes or no question again. Anything else said (but the choice itself) ends it."""
+    global LAST_YES_NO
+    if not isinstance(text,str):return
+    if 'yes or no' in text.casefold():LAST_YES_NO=text
+    elif text not in ('Yes.','No.','Start of list.','End of list.'):LAST_YES_NO=''
+
+
 def speak(text):
     global KEYBOARD_BATCH_TEXT
+    remember_question(text)
     if KEYBOARD_BATCH:
         KEYBOARD_BATCH_TEXT=text;return
     TRANSCRIPT.said(text)   # off unless chosen; never raises
@@ -2286,6 +2372,7 @@ def open_saved_note(spoken, mode):
     note = notes[number - 1]
     OPEN_NOTE = note
     note_buffer[:] = [note.text] if note.text else []
+    if isinstance(note_buffer, NoteBuffer): note_buffer.forget()   # opening is not a change to undo
     note_selection.text = None
     speak('Opened the note from ' + notepad.spoken_date(note.stamp) + '. ' + (note.text.strip() or 'It is empty.'))
     speak_prompt('Speak to add to it. Say save note when finished.')
@@ -3970,6 +4057,19 @@ def _handle(text, mode, typed=False):
         answered = thunderbird_setup_answer(command, mode)
         if answered is not None:
             return answered
+    if mode=='awake' and not account_setup and ACCOUNT_PICKER is None and pending_website is None:
+        # Everyday words on the main menu (Will, October 31, 2026).
+        if command in MAIN_MENU_HELP:text=command='help'
+        elif command in ('go back','back','go back a screen','previous screen'):
+            speak(MAIN_MENU_FIRST);return mode
+    if command in ('open earlier copy','open the earlier copy','use earlier copy','use the earlier copy','restore earlier copy') \
+            and __import__('document_reader').DAMAGED_PATH is not None:
+        # The damaged file said an earlier copy was kept (document_reader.damaged_words).
+        try:
+            path=__import__('document_reader').restore_earlier_copy()
+            return task_navigation().open_document(path)
+        except ValueError as error:
+            speak(str(error));return mode
     if command=='toggle audio':
         video=__import__('youtube_screen').toggle_audio(sys.modules[__name__])  # Control+P while a YouTube video plays
         if video:speak(video);return mode
@@ -3999,7 +4099,8 @@ def _handle(text, mode, typed=False):
     manager=globals().get('FILE_MANAGER')
     if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):
         if manager.pending[0]=='rename' and not typed and command not in ('cancel','escape','go back','no'):
-            text=__import__('file_manager').spoken_name(text)
+            # A spoken name without a type keeps the old type (Will, October 31, 2026); typed names are used as typed.
+            text=__import__('file_manager').keep_type(manager.pending[1][0],__import__('file_manager').spoken_name(text))
         try:speak(manager.command(text))
         except (OSError,ValueError) as error:speak(str(error))
         sync_app_context(mode,True);return mode
@@ -4746,6 +4847,10 @@ def _handle(text, mode, typed=False):
                         'next podcast','previous podcast','next show','previous show'))):
         speak(MEDIA_HUB.command(text))
         return mode
+    if command == 'pause' and mode not in ('web', 'mailbox', 'media', 'local_media', 'downloads', 'youtube') and not writing_dictation(mode, typed):
+        # Nothing is playing: Pause stops Companion's speech, as Stop does. Resume goes on (Will, October 31, 2026).
+        control_speech('pause')
+        return mode
     if mode == 'media':
         if command in ('exit','main menu','back to main menu','leave radio','leave podcasts') or command in ('go back','back') and not (media().stations if MEDIA_SECTION == 'radio' else media().shows):
             # Only when something is scheduled, and with the main menu in one message.
@@ -4758,10 +4863,17 @@ def _handle(text, mode, typed=False):
             speak(media_navigation().enter(MEDIA_SECTION,keyboard=KEYBOARD_NAVIGATION))
             return 'media'
         try:
-            speak(media_navigation().command(text));sync_app_context('media',True)
+            said=media_navigation().command(text)
+            if said=='__main__':return handle('media menu','media')   # "Go back" from the Radio or Podcasts menu
+            speak(said);sync_app_context('media',True)
         except (OSError,ValueError,IndexError,ET.ParseError) as exc:
             speak('I could not complete that media request. ' + __import__('media_navigation').spoken_error(exc))
         return 'media'
+    if mode == 'note' and (command in UNDO_REQUESTS or command in ('scratch', 'scratch that') and not (
+            note_selection.text == ' '.join(note_buffer) and note_selection.editor.selection)):
+        # Scratch that with words selected deletes them (below); without, it removes the last dictation.
+        speak(note_history(command))
+        return mode
     literal = re.fullmatch(r'(?:type|dictate) literally\s+(.+)', text, re.I | re.S)
     if command == 'type new line': literal_text = 'new line'
     else: literal_text = literal[1] if literal else None
@@ -5014,7 +5126,8 @@ def _handle(text, mode, typed=False):
     # Everyday words for the inbox, as a new user says them ("Open the inbox.", "Check my mail.").
     # In a document, email or note they are text you are writing. In the inbox and on a web
     # page they keep going to the mailbox or the page (a webmail page has its own Inbox).
-    if command in ('email', 'my email', 'open email') or mode not in ('mailbox', 'web') and not writing_dictation(mode, typed) and command in (
+    # In the inbox, "Open email" opens the message you are on (mail_voice), not the inbox again.
+    if command in ('email', 'my email') or command == 'open email' and mode != 'mailbox' or mode not in ('mailbox', 'web') and not writing_dictation(mode, typed) and command in (
             'open my email', 'go to email', 'go to my email', 'inbox', 'my inbox', 'open inbox', 'open the inbox',
             'open my inbox', 'go to inbox', 'go to the inbox', 'go to my inbox', 'check my email', 'check mail',
             'check my mail', 'read email', 'read mail', 'read my mail', 'open mail', 'open my mail'):
@@ -5158,7 +5271,10 @@ def _handle(text, mode, typed=False):
             speak('Sending canceled. The email remains a local draft.')
             return mode
         if command in ('send email', 'send message', 'send the email', 'send this email',
-                       'send it', 'send that', 'send this', 'please send it', 'please send that', 'send'):
+                       'send it', 'send that', 'send this', 'please send it', 'please send that', 'send',
+                       # The whole sentence only (Will, October 31, 2026); the review still asks first.
+                       'send my email', 'send my message', 'send now', 'send it now', 'send email now',
+                       'send the message', 'please send', 'please send my email', 'send this message'):
             pending_send = None
             email_draft.dictating = False
             try: email_draft.save()
@@ -5764,6 +5880,40 @@ def announce_startup():
 
 _HANDLE_DEPTH = 0
 
+# Every screen's safety net (Will, October 31, 2026). An unexpected error in a command or key
+# says what happened and keeps the app running on the same screen. Under tests it is off, so a
+# bug still stops the test that found it; SAFETY_NET = True turns it on there.
+SAFETY_NET = None
+# Screens that come back to the note with its words: questions, Help, sleep and Options.
+NOTE_KEPT_OPEN = ('note','sleep','help','tutorial','exit_confirm','power_confirm','settings','update_offer','exit')
+COMMAND_FAILED = 'That did not work because of a problem in Voice Companion. You are still on {screen}. Try again, or press F1 for help.'
+
+
+def safety_net_on():
+    return SAFETY_NET if SAFETY_NET is not None else 'unittest' not in sys.modules
+
+
+def command_failed(exc, mode):
+    """Say the command did not work, record where (code places only, never what was said), and stay."""
+    try:
+        frames = traceback.extract_tb(exc.__traceback__)
+        detail = ('Voice Companion ' + APP_VERSION + '\n' + type(exc).__module__ + '.' + type(exc).__name__ + '\n' +
+                  '\n'.join(Path(f.filename).name + ':' + str(f.lineno) + ' in ' + f.name for f in frames[-12:]))
+        APP.mkdir(parents=True, exist_ok=True)
+        __import__('storage').write_text_atomic(APP / 'command-error.txt', detail)
+    except Exception:
+        pass
+    try:
+        screen = __import__('display_options').screen_name(mode) if mode not in ('sleep', 'exit') else 'the same screen'
+    except Exception:
+        screen = 'the same screen'
+    try:
+        speak(COMMAND_FAILED.format(screen=screen))
+    except Exception:
+        pass
+    return mode if mode != 'exit' else 'awake'
+
+
 def handle(text, mode, typed=False):
     global _HANDLE_DEPTH, CONFIRM_CHOICE, KEYBOARD_NAVIGATION
     if _HANDLE_DEPTH==0:TRANSCRIPT.mode=SLEEP_RETURN_MODE+', asleep' if mode=='sleep' else mode
@@ -5788,8 +5938,18 @@ def handle(text, mode, typed=False):
         if _HANDLE_DEPTH==1:
             try:flush_keyboard_edits(True)
             except OSError:speak('Your typed changes could not be saved yet. The file may be open in another program. Close it and they will be saved.')
-        with dictation_scope(PREFERENCES.get('dictation_type','old school'), typed=typed):
-            result = _handle(text, mode, typed)
+        try:
+            with dictation_scope(PREFERENCES.get('dictation_type','old school'), typed=typed):
+                result = _handle(text, mode, typed)
+        except Exception as exc:
+            if _HANDLE_DEPTH!=1 or isinstance(exc,user_stop.Stopped) or not safety_net_on():raise
+            result = command_failed(exc, mode)
+        if _HANDLE_DEPTH==1 and mode=='note' and result not in NOTE_KEPT_OPEN and note_buffer:
+            # Any command that leaves the note ("Media menu", "Radio") saves it first, as Main menu does.
+            # If it cannot be saved, the note stays open with its words (save_note said why).
+            said=[]
+            if flush_note('note',said.append) is False:
+                speak(' '.join(said));result='note'
         if (mail_session and not old_mail_pending and getattr(mail_session,"pending",None)) or old_send is None and pending_send is not None:CONFIRM_CHOICE="yes"
     finally:
         _HANDLE_DEPTH -= 1

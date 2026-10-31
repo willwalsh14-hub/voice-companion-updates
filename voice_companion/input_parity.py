@@ -8,7 +8,8 @@ from pathlib import Path
 SCREEN_KEYS = {
     'awake': {'F1': 'help', 'Ctrl+V': 'what version', 'Ctrl+M': 'what mode',
               'Ctrl+G': 'open user guides', 'Ctrl+T': 'start tutorial'},
-    'note': {'Ctrl+S': 'save note', 'Ctrl+R': 'read from top', 'F1': 'help with notepad'},
+    'note': {'Ctrl+S': 'save note', 'Ctrl+R': 'read from top', 'F1': 'help with notepad',
+             'Ctrl+Z': 'undo', 'Ctrl+Y': 'redo'},
     'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+R': 'read email draft', 'F1': 'help with writing email',
                     'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline',
                     'Ctrl+K': 'list contacts', 'Ctrl+O': 'attach a file', 'Ctrl+L': 'list attachments',
@@ -142,6 +143,8 @@ def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
         return None  # arrows, Home and Delete edit a typed command
     if mode == 'mailbox' and key in ('Next', 'Prior') and (context.get('source') or typed_text):
         return None  # Page keys scroll an open message; they change pages only in the list.
+    if mode == 'note' and key in ('Ctrl+Z', 'Ctrl+Y') and typed_text:
+        return None  # words still in the typing box: the box undoes its own typing
     if mode == 'email_draft' and key in BODY_ONLY and email_field:
         return None
     if mode == 'help' and key in HELP_ARTICLE_ONLY and not context.get('help_reader'):

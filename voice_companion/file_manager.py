@@ -97,6 +97,13 @@ def spoken_name(heard):
     said=re.fullmatch(r'(.+?)\s+dot\s+((?:[a-z0-9]\s+){1,4}[a-z0-9]|[a-z0-9]{1,5})',name,re.I)
     return said[1]+'.'+re.sub(r'\s+','',said[2]) if said else name
 
+def keep_type(old,name):
+    """A new name without a file type keeps the old one: "budget" for Budget.docx is budget.docx
+    (Will, October 31, 2026). A name that gives a type ("budget.txt") is used as it is."""
+    old=Path(old)
+    if old.is_dir() or not old.suffix or re.search(r'\.[A-Za-z0-9]{1,5}$',name):return name
+    return name+old.suffix
+
 def shell_thread(function):
     def call(*args,**kwargs):
         import pythoncom
@@ -388,8 +395,8 @@ class FileManager:
         if match:
             targets=self.targets()
             if len(targets)!=1:raise ValueError('Select one item to rename.')
-            if match[1]:return self.mutate('rename',[targets[0].path],name=valid_name(match[1]))
-            self.pending=('rename',[targets[0].path]);return 'Rename '+targets[0].name+'. Type or say the new name, '+('' if targets[0].folder else 'including the extension, ')+'then press Enter.'
+            if match[1]:return self.mutate('rename',[targets[0].path],name=keep_type(targets[0].path,valid_name(match[1])))
+            self.pending=('rename',[targets[0].path]);return 'Rename '+targets[0].name+'. Type or say the new name, then press Enter.'+('' if targets[0].folder else ' A name you say keeps the file type.')
         if cmd in ('status','where am i','current item','read current item'):return location_name(self.location)+'. '+self.say_current()
         if cmd in ('open','enter','okay','ok','activate','confirm','that one'):
             item=self.current()

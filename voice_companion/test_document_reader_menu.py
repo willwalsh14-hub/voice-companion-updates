@@ -48,11 +48,16 @@ class DocumentReaderMenuTests(CompanionTestCase):
         self.assertEqual(mode, 'reader_recent')
         self.assertTrue(self.said[-1].startswith('Recent documents. Orders.txt'), self.said[-1])
         self.assertEqual(self.key('Enter', mode), 'file_reader')
-        self.text.unlink()
+        # Gone after the list was read: Enter says so.
         mode = self.key('Ctrl+R', companion.handle('document reader', 'awake'))
+        self.text.unlink()
         self.assertEqual(self.key('Enter', mode), 'reader_menu')
         self.assertTrue(any('no longer there' in line for line in self.said[-3:]), self.said[-3:])
         self.assertEqual(self.key('Escape', 'reader_recent'), 'reader_menu')
+        # Gone before the list is read: it is taken off the list (Will, October 31, 2026).
+        nav.remember_read(self.text)
+        self.assertEqual(self.key('Ctrl+R', companion.handle('document reader', 'awake')), 'reader_menu')
+        self.assertTrue(self.said[-1].startswith('1 file is gone, so it was removed from the list.'), self.said[-1])
 
     def test_auto_read_option_can_be_turned_off(self):
         companion.PREFERENCES['reader_auto_read'] = False

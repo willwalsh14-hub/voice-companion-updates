@@ -110,6 +110,10 @@ function load(api) {
   await assert.rejects(call('move', {messageIds: [23], folderId: 'account1://Missing'}), /not available/);
   await call('trash', {messageIds: [23]});
   assert.deepEqual(state.deleted.at(-1), {ids: [23], skipTrash: false});
+  // Already in Trash: never deleted for good (Thunderbird would, with no way back).
+  const deletions = state.deleted.length;
+  await assert.rejects(call('trash', {messageIds: [23]}), /already in Trash/);
+  assert.equal(state.deleted.length, deletions);
 
   // Folders: create at the account root, rename, refuse names with slashes.
   const created = await call('createFolder', {accountId: 'account1', name: 'Bills'});

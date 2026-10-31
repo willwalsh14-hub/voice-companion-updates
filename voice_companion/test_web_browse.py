@@ -68,7 +68,7 @@ class WebBrowseTests(unittest.TestCase):
         self.assertIn('heading level 2',cursor.move('2'));self.assertIn('Link',cursor.move('k'))
         self.assertIn('checked',cursor.move('x'));self.assertIn('heading',cursor.move('h',True))
         self.assertIn('Link',cursor.move('',tab=True));self.assertIn('Agree',cursor.move('f'));self.assertIn('button',cursor.move('b'))
-        self.assertEqual(cursor.move('b'),'End of list. No next button.')
+        self.assertEqual(cursor.move('b'),'No next button.')
     def test_table_rows_columns_headers_spans_and_boundaries(self):
         elements=[dict(key='t',role='table',label='Prices',start=0,end=100),cell('h',0,0,'Product',header=True,scope='col'),cell('h2',0,1,'Cost',header=True,scope='col'),cell('a',1,0,'Apple'),cell('b',1,1,'One dollar'),cell('c',2,0,'Summary',colspan=2)]
         cursor=BrowseCursor({'elements':elements});cursor.move('t')

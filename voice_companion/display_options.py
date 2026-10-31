@@ -48,6 +48,8 @@ DEFAULTS = {'display_colors': 'yellow on black', 'display_text_size': '200 perce
             'display_bold': False, 'display_highlight': 'automatic', 'display_spacing': 'one and a half',
             'display_full_screen': True}
 DEFAULT_SIZE = 200
+SIZE_RANGE = ('Text size can be 100 to 400 percent: 100, 125, 150, 175, 200, 250, 300, 350 or 400. '
+              'Nothing changed. Say text size, then one of these.')
 
 # Base sizes in points at 100 percent.
 BASE_SIZES = {'title': 20, 'message': 13, 'body': 12, 'hint': 11, 'heading': 16}
@@ -268,6 +270,9 @@ def voice_request(text):
     match = re.fullmatch(r'(?:set |change |make )?(?:the )?text size(?: to)? (.+)', words)
     if match and size_value(match[1]) is not None:
         return ('size_set', size_value(match[1]))
+    if match and re.fullmatch(r'\d+(?: percent)?', match[1]):
+        # A number that is not a size ("Text size 1000"): say the sizes (Will, October 31, 2026).
+        return ('size_invalid', None)
     match = re.fullmatch(r'(?:use |set |change to |switch to )?(?:the )?(?:colors? |colours? |color scheme |colour scheme )?(?:to )?'
                          r'(yellow on black|white on black|black on white|black on yellow|windows colou?rs)'
                          r'(?: colou?rs| colou?r scheme)?', words)
@@ -316,6 +321,8 @@ def apply_request(values, request):
     action, argument = request[0], request[1]
     if action == 'status':
         return values, status(values)
+    if action == 'size_invalid':
+        return values, SIZE_RANGE
     if action in ('size', 'size_set', 'size_reset'):
         old = percent(values)
         new = step_size(old, argument) if action == 'size' else argument if action == 'size_set' else DEFAULT_SIZE

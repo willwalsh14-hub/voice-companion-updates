@@ -46,7 +46,8 @@ class GuidedChecks(unittest.TestCase):
                 self.assertEqual(hub.station_index,1)
                 companion.handle('that one','media')
                 self.assertEqual(play.call_args.args[0],2)
-                companion.handle('go back','media')
+                # "Go back" leaves the results now, as Escape does (Will, October 31, 2026); Previous moves back.
+                companion.handle('previous','media')
                 self.assertEqual(hub.station_index,0)
                 companion.handle('confirm that','media')
                 self.assertEqual(play.call_args.args[0],1)

@@ -28,6 +28,10 @@ class ThunderbirdUnavailable(OSError):
     """Thunderbird or its Voice Companion add-on is not connected right now."""
 
 
+class Dropped(ThunderbirdUnavailable):
+    """The request was sent, then the connection ended before the answer. It may have been done."""
+
+
 class NoAnswer(ThunderbirdUnavailable):
     """Thunderbird got the request but did not answer in time. It may still do what was asked."""
 
@@ -124,7 +128,7 @@ class MailRelay:
             if not answered:
                 raise NoAnswer('Thunderbird did not answer.')
             if waiter['answer'] is None:
-                raise ThunderbirdUnavailable('Thunderbird did not answer.')
+                raise Dropped('Thunderbird did not answer.')
         finally:
             self.pending.pop(ident, None)
         answer = waiter['answer']

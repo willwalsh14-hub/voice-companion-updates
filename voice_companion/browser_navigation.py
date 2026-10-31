@@ -36,6 +36,13 @@ def prepare_address(spoken):
     if '://' in address and parsed.scheme not in ('http','https'):
         raise ValueError('Use an HTTP or HTTPS website address.')
     host = parsed.hostname or ''
+    if host and not host.isascii():
+        # International names such as münchen.de are sent in the form browsers use, xn--mnchen-3ya.de
+        # (Will, October 31, 2026).
+        try:
+            host = host.encode('idna').decode('ascii').lower()
+        except UnicodeError as exc:
+            raise ValueError('I could not understand that website address.') from exc
     try:
         port = parsed.port
     except ValueError as exc:
@@ -52,11 +59,11 @@ def looks_like_address(text):
     value=str(text).strip().rstrip('.!?,;')
     if re.search(r'\s',value):return False
     if re.match(r'^https?://\S+',value,re.I):return True
-    match=re.match(r'^((?:[A-Za-z0-9-]+)(?:\.[A-Za-z0-9-]+)+)(?:[/?:#]|$)',value)
+    match=re.match(r'^((?:[^\W_]|-)+(?:\.(?:[^\W_]|-)+)+)(?:[/?:#]|$)',value)
     if not match:return False
     # A plain number such as 98.6 or 3.14 is a search, not a website; keep IPv4 addresses.
     labels=match[1].split('.')
-    return bool(re.search(r'[A-Za-z]',labels[-1])) or len(labels)==4 and all(label.isdigit() for label in labels)
+    return bool(re.search(r'[^\W\d_]',labels[-1])) or len(labels)==4 and all(label.isdigit() for label in labels)
 
 def contains_address(text):
     return bool(re.search(r'@|https?://|www\.|\b[A-Za-z0-9-]+\.(?:[A-Za-z]{2,})(?:\b|/)|\b(?:at|dot)\b.+\b(?:dot|com|org|net|co|edu)\b',str(text),re.I))

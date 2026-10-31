@@ -15,6 +15,21 @@ from address_book import AddressBook
 from ai_dictation import prepare_dictation
 
 
+def flushed_write(path, data):
+    """Write the draft's temporary file all the way to the disk before it replaces the saved one, as
+    documents do: a power cut must not leave an empty draft (sweep, October 31, 2026). A full disk or
+    a locked file leaves no half-written copy behind."""
+    try:
+        with open(path, 'wb') as file:
+            file.write(data)
+            file.flush()
+            os.fsync(file.fileno())
+    except BaseException:
+        try: Path(path).unlink()
+        except OSError: pass
+        raise
+
+
 def email_field_destination(spoken):
     """Recognize short field navigation even with common speech homophones."""
     words = re.sub(r'[^a-z ]', ' ', spoken.casefold()).split()
@@ -110,6 +125,8 @@ RECEIPT_COMMANDS = {
     'remove read receipt': False, 'remove the read receipt': False, 'cancel read receipt': False, 'return receipt off': False,
     'read receipt on or off': 'toggle', 'toggle read receipt': 'toggle',
 }
+# The phrases Control+Shift+I and Control+Shift+T send (input_parity.SCREEN_KEYS).
+KEY_OPTIONS = ('change importance', 'read receipt on or off')
 RECEIPT_QUESTIONS = ('read receipt', 'is there a read receipt', 'is a read receipt on', 'read receipt status')
 
 
@@ -260,6 +277,10 @@ class VoiceEmail(VoiceDocument):
         """Importance and read receipt. Only the whole phrase counts, so a sentence such as
         "This is of high importance." stays in the message."""
         command = re.sub(r'[,;]', '', command).strip()
+        if self.compose_step == 'subject' and command not in KEY_OPTIONS:
+            # In the Subject box, words such as "High priority" are the subject (writing comes
+            # first). Control+Shift+I and Control+Shift+T still work there.
+            return ''
         level = IMPORTANCE_COMMANDS.get(command)
         if level == 'next':
             order = ('', 'high', 'low')
@@ -336,7 +357,7 @@ class VoiceEmail(VoiceDocument):
             'paragraphs': [asdict(p) for p in self.paragraphs],
         }
         temporary = self.state_path.with_suffix('.writing.json')
-        temporary.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding='utf-8')
+        flushed_write(temporary, json.dumps(state, ensure_ascii=False, indent=2).encode('utf-8'))
         keep_previous(self.state_path)
         temporary.replace(self.state_path)
         msg = EmailMessage()
@@ -376,7 +397,7 @@ class VoiceEmail(VoiceDocument):
             data = (data[:end] + b''.join(b'--' + boundary.encode('ascii') + b'\n' + part + b'\n' for part in parts)
                     + b'--' + boundary.encode('ascii') + b'--\n')
         output = self.path.with_suffix('.writing.eml')
-        output.write_bytes(data)
+        flushed_write(output, data)
         output.replace(self.path)
         return self.path
 
@@ -553,7 +574,10 @@ class VoiceEmail(VoiceDocument):
             if self.compose_step == 'body':
                 return 'Recipient recorded as ' + recipient + '. Back to the message body.'
             return 'Recipient recorded as ' + recipient + '. What is the subject? You can also say CC or BCC first.'
-        if command.startswith('subject is ') and not (self.response_context and in_body):
+        # In the message, "Subject is ..." is words (writing comes first), unless nothing is written
+        # yet and there is no subject: then it can only mean the subject (sweep, October 31, 2026).
+        body_started = bool(self.subject) or any(p.text.strip() for p in self.paragraphs)
+        if command.startswith('subject is ') and not (in_body and (self.response_context or body_started)):
             if self.response_context:
                 # A reply keeps its subject: in the message, "Subject is ..." is only words (above).
                 return REPLY_SUBJECT

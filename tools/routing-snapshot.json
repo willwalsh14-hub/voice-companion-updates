@@ -664,7 +664,7 @@
 },
 "awake | back": {
 "said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"You are on the main menu. It is the first screen, so there is nothing to go back to. Say a choice, or say help."
 ],
 "screen_after": "awake"
 },
@@ -1874,13 +1874,19 @@
 },
 "awake | go back": {
 "said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"You are on the main menu. It is the first screen, so there is nothing to go back to. Say a choice, or say help."
 ],
 "screen_after": "awake"
 },
 "awake | go back a list": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | go back a screen": {
+"said": [
+"You are on the main menu. It is the first screen, so there is nothing to go back to. Say a choice, or say help."
 ],
 "screen_after": "awake"
 },
@@ -2055,6 +2061,12 @@
 "screen_after": "media"
 },
 "awake | importance": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | in": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
@@ -2423,6 +2435,12 @@
 "screen_after": "awake"
 },
 "awake | media": {
+"said": [
+"Media menu. Radio (R), 1 of 4."
+],
+"screen_after": "media_menu"
+},
+"awake | media menu": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
 ],
@@ -2837,6 +2855,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | open earlier copy": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | open email": {
 "said": [
 "No email account is set up yet. Say add account to set one up."
@@ -3040,6 +3064,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | open the earlier copy": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | open the inbox": {
 "said": [
 "No email account is set up yet. Say add account to set one up."
@@ -3153,9 +3183,7 @@
 "screen_after": "awake"
 },
 "awake | pause": {
-"said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
-],
+"said": [],
 "screen_after": "awake"
 },
 "awake | pending": {
@@ -3200,9 +3228,21 @@
 ],
 "screen_after": "awake"
 },
+"awake | please send": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | please send it": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | please send my email": {
+"said": [
+"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
 ],
 "screen_after": "awake"
 },
@@ -3325,6 +3365,12 @@
 "No radio presets yet."
 ],
 "screen_after": "media"
+},
+"awake | previous screen": {
+"said": [
+"You are on the main menu. It is the first screen, so there is nothing to go back to. Say a choice, or say help."
+],
+"screen_after": "awake"
 },
 "awake | previous show": {
 "said": [
@@ -3675,6 +3721,12 @@
 ],
 "screen_after": "power_confirm"
 },
+"awake | restore earlier copy": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | resume": {
 "said": [],
 "screen_after": "awake"
@@ -3829,6 +3881,18 @@
 ],
 "screen_after": "awake"
 },
+"awake | scratch": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | scratch that": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | search": {
 "said": [
 "Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
@@ -3905,13 +3969,43 @@
 ],
 "screen_after": "awake"
 },
+"awake | send email now": {
+"said": [
+"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
 "awake | send it": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
 "screen_after": "awake"
 },
+"awake | send it now": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | send message": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | send my email": {
+"said": [
+"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | send my message": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | send now": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
@@ -3929,6 +4023,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | send the message": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | send this": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -3938,6 +4038,12 @@
 "awake | send this email": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | send this message": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
 ],
 "screen_after": "awake"
 },
@@ -4209,6 +4315,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | storage": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | subject": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -4359,6 +4471,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | the same screen": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | thunderbird": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -4414,6 +4532,12 @@
 "screen_after": "awake"
 },
 "awake | type new line": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | unittest": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
@@ -4479,6 +4603,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | use earlier copy": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | use espeak": {
 "said": [
 "That synthesizer is not configured. Ask your trainer to check setup."
@@ -4508,6 +4638,12 @@
 "Say search followed by a station name, browse genre jazz, list stations, or play station followed by its number."
 ],
 "screen_after": "media"
+},
+"awake | use the earlier copy": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
 },
 "awake | use voice": {
 "said": [
@@ -5023,6 +5159,12 @@
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
 "screen_after": "awake"
+},
+"awake | youtube": {
+"said": [
+"YouTube menu. Search (S), 1 of 9. Control+F."
+],
+"screen_after": "youtube"
 },
 "document | Add appointment tomorrow at 3 PM called doctor": {
 "said": [
@@ -7792,6 +7934,15 @@
 "Hello world. Second sentence. go back a list"
 ]
 },
+"document | go back a screen": {
+"said": [
+"go back a screen"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go back a screen"
+]
+},
 "document | go to": {
 "said": [
 "go to"
@@ -8042,6 +8193,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. importance"
+]
+},
+"document | in": {
+"said": [
+"in"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. in"
 ]
 },
 "document | inbox": {
@@ -8573,6 +8733,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. media"
+]
+},
+"document | media menu": {
+"said": [
+"media menu"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. media menu"
 ]
 },
 "document | message": {
@@ -9170,6 +9339,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | open earlier copy": {
+"said": [
+"open earlier copy"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open earlier copy"
+]
+},
 "document | open email": {
 "said": [
 "No email account is set up yet. Say add account to set one up."
@@ -9472,6 +9650,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | open the earlier copy": {
+"said": [
+"open the earlier copy"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open the earlier copy"
+]
+},
 "document | open the inbox": {
 "said": [
 "open the inbox"
@@ -9697,6 +9884,15 @@
 "Hello world. Second sentence. play station"
 ]
 },
+"document | please send": {
+"said": [
+"please send"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. please send"
+]
+},
 "document | please send it": {
 "said": [
 "please send it"
@@ -9704,6 +9900,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. please send it"
+]
+},
+"document | please send my email": {
+"said": [
+"please send my email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. please send my email"
 ]
 },
 "document | please send that": {
@@ -9884,6 +10089,15 @@
 "screen_after": "media",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | previous screen": {
+"said": [
+"previous screen"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. previous screen"
 ]
 },
 "document | previous show": {
@@ -10395,6 +10609,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | restore earlier copy": {
+"said": [
+"restore earlier copy"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. restore earlier copy"
+]
+},
 "document | resume": {
 "said": [],
 "screen_after": "document",
@@ -10627,6 +10850,24 @@
 "Hello world. Second sentence. schedule station"
 ]
 },
+"document | scratch": {
+"said": [
+"There is no recent dictated text or selected text to scratch. Say undo for another change."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | scratch that": {
+"said": [
+"There is no recent dictated text or selected text to scratch. Say undo for another change."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | search": {
 "said": [
 "search"
@@ -10726,6 +10967,15 @@
 "Hello world. Second sentence. send email"
 ]
 },
+"document | send email now": {
+"said": [
+"send email now"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. send email now"
+]
+},
 "document | send it": {
 "said": [
 "send it"
@@ -10735,6 +10985,15 @@
 "Hello world. Second sentence. send it"
 ]
 },
+"document | send it now": {
+"said": [
+"send it now"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. send it now"
+]
+},
 "document | send message": {
 "said": [
 "send message"
@@ -10742,6 +11001,33 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. send message"
+]
+},
+"document | send my email": {
+"said": [
+"send my email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. send my email"
+]
+},
+"document | send my message": {
+"said": [
+"send my message"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. send my message"
+]
+},
+"document | send now": {
+"said": [
+"send now"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. send now"
 ]
 },
 "document | send that": {
@@ -10762,6 +11048,15 @@
 "Hello world. Second sentence. send the email"
 ]
 },
+"document | send the message": {
+"said": [
+"send the message"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. send the message"
+]
+},
 "document | send this": {
 "said": [
 "send this"
@@ -10778,6 +11073,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. send this email"
+]
+},
+"document | send this message": {
+"said": [
+"send this message"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. send this message"
 ]
 },
 "document | session": {
@@ -11183,6 +11487,15 @@
 "Hello world. Second sentence. stop update"
 ]
 },
+"document | storage": {
+"said": [
+"storage"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. storage"
+]
+},
 "document | subject": {
 "said": [
 "subject"
@@ -11408,6 +11721,15 @@
 "Hello world. Second sentence. that one"
 ]
 },
+"document | the same screen": {
+"said": [
+"the same screen"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. the same screen"
+]
+},
 "document | thunderbird": {
 "said": [
 "thunderbird"
@@ -11496,6 +11818,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. new line"
+]
+},
+"document | unittest": {
+"said": [
+"unittest"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. unittest"
 ]
 },
 "document | update my thunderbird": {
@@ -11588,6 +11919,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | use earlier copy": {
+"said": [
+"use earlier copy"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. use earlier copy"
+]
+},
 "document | use espeak": {
 "said": [
 "That synthesizer is not configured. Ask your trainer to check setup."
@@ -11631,6 +11971,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. use station database"
+]
+},
+"document | use the earlier copy": {
+"said": [
+"use the earlier copy"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. use the earlier copy"
 ]
 },
 "document | use voice": {
@@ -12353,6 +12702,15 @@
 "Hello world. Second sentence. yes send that"
 ]
 },
+"document | youtube": {
+"said": [
+"youtube"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. youtube"
+]
+},
 "email_draft | Add appointment tomorrow at 3 PM called doctor": {
 "said": [
 "Add appointment tomorrow at 3 PM called doctor"
@@ -12850,11 +13208,11 @@
 },
 "email_draft | Subject is closed for now.": {
 "said": [
-"Subject recorded as closed for now. What would you like the message to say?"
+"Subject is closed for now."
 ],
 "screen_after": "email_draft",
 "text": [
-"Hello world."
+"Hello world. Subject is closed for now."
 ]
 },
 "email_draft | Switch to the left lane at the light.": {
@@ -15245,6 +15603,15 @@
 "Hello world. go back a list"
 ]
 },
+"email_draft | go back a screen": {
+"said": [
+"go back a screen"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. go back a screen"
+]
+},
 "email_draft | go to": {
 "said": [
 "go to"
@@ -15510,6 +15877,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | in": {
+"said": [
+"in"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. in"
 ]
 },
 "email_draft | inbox": {
@@ -16048,6 +16424,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. media"
+]
+},
+"email_draft | media menu": {
+"said": [
+"media menu"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. media menu"
 ]
 },
 "email_draft | message": {
@@ -16655,6 +17040,15 @@
 "Hello world."
 ]
 },
+"email_draft | open earlier copy": {
+"said": [
+"open earlier copy"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open earlier copy"
+]
+},
 "email_draft | open email": {
 "said": [
 "No email account is set up yet. Say add account to set one up."
@@ -16957,6 +17351,15 @@
 "Hello world."
 ]
 },
+"email_draft | open the earlier copy": {
+"said": [
+"open the earlier copy"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open the earlier copy"
+]
+},
 "email_draft | open the inbox": {
 "said": [
 "open the inbox"
@@ -17182,7 +17585,25 @@
 "Hello world. play station"
 ]
 },
+"email_draft | please send": {
+"said": [
+"That account is not connected. The draft is saved locally. It has not been sent."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | please send it": {
+"said": [
+"That account is not connected. The draft is saved locally. It has not been sent."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | please send my email": {
 "said": [
 "That account is not connected. The draft is saved locally. It has not been sent."
 ],
@@ -17369,6 +17790,15 @@
 "screen_after": "media",
 "text": [
 "Hello world."
+]
+},
+"email_draft | previous screen": {
+"said": [
+"previous screen"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. previous screen"
 ]
 },
 "email_draft | previous show": {
@@ -17880,6 +18310,15 @@
 "Hello world."
 ]
 },
+"email_draft | restore earlier copy": {
+"said": [
+"restore earlier copy"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. restore earlier copy"
+]
+},
 "email_draft | resume": {
 "said": [],
 "screen_after": "email_draft",
@@ -17939,7 +18378,7 @@
 },
 "email_draft | save": {
 "said": [
-"Email draft saved locally as Routing check 438. It has not been sent."
+"Email draft saved locally as Routing check 447. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17957,7 +18396,7 @@
 },
 "email_draft | save document": {
 "said": [
-"Email draft saved locally as Routing check 439. It has not been sent."
+"Email draft saved locally as Routing check 448. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17975,7 +18414,7 @@
 },
 "email_draft | save draft": {
 "said": [
-"Email draft saved locally as Routing check 440. It has not been sent."
+"Email draft saved locally as Routing check 449. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -18002,7 +18441,7 @@
 },
 "email_draft | save it": {
 "said": [
-"Email draft saved locally as Routing check 442. It has not been sent."
+"Email draft saved locally as Routing check 451. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -18011,7 +18450,7 @@
 },
 "email_draft | save my document": {
 "said": [
-"Email draft saved locally as Routing check 443. It has not been sent."
+"Email draft saved locally as Routing check 452. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -18117,6 +18556,24 @@
 "Hello world. schedule station"
 ]
 },
+"email_draft | scratch": {
+"said": [
+"There is no recent dictated text or selected text to scratch. Say undo for another change."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | scratch that": {
+"said": [
+"There is no recent dictated text or selected text to scratch. Say undo for another change."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | search": {
 "said": [
 "search"
@@ -18216,6 +18673,15 @@
 "Hello world."
 ]
 },
+"email_draft | send email now": {
+"said": [
+"That account is not connected. The draft is saved locally. It has not been sent."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | send it": {
 "said": [
 "That account is not connected. The draft is saved locally. It has not been sent."
@@ -18225,7 +18691,43 @@
 "Hello world."
 ]
 },
+"email_draft | send it now": {
+"said": [
+"That account is not connected. The draft is saved locally. It has not been sent."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | send message": {
+"said": [
+"That account is not connected. The draft is saved locally. It has not been sent."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | send my email": {
+"said": [
+"That account is not connected. The draft is saved locally. It has not been sent."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | send my message": {
+"said": [
+"That account is not connected. The draft is saved locally. It has not been sent."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | send now": {
 "said": [
 "That account is not connected. The draft is saved locally. It has not been sent."
 ],
@@ -18252,6 +18754,15 @@
 "Hello world."
 ]
 },
+"email_draft | send the message": {
+"said": [
+"That account is not connected. The draft is saved locally. It has not been sent."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | send this": {
 "said": [
 "That account is not connected. The draft is saved locally. It has not been sent."
@@ -18262,6 +18773,15 @@
 ]
 },
 "email_draft | send this email": {
+"said": [
+"That account is not connected. The draft is saved locally. It has not been sent."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | send this message": {
 "said": [
 "That account is not connected. The draft is saved locally. It has not been sent."
 ],
@@ -18673,6 +19193,15 @@
 "Hello world. stop update"
 ]
 },
+"email_draft | storage": {
+"said": [
+"storage"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. storage"
+]
+},
 "email_draft | subject": {
 "said": [
 "subject"
@@ -18898,6 +19427,15 @@
 "Hello world. that one"
 ]
 },
+"email_draft | the same screen": {
+"said": [
+"the same screen"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. the same screen"
+]
+},
 "email_draft | thunderbird": {
 "said": [
 "thunderbird"
@@ -18986,6 +19524,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. new line"
+]
+},
+"email_draft | unittest": {
+"said": [
+"unittest"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. unittest"
 ]
 },
 "email_draft | update my thunderbird": {
@@ -19078,6 +19625,15 @@
 "Hello world."
 ]
 },
+"email_draft | use earlier copy": {
+"said": [
+"use earlier copy"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. use earlier copy"
+]
+},
 "email_draft | use espeak": {
 "said": [
 "That synthesizer is not configured. Ask your trainer to check setup."
@@ -19121,6 +19677,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. use station database"
+]
+},
+"email_draft | use the earlier copy": {
+"said": [
+"use the earlier copy"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. use the earlier copy"
 ]
 },
 "email_draft | use voice": {
@@ -19841,6 +20406,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | youtube": {
+"said": [
+"youtube"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. youtube"
 ]
 },
 "help | Add appointment tomorrow at 3 PM called doctor": {
@@ -21690,6 +22264,12 @@
 ],
 "screen_after": "help"
 },
+"help | go back a screen": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | go to": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -21853,6 +22433,12 @@
 "screen_after": "help"
 },
 "help | importance": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | in": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -22207,6 +22793,12 @@
 "screen_after": "help"
 },
 "help | media": {
+"said": [
+"Media menu. Radio (R), 1 of 4."
+],
+"screen_after": "media_menu"
+},
+"help | media menu": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
 ],
@@ -22609,6 +23201,12 @@
 ],
 "screen_after": "help"
 },
+"help | open earlier copy": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | open email": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -22812,6 +23410,12 @@
 ],
 "screen_after": "help"
 },
+"help | open the earlier copy": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | open the inbox": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -22962,7 +23566,19 @@
 ],
 "screen_after": "help"
 },
+"help | please send": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | please send it": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | please send my email": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -23083,6 +23699,12 @@
 "screen_after": "help"
 },
 "help | previous preset": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | previous screen": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -23430,6 +24052,12 @@
 ],
 "screen_after": "power_confirm"
 },
+"help | restore earlier copy": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | resume": {
 "said": [],
 "screen_after": "help"
@@ -23584,6 +24212,18 @@
 ],
 "screen_after": "help"
 },
+"help | scratch": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | scratch that": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | search": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -23650,13 +24290,43 @@
 ],
 "screen_after": "help"
 },
+"help | send email now": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | send it": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
 "screen_after": "help"
 },
+"help | send it now": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | send message": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | send my email": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | send my message": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | send now": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -23674,6 +24344,12 @@
 ],
 "screen_after": "help"
 },
+"help | send the message": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | send this": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -23681,6 +24357,12 @@
 "screen_after": "help"
 },
 "help | send this email": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | send this message": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -23954,6 +24636,12 @@
 ],
 "screen_after": "help"
 },
+"help | storage": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | subject": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -24104,6 +24792,12 @@
 ],
 "screen_after": "help"
 },
+"help | the same screen": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | thunderbird": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -24159,6 +24853,12 @@
 "screen_after": "help"
 },
 "help | type new line": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | unittest": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -24224,6 +24924,12 @@
 ],
 "screen_after": "help"
 },
+"help | use earlier copy": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | use espeak": {
 "said": [
 "That synthesizer is not configured. Ask your trainer to check setup."
@@ -24249,6 +24955,12 @@
 "screen_after": "help"
 },
 "help | use station database": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | use the earlier copy": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -24729,6 +25441,12 @@
 "screen_after": "help"
 },
 "help | yes send that": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | youtube": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -27259,6 +27977,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | go back a screen": {
+"calls": [
+"call.process('go back a screen')"
+],
+"said": [
+"session handled: go back a screen"
+],
+"screen_after": "mailbox"
+},
 "mailbox | go to": {
 "calls": [
 "call.process('go to')"
@@ -27494,6 +28221,15 @@
 ],
 "said": [
 "session handled: importance"
+],
+"screen_after": "mailbox"
+},
+"mailbox | in": {
+"calls": [
+"call.process('in')"
+],
+"said": [
+"session handled: in"
 ],
 "screen_after": "mailbox"
 },
@@ -27957,6 +28693,12 @@
 "screen_after": "mailbox"
 },
 "mailbox | media": {
+"said": [
+"Media menu. Radio (R), 1 of 4."
+],
+"screen_after": "media_menu"
+},
+"mailbox | media menu": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
 ],
@@ -28513,9 +29255,21 @@
 ],
 "screen_after": "mailbox"
 },
-"mailbox | open email": {
+"mailbox | open earlier copy": {
+"calls": [
+"call.process('open earlier copy')"
+],
 "said": [
-"No email account is set up yet. Say add account to set one up."
+"session handled: open earlier copy"
+],
+"screen_after": "mailbox"
+},
+"mailbox | open email": {
+"calls": [
+"call.process('open email')"
+],
+"said": [
+"session handled: open email"
 ],
 "screen_after": "mailbox"
 },
@@ -28776,6 +29530,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | open the earlier copy": {
+"calls": [
+"call.process('open the earlier copy')"
+],
+"said": [
+"session handled: open the earlier copy"
+],
+"screen_after": "mailbox"
+},
 "mailbox | open the inbox": {
 "calls": [
 "call.process('open the inbox')"
@@ -28980,12 +29743,30 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | please send": {
+"calls": [
+"call.process('please send')"
+],
+"said": [
+"session handled: please send"
+],
+"screen_after": "mailbox"
+},
 "mailbox | please send it": {
 "calls": [
 "call.process('please send it')"
 ],
 "said": [
 "session handled: please send it"
+],
+"screen_after": "mailbox"
+},
+"mailbox | please send my email": {
+"calls": [
+"call.process('please send my email')"
+],
+"said": [
+"session handled: please send my email"
 ],
 "screen_after": "mailbox"
 },
@@ -29147,6 +29928,15 @@
 "No radio presets yet."
 ],
 "screen_after": "media"
+},
+"mailbox | previous screen": {
+"calls": [
+"call.process('previous screen')"
+],
+"said": [
+"session handled: previous screen"
+],
+"screen_after": "mailbox"
 },
 "mailbox | previous show": {
 "calls": [
@@ -29614,6 +30404,15 @@
 ],
 "screen_after": "power_confirm"
 },
+"mailbox | restore earlier copy": {
+"calls": [
+"call.process('restore earlier copy')"
+],
+"said": [
+"session handled: restore earlier copy"
+],
+"screen_after": "mailbox"
+},
 "mailbox | resume": {
 "said": [],
 "screen_after": "mailbox"
@@ -29837,6 +30636,24 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | scratch": {
+"calls": [
+"call.process('scratch')"
+],
+"said": [
+"session handled: scratch"
+],
+"screen_after": "mailbox"
+},
+"mailbox | scratch that": {
+"calls": [
+"call.process('scratch that')"
+],
+"said": [
+"session handled: scratch that"
+],
+"screen_after": "mailbox"
+},
 "mailbox | search": {
 "calls": [
 "call.process('search')"
@@ -29933,6 +30750,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | send email now": {
+"calls": [
+"call.process('send email now')"
+],
+"said": [
+"session handled: send email now"
+],
+"screen_after": "mailbox"
+},
 "mailbox | send it": {
 "calls": [
 "call.process('send it')"
@@ -29942,12 +30768,48 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | send it now": {
+"calls": [
+"call.process('send it now')"
+],
+"said": [
+"session handled: send it now"
+],
+"screen_after": "mailbox"
+},
 "mailbox | send message": {
 "calls": [
 "call.process('send message')"
 ],
 "said": [
 "session handled: send message"
+],
+"screen_after": "mailbox"
+},
+"mailbox | send my email": {
+"calls": [
+"call.process('send my email')"
+],
+"said": [
+"session handled: send my email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | send my message": {
+"calls": [
+"call.process('send my message')"
+],
+"said": [
+"session handled: send my message"
+],
+"screen_after": "mailbox"
+},
+"mailbox | send now": {
+"calls": [
+"call.process('send now')"
+],
+"said": [
+"session handled: send now"
 ],
 "screen_after": "mailbox"
 },
@@ -29969,6 +30831,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | send the message": {
+"calls": [
+"call.process('send the message')"
+],
+"said": [
+"session handled: send the message"
+],
+"screen_after": "mailbox"
+},
 "mailbox | send this": {
 "calls": [
 "call.process('send this')"
@@ -29984,6 +30855,15 @@
 ],
 "said": [
 "session handled: send this email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | send this message": {
+"calls": [
+"call.process('send this message')"
+],
+"said": [
+"session handled: send this message"
 ],
 "screen_after": "mailbox"
 },
@@ -30333,6 +31213,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | storage": {
+"calls": [
+"call.process('storage')"
+],
+"said": [
+"session handled: storage"
+],
+"screen_after": "mailbox"
+},
 "mailbox | subject": {
 "calls": [
 "call.process('subject')"
@@ -30513,6 +31402,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | the same screen": {
+"calls": [
+"call.process('the same screen')"
+],
+"said": [
+"session handled: the same screen"
+],
+"screen_after": "mailbox"
+},
 "mailbox | thunderbird": {
 "calls": [
 "call.process('thunderbird')"
@@ -30600,6 +31498,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | unittest": {
+"calls": [
+"call.process('unittest')"
+],
+"said": [
+"session handled: unittest"
+],
+"screen_after": "mailbox"
+},
 "mailbox | update my thunderbird": {
 "said": [
 "Thunderbird is not on this computer. To install it, say add Thunderbird account."
@@ -30669,6 +31576,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | use earlier copy": {
+"calls": [
+"call.process('use earlier copy')"
+],
+"said": [
+"session handled: use earlier copy"
+],
+"screen_after": "mailbox"
+},
 "mailbox | use espeak": {
 "said": [
 "That synthesizer is not configured. Ask your trainer to check setup."
@@ -30702,6 +31618,15 @@
 ],
 "said": [
 "session handled: use station database"
+],
+"screen_after": "mailbox"
+},
+"mailbox | use the earlier copy": {
+"calls": [
+"call.process('use the earlier copy')"
+],
+"said": [
+"session handled: use the earlier copy"
 ],
 "screen_after": "mailbox"
 },
@@ -31303,6 +32228,12 @@
 "session handled: yes send that"
 ],
 "screen_after": "mailbox"
+},
+"mailbox | youtube": {
+"said": [
+"YouTube menu. Search (S), 1 of 9. Control+F."
+],
+"screen_after": "youtube"
 },
 "note | Add appointment tomorrow at 3 PM called doctor": {
 "said": [
@@ -33153,6 +34084,12 @@
 ],
 "screen_after": "note"
 },
+"note | go back a screen": {
+"said": [
+"go back a screen"
+],
+"screen_after": "note"
+},
 "note | go to": {
 "said": [
 "go to"
@@ -33318,6 +34255,12 @@
 "note | importance": {
 "said": [
 "importance"
+],
+"screen_after": "note"
+},
+"note | in": {
+"said": [
+"in"
 ],
 "screen_after": "note"
 },
@@ -33670,6 +34613,12 @@
 "screen_after": "note"
 },
 "note | media": {
+"said": [
+"Media menu. Radio (R), 1 of 4."
+],
+"screen_after": "media_menu"
+},
+"note | media menu": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
 ],
@@ -34071,6 +35020,12 @@
 ],
 "screen_after": "note"
 },
+"note | open earlier copy": {
+"said": [
+"open earlier copy"
+],
+"screen_after": "note"
+},
 "note | open email": {
 "said": [
 "No email account is set up yet. Say add account to set one up."
@@ -34274,6 +35229,12 @@
 ],
 "screen_after": "note"
 },
+"note | open the earlier copy": {
+"said": [
+"open the earlier copy"
+],
+"screen_after": "note"
+},
 "note | open the inbox": {
 "said": [
 "open the inbox"
@@ -34424,9 +35385,21 @@
 ],
 "screen_after": "note"
 },
+"note | please send": {
+"said": [
+"please send"
+],
+"screen_after": "note"
+},
 "note | please send it": {
 "said": [
 "please send it"
+],
+"screen_after": "note"
+},
+"note | please send my email": {
+"said": [
+"please send my email"
 ],
 "screen_after": "note"
 },
@@ -34549,6 +35522,12 @@
 "No radio presets yet."
 ],
 "screen_after": "media"
+},
+"note | previous screen": {
+"said": [
+"previous screen"
+],
+"screen_after": "note"
 },
 "note | previous show": {
 "said": [
@@ -34891,6 +35870,12 @@
 ],
 "screen_after": "power_confirm"
 },
+"note | restore earlier copy": {
+"said": [
+"restore earlier copy"
+],
+"screen_after": "note"
+},
 "note | resume": {
 "said": [],
 "screen_after": "note"
@@ -35046,6 +36031,18 @@
 ],
 "screen_after": "note"
 },
+"note | scratch": {
+"said": [
+"Nothing to scratch. Say undo to undo the last change."
+],
+"screen_after": "note"
+},
+"note | scratch that": {
+"said": [
+"Nothing to scratch. Say undo to undo the last change."
+],
+"screen_after": "note"
+},
 "note | search": {
 "said": [
 "search"
@@ -35112,15 +36109,45 @@
 ],
 "screen_after": "note"
 },
+"note | send email now": {
+"said": [
+"send email now"
+],
+"screen_after": "note"
+},
 "note | send it": {
 "said": [
 "send it"
 ],
 "screen_after": "note"
 },
+"note | send it now": {
+"said": [
+"send it now"
+],
+"screen_after": "note"
+},
 "note | send message": {
 "said": [
 "send message"
+],
+"screen_after": "note"
+},
+"note | send my email": {
+"said": [
+"send my email"
+],
+"screen_after": "note"
+},
+"note | send my message": {
+"said": [
+"send my message"
+],
+"screen_after": "note"
+},
+"note | send now": {
+"said": [
+"send now"
 ],
 "screen_after": "note"
 },
@@ -35136,6 +36163,12 @@
 ],
 "screen_after": "note"
 },
+"note | send the message": {
+"said": [
+"send the message"
+],
+"screen_after": "note"
+},
 "note | send this": {
 "said": [
 "send this"
@@ -35145,6 +36178,12 @@
 "note | send this email": {
 "said": [
 "send this email"
+],
+"screen_after": "note"
+},
+"note | send this message": {
+"said": [
+"send this message"
 ],
 "screen_after": "note"
 },
@@ -35416,6 +36455,12 @@
 ],
 "screen_after": "note"
 },
+"note | storage": {
+"said": [
+"storage"
+],
+"screen_after": "note"
+},
 "note | subject": {
 "said": [
 "subject"
@@ -35566,6 +36611,12 @@
 ],
 "screen_after": "note"
 },
+"note | the same screen": {
+"said": [
+"the same screen"
+],
+"screen_after": "note"
+},
 "note | thunderbird": {
 "said": [
 "thunderbird"
@@ -35623,6 +36674,12 @@
 "note | type new line": {
 "said": [
 "new line"
+],
+"screen_after": "note"
+},
+"note | unittest": {
+"said": [
+"unittest"
 ],
 "screen_after": "note"
 },
@@ -35686,6 +36743,12 @@
 ],
 "screen_after": "note"
 },
+"note | use earlier copy": {
+"said": [
+"use earlier copy"
+],
+"screen_after": "note"
+},
 "note | use espeak": {
 "said": [
 "That synthesizer is not configured. Ask your trainer to check setup."
@@ -35713,6 +36776,12 @@
 "note | use station database": {
 "said": [
 "use station database"
+],
+"screen_after": "note"
+},
+"note | use the earlier copy": {
+"said": [
+"use the earlier copy"
 ],
 "screen_after": "note"
 },
@@ -36193,6 +37262,12 @@
 "note | yes send that": {
 "said": [
 "yes send that"
+],
+"screen_after": "note"
+},
+"note | youtube": {
+"said": [
+"youtube"
 ],
 "screen_after": "note"
 },
@@ -38958,6 +40033,16 @@
 ],
 "screen_after": "web"
 },
+"web | go back a screen": {
+"calls": [
+"call.command('go back a screen')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go back a screen"
+],
+"screen_after": "web"
+},
 "web | go to": {
 "calls": [
 "call.command('go to')",
@@ -39223,6 +40308,16 @@
 ],
 "said": [
 "session handled: importance"
+],
+"screen_after": "web"
+},
+"web | in": {
+"calls": [
+"call.command('in')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: in"
 ],
 "screen_after": "web"
 },
@@ -39746,6 +40841,12 @@
 "screen_after": "web"
 },
 "web | media": {
+"said": [
+"Media menu. Radio (R), 1 of 4."
+],
+"screen_after": "media_menu"
+},
+"web | media menu": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
 ],
@@ -40359,6 +41460,16 @@
 ],
 "screen_after": "web"
 },
+"web | open earlier copy": {
+"calls": [
+"call.command('open earlier copy')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open earlier copy"
+],
+"screen_after": "web"
+},
 "web | open email": {
 "said": [
 "No email account is set up yet. Say add account to set one up."
@@ -40650,6 +41761,16 @@
 ],
 "screen_after": "web"
 },
+"web | open the earlier copy": {
+"calls": [
+"call.command('open the earlier copy')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open the earlier copy"
+],
+"screen_after": "web"
+},
 "web | open the inbox": {
 "calls": [
 "call.command('open the inbox')",
@@ -40868,6 +41989,16 @@
 ],
 "screen_after": "web"
 },
+"web | please send": {
+"calls": [
+"call.command('please send')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: please send"
+],
+"screen_after": "web"
+},
 "web | please send it": {
 "calls": [
 "call.command('please send it')",
@@ -40875,6 +42006,16 @@
 ],
 "said": [
 "session handled: please send it"
+],
+"screen_after": "web"
+},
+"web | please send my email": {
+"calls": [
+"call.command('please send my email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: please send my email"
 ],
 "screen_after": "web"
 },
@@ -41055,6 +42196,16 @@
 ],
 "said": [
 "session handled: previous preset"
+],
+"screen_after": "web"
+},
+"web | previous screen": {
+"calls": [
+"call.command('previous screen')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: previous screen"
 ],
 "screen_after": "web"
 },
@@ -41563,6 +42714,16 @@
 ],
 "screen_after": "power_confirm"
 },
+"web | restore earlier copy": {
+"calls": [
+"call.command('restore earlier copy')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: restore earlier copy"
+],
+"screen_after": "web"
+},
 "web | resume": {
 "said": [],
 "screen_after": "web"
@@ -41817,6 +42978,26 @@
 ],
 "screen_after": "web"
 },
+"web | scratch": {
+"calls": [
+"call.select_focused('scratch')",
+"call.select_focused().__str__()"
+],
+"said": [
+"<mock>"
+],
+"screen_after": "web"
+},
+"web | scratch that": {
+"calls": [
+"call.select_focused('scratch that')",
+"call.select_focused().__str__()"
+],
+"said": [
+"<mock>"
+],
+"screen_after": "web"
+},
 "web | search": {
 "said": [
 "Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
@@ -41911,6 +43092,16 @@
 ],
 "screen_after": "web"
 },
+"web | send email now": {
+"calls": [
+"call.command('send email now')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: send email now"
+],
+"screen_after": "web"
+},
 "web | send it": {
 "calls": [
 "call.command('send it')",
@@ -41921,6 +43112,16 @@
 ],
 "screen_after": "web"
 },
+"web | send it now": {
+"calls": [
+"call.command('send it now')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: send it now"
+],
+"screen_after": "web"
+},
 "web | send message": {
 "calls": [
 "call.command('send message')",
@@ -41928,6 +43129,36 @@
 ],
 "said": [
 "session handled: send message"
+],
+"screen_after": "web"
+},
+"web | send my email": {
+"calls": [
+"call.command('send my email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: send my email"
+],
+"screen_after": "web"
+},
+"web | send my message": {
+"calls": [
+"call.command('send my message')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: send my message"
+],
+"screen_after": "web"
+},
+"web | send now": {
+"calls": [
+"call.command('send now')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: send now"
 ],
 "screen_after": "web"
 },
@@ -41951,6 +43182,16 @@
 ],
 "screen_after": "web"
 },
+"web | send the message": {
+"calls": [
+"call.command('send the message')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: send the message"
+],
+"screen_after": "web"
+},
 "web | send this": {
 "calls": [
 "call.command('send this')",
@@ -41968,6 +43209,16 @@
 ],
 "said": [
 "session handled: send this email"
+],
+"screen_after": "web"
+},
+"web | send this message": {
+"calls": [
+"call.command('send this message')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: send this message"
 ],
 "screen_after": "web"
 },
@@ -42343,6 +43594,16 @@
 ],
 "screen_after": "web"
 },
+"web | storage": {
+"calls": [
+"call.command('storage')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: storage"
+],
+"screen_after": "web"
+},
 "web | subject": {
 "calls": [
 "call.command('subject')",
@@ -42533,6 +43794,16 @@
 ],
 "screen_after": "web"
 },
+"web | the same screen": {
+"calls": [
+"call.command('the same screen')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: the same screen"
+],
+"screen_after": "web"
+},
 "web | thunderbird": {
 "calls": [
 "call.command('thunderbird')",
@@ -42629,6 +43900,16 @@
 ],
 "screen_after": "web"
 },
+"web | unittest": {
+"calls": [
+"call.command('unittest')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: unittest"
+],
+"screen_after": "web"
+},
 "web | update my thunderbird": {
 "said": [
 "Thunderbird is not on this computer. To install it, say add Thunderbird account."
@@ -42701,6 +43982,16 @@
 ],
 "screen_after": "web"
 },
+"web | use earlier copy": {
+"calls": [
+"call.command('use earlier copy')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: use earlier copy"
+],
+"screen_after": "web"
+},
 "web | use espeak": {
 "said": [
 "That synthesizer is not configured. Ask your trainer to check setup."
@@ -42736,6 +44027,16 @@
 ],
 "said": [
 "session handled: use station database"
+],
+"screen_after": "web"
+},
+"web | use the earlier copy": {
+"calls": [
+"call.command('use the earlier copy')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: use the earlier copy"
 ],
 "screen_after": "web"
 },
@@ -43365,6 +44666,16 @@
 ],
 "said": [
 "session handled: yes send that"
+],
+"screen_after": "web"
+},
+"web | youtube": {
+"calls": [
+"call.command('youtube')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: youtube"
 ],
 "screen_after": "web"
 }

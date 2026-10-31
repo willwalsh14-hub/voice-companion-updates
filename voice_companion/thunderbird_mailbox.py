@@ -7,7 +7,7 @@ to the Voice Companion Mail Connection add-on through thunderbird_bridge.
 from email.utils import getaddresses
 
 from mailbox_access import MailboxError, html_text, message_date, reply_addresses
-from thunderbird_bridge import NoAnswer, ThunderbirdError, ThunderbirdUnavailable, current
+from thunderbird_bridge import Dropped, NoAnswer, ThunderbirdError, ThunderbirdUnavailable, current
 
 INBOX = 'inbox'   # Voice Companion's name for "this account's inbox"
 
@@ -95,6 +95,13 @@ STOPPED = 'Stopped waiting for Thunderbird.'
 NO_ANSWER = 'Thunderbird did not answer in time. Wait a minute, then try again.'
 
 
+# Requests that change mail, contacts or events. They are never sent a second time by themselves.
+CHANGES = frozenset(('move', 'trash', 'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'mark', 'send',
+                     'addContact', 'updateContact', 'deleteContact', 'addEvent', 'deleteEvent', 'modifyEvent'))
+CHANGE_UNSURE = ('Thunderbird closed before it said whether that was done. Check whether the change is there. '
+                 'If it is not, try again.')
+
+
 def call(method, **params):
     from user_stop import Stopped
     try:
@@ -104,6 +111,10 @@ def call(method, **params):
     except NoAnswer as exc:
         raise MailboxError(NO_ANSWER) from exc
     except ThunderbirdUnavailable as exc:
+        if isinstance(exc, Dropped) and method in CHANGES:
+            # Sent, then Thunderbird closed: it may be done, and asking again could make a second
+            # copy or move twice. Say to check instead (sweep, October 31, 2026).
+            raise MailboxError(CHANGE_UNSURE) from exc
         # Thunderbird closed after it was connected: start it again once, then repeat the request.
         if STARTER is None or connected():
             raise MailboxError(NOT_CONNECTED) from exc
