@@ -450,14 +450,17 @@ class TaskNavigation:
         if editor is not None and command in ('toggle bold','toggle italic','toggle underline') and (mode == 'document' or (editor.compose_step or 'body') == 'body'):
             attribute=command.split()[1]
             value=editor.formatting_report(attribute).lower()==attribute+'.'
-            m.speak(editor.process(('remove '+attribute) if value else 'make this '+('underlined' if attribute=='underline' else attribute)))
+            m.speak(m.editor_process(editor,('remove '+attribute) if value else 'make this '+('underlined' if attribute=='underline' else attribute)))
             return mode
         if mode in ('awake','document','word_processor') and command in ('open a document','open document'):
             return self.pick('document', mode)
         if command in ('word processor','open word processor','word processor menu'):
             if mode == 'document' and m.document:
                 if not m.save_document_before_leaving():return 'document'
-            elif mode=='email_draft' and m.email_draft:m.email_draft.save()
+            elif mode=='email_draft' and m.email_draft:
+                try:m.email_draft.save()
+                except OSError:
+                    m.speak(m.UNSAVED_DRAFT);return 'email_draft'
             else:m.flush_note(mode)
             return self.enter('word_processor', 'Word processor menu')
         if command in ('document reader','open document reader','document reader menu') and mode not in ('document','email_draft','note'):

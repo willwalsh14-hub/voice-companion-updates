@@ -2285,6 +2285,15 @@ UNSAVED_DRAFT = ('Your change is in the draft, but the draft could not be saved.
                  'then say save draft.')
 
 
+def editor_process(editor, text, **options):
+    """A change in a document or draft. If only the save fails (the file is open in Word,
+    or the disk is full), the change stays, the person hears why, and the app keeps running."""
+    try:
+        return editor.process(text, **options)
+    except OSError:
+        return UNSAVED_DRAFT if isinstance(editor, VoiceEmail) else UNSAVED_DOCUMENT
+
+
 def finish_exit(mode):
     global help_session, account_setup, pending_send, mail_session, KEYBOARD_BATCH_TEXT
     KEYBOARD_BATCH_TEXT=None
@@ -4720,7 +4729,7 @@ def _handle(text, mode, typed=False):
         # "Save as My Letter Copy": the name is heard; the folder question comes next.
         return start_save_as(save_as_named[1])
     if mode == 'document' and document is not None and document_control_request(text):
-        result=document.process(text)
+        result=editor_process(document,text)
         if result.startswith(('Document named ','Saved document as ','Saved the Word document as ')):checkpoint_document()
         speak(result)
         return mode
@@ -4734,10 +4743,10 @@ def _handle(text, mode, typed=False):
                     email_draft.apply_field_selection_edit(*edit)
                 speak(result)
             else:
-                dictation_feedback(email_draft.process(text))
+                dictation_feedback(editor_process(email_draft,text))
             return mode
         if mode == 'document' and document is not None:
-            speak(document.process(text))
+            speak(editor_process(document,text))
             return mode
         if mode == 'note':
             speak(note_selection.select(' '.join(note_buffer), text)[0])
@@ -4750,7 +4759,7 @@ def _handle(text, mode, typed=False):
         editor = document if mode == 'document' else email_draft
         body_active = mode == 'document' or (email_draft.compose_step or 'body') == 'body'
         if body_active and ((((isinstance(editor.replacement_candidates, list) and editor.replacement_candidates) or (isinstance(editor.selection_candidates, list) and editor.selection_candidates)) and command not in ('main menu', 'back to main menu', 'leave document', 'close document', 'go back', 'back', 'exit', 'exit document', 'leave email', 'close email', 'exit email')) or re.fullmatch(r'(?:replace|change) .+ (?:with|to) .+', command) or re.fullmatch(r'insert (?:before|after) .+', command) or re.fullmatch(r'(?:select|find|highlight|bold|underline|italicize|copy|cut|delete) .+', command)):
-            speak(editor.process(text))
+            speak(editor_process(editor,text))
             return mode
     # While a send review is waiting, "yes" or "no" answers it; it is not message text.
     answering_send = mode == 'email_draft' and pending_send is not None and command in SEND_REVIEW_ANSWERS
