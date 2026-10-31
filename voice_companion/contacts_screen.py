@@ -109,6 +109,9 @@ def reload(m, keep=None):
 def choose_sources(m):
     """The address books from Thunderbird, and the contacts on this computer as one more; which are shown."""
     global SOURCES, SOURCE, SOURCE_NOTICE
+    if BOOK.unread:
+        # Thunderbird did not answer this time: its address books are not gone, and the one chosen is kept.
+        return
     items = [dict(b) for b in BOOK.books]
     if BOOK.local_contacts():
         items.append({'id': contacts_book.LOCAL_ID, 'name': 'Saved on this computer'})
@@ -533,6 +536,9 @@ def choice_names():
 def start_choosing(m, first=None, lead=''):
     """Control+L: the list of address books to show, on the one shown now."""
     global PENDING, CHOICE, CHOICES, VIEW
+    if not choosing() and BOOK is not None and BOOK.unread:
+        m.speak(BOOK.notice)    # not "one email account": Thunderbird could not be read
+        return MODE
     if not choosing():
         m.speak('You have one email account in Thunderbird, so all your contacts are shown.')
         return MODE

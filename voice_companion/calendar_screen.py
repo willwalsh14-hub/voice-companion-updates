@@ -503,6 +503,13 @@ CHOOSE_HINT = 'To choose another, press Control+L.'
 def start_choosing(m, first=None, lead=''):
     """Control+L: the list of calendars to show, on the one shown now."""
     global PENDING, CHOICE, CHOICES
+    if SOURCES is None:
+        # The calendars could not be read when Calendar opened: not "one email account".
+        try:
+            load_calendars(m)
+        except thunderbird_pim.PimError as exc:
+            m.speak(str(exc))
+            return MODE
     if not choosing():
         m.speak('You have one email account in Thunderbird, so all your calendars are shown.')
         return MODE

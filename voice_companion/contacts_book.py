@@ -103,6 +103,7 @@ class ContactBook:
         self.account = account or ''
         self.local = AddressBook(folder, self.account)
         self.notice = ''              # why Thunderbird's contacts are missing, when they are
+        self.unread = False           # Thunderbird was asked and could not be read (so its address books are not known)
         self.books = []
         self.thunderbird = []         # Thunderbird's contacts as last read, before merging
         self.failed_books = []        # ids of the address books that could not be read
@@ -114,6 +115,7 @@ class ContactBook:
     def load(self, use_thunderbird=True):
         """Read every contact. Thunderbird is asked when usable; a failure leaves the local ones and a notice."""
         self.notice = ''
+        self.unread = False
         self.failed_books = []
         found = []
         if use_thunderbird and thunderbird_pim.usable(self.folder):
@@ -127,6 +129,7 @@ class ContactBook:
                     self.notice = 'Some Thunderbird address books could not be read. Try again in a minute.'
             except thunderbird_pim.PimError as exc:
                 self.notice = str(exc)
+                self.unread = True
                 found = []
         elif use_thunderbird:
             self.notice = 'Only contacts saved on this computer are here. To use your Google or Outlook contacts, say add Thunderbird account.'
