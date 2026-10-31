@@ -275,5 +275,22 @@ class FormReviewFailureTests(unittest.TestCase):
         self.assertEqual(self.backend.activated, [])
 
 
+class WebCommandSafetyTests(unittest.TestCase):
+    """Any unexpected error in a spoken web command stopped Voice Companion: nothing
+    above WebSession.command caught it (October 31, 2026)."""
+    def test_an_unexpected_error_is_said_and_kept_for_a_helper(self):
+        from pathlib import Path
+        from unittest.mock import patch
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        session = WebSession(folder.name, FakeBackend())
+        session.open('example.com')
+        with patch.object(WebSession, 'list_links', side_effect=KeyError('my secret answer')):
+            self.assertEqual(session.command('list links'), WebSession.COMMAND_FAILED)
+        kept = (Path(folder.name) / 'web-command-error.txt').read_text(encoding='utf-8')
+        self.assertIn('KeyError', kept)
+        self.assertNotIn('my secret answer', kept)
+        self.assertIn('Links list', session.command('list links'))
+
+
 if __name__ == '__main__':
     unittest.main()

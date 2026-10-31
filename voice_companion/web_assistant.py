@@ -3247,7 +3247,21 @@ class WebSession:
             return describe(item,self.browse.elements)
         return 'Move to a link or heading first.'
 
+    COMMAND_FAILED='That did not work. The page may have changed. Press F5 to refresh the page, then try again.'
+
     def command(self, spoken):
+        """A spoken web command. Nothing here may stop the app: an unexpected error
+        is said plainly, and its details are kept in web-command-error.txt."""
+        try:return self._command(spoken)
+        except WebError as exc:return str(exc)
+        except Exception as exc:
+            # Where it failed and the error's type only: its words can hold page text or typing.
+            import traceback
+            try:write_text_atomic(self.folder/'web-command-error.txt',''.join(traceback.format_tb(exc.__traceback__))+type(exc).__name__+'\n')
+            except OSError:pass
+            return self.COMMAND_FAILED
+
+    def _command(self, spoken):
         try:self._sync_browser_tab()
         except Exception:return 'The browser connection is not ready. Keep Voice Companion open; it will reconnect automatically.'
         command = _plain(spoken).rstrip('.!?').lower()
