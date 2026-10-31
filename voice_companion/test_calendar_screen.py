@@ -177,7 +177,9 @@ class CalendarScreenTests(CalendarHarness):
         with mock.patch.object(thunderbird_mailbox, 'call', failing):
             app.handle('add event tomorrow at 3 PM called Lunch', mode)
             app.handle('yes', mode)
-            self.assertEqual(self.said(), 'Thunderbird could not save the event. Close Thunderbird, then try again.')
+            self.assertEqual(self.said(), 'Thunderbird could not save the event. Close Thunderbird, then try again. '
+                                          'Its name and time are kept. Say Yes to try again, or No to cancel.')
+            app.handle('no', mode)
             app.handle('rename event to Dentist', mode)
             app.handle('yes', mode)
             self.assertEqual(self.said(), 'Thunderbird could not save the change. Close Thunderbird, then try again.')
@@ -188,7 +190,8 @@ class CalendarScreenTests(CalendarHarness):
             with mock.patch.object(thunderbird_pim, 'add_event', side_effect=thunderbird_pim.PimError('That calendar cannot be changed. Choose another calendar.')):
                 app.handle('add event tomorrow at 3 PM called Lunch', mode)
                 app.handle('yes', mode)
-            self.assertEqual(self.said(), 'That calendar cannot be changed. Choose another calendar. The event was not saved.')
+            self.assertEqual(self.said(), 'That calendar cannot be changed. Choose another calendar. The event was not saved. '
+                                          'Its name and time are kept. Say Yes to try again, or No to cancel.')
 
     def test_thunderbirds_general_failure_says_nothing_changed_and_what_to_do(self):
         import thunderbird_mailbox
@@ -208,7 +211,7 @@ class CalendarScreenTests(CalendarHarness):
             app.handle('add event tomorrow at 3 PM called Lunch', mode)
             app.handle('yes', mode)
             self.assertEqual(self.said(), 'Thunderbird could not complete that request. Close Thunderbird, then try again. '
-                                          'The event was not saved.')
+                                          'The event was not saved. Its name and time are kept. Say Yes to try again, or No to cancel.')
 
     def test_damaged_answers_from_thunderbird_never_stop_the_screen(self):
         import thunderbird_mailbox
@@ -264,7 +267,7 @@ class CalendarScreenTests(CalendarHarness):
 
     def test_a_day_without_a_time_asks_for_the_time_or_all_day(self):
         mode = self.press('Ctrl+N', self.open())
-        mode = app.handle('next Friday', mode)
+        mode = app.handle('this Friday', mode)
         self.assertEqual(self.said(), 'Friday, October 30. What time? Say a time like 3 PM, or say all day. Escape cancels.')
         mode = app.handle('all day', mode)
         mode = app.handle('Fishing trip', mode)
@@ -394,7 +397,7 @@ class GoToDateTests(CalendarHarness):
         mode = self.open()
         for words, day in (('Go to October 30.', date(2026, 10, 30)), ('go to 10/30', date(2026, 10, 30)),
                            ('Go to December 25, 2026.', date(2026, 12, 25)), ('go to the 15th', date(2026, 11, 15)),
-                           ('go to next Friday', date(2026, 10, 30)), ('Go to Friday, October 30.', date(2026, 10, 30)),
+                           ('go to next Friday', date(2026, 11, 6)), ('go to this Friday', date(2026, 10, 30)), ('Go to Friday, October 30.', date(2026, 10, 30)),
                            ('go to 2027-01-04', date(2027, 1, 4)), ('go to date November 11', date(2026, 11, 11)),
                            ('Tuesday, November 3', date(2026, 11, 3)), ('go to last Friday', date(2026, 10, 23))):
             with self.subTest(words=words):
@@ -719,10 +722,10 @@ class BrokenCalendarTests(CalendarHarness):
 
     def test_a_damaged_answer_is_said_plainly_and_the_screen_still_works(self):
         mode = self.open()
-        self.assertEqual(self.said(), 'Calendar. Today, Monday, October 26. No events. Thunderbird could not list its calendars. '
+        self.assertEqual(self.said(), 'Calendar. Today, Monday, October 26. Thunderbird could not list its calendars. '
                                       'Close Thunderbird, then try again.')
         self.press('Right', mode)
-        self.assertEqual(self.said(), 'Tomorrow, Tuesday, October 27. No events. Thunderbird could not list its calendars. '
+        self.assertEqual(self.said(), 'Tomorrow, Tuesday, October 27. Thunderbird could not list its calendars. '
                                       'Close Thunderbird, then try again.')
         self.press('Down', mode)
         self.assertEqual(self.said(), 'No events. Press Right Arrow for the next day.')
@@ -733,7 +736,7 @@ class OldAddonCalendarTests(CalendarHarness):
 
     def test_an_old_add_on_copy_asks_for_an_update(self):
         self.open()
-        self.assertEqual(self.said(), 'Calendar. Today, Monday, October 26. No events. ' + thunderbird_pim.UPDATE_NEEDED)
+        self.assertEqual(self.said(), 'Calendar. Today, Monday, October 26. ' + thunderbird_pim.UPDATE_NEEDED)
 
 
 class NoThunderbirdCalendarTests(CalendarHarness):

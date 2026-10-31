@@ -164,7 +164,12 @@ def show(m, day, opening=False):
             NOTICE = ' '.join(failed_words(name) for name in failed[:3])
     except thunderbird_pim.PimError as exc:
         EVENTS, NOTICE = [], str(exc)
-    words = spoken_day(day, today(m)) + '. ' + day_summary()
+        unread = True
+    else:
+        unread = False
+    # When the day could not be read at all, only the reason is said, never "No events." first
+    # (sweep, October 31, 2026). It is said just after the day, below.
+    words = spoken_day(day, today(m)) + '.' + ('' if unread else ' ' + day_summary())
     global NOTICE_SAID
     NOTICE_SAID = bool(SOURCE_NOTICE)
     if SOURCE_NOTICE:
@@ -796,9 +801,13 @@ def add_question(m):
             '? ' + passed + 'Say Yes to save or No to cancel.' + (' To use another calendar, say change calendar.' if others else ''))
 
 
+KEPT_TRY_AGAIN = 'Its name and time are kept. Say Yes to try again, or No to cancel.'
+
+
 def save_draft(m):
-    global LAST_CALENDAR, DRAFT, INDEX
+    global LAST_CALENDAR, DRAFT, INDEX, PENDING, CHOICE, CHOICES
     when, calendar, title = DRAFT['when'], DRAFT['calendar'], DRAFT['title']
+    kept = DRAFT
     if when.all_day:
         start, end = when.day.isoformat(), (when.day + timedelta(days=1)).isoformat()
         first = datetime.combine(when.day, time())
@@ -809,7 +818,14 @@ def save_draft(m):
     try:
         added = thunderbird_pim.add_event(calendar['id'], title, start, end, all_day=when.all_day)
     except thunderbird_pim.PimError as exc:
-        m.speak(not_saved(exc, 'The event was not saved.'))
+        if thunderbird_pim.unsure(exc):
+            # It may be saved: asking again could add it twice.
+            m.speak(not_saved(exc, 'The event was not saved.'))
+            return MODE
+        # Not saved: the name and time are kept, so Yes tries again (Will, October 31, 2026).
+        DRAFT = kept
+        PENDING, CHOICE, CHOICES = ('add', DRAFT), 'yes', ('yes', 'no')
+        m.speak(not_saved(exc, 'The event was not saved.') + ' ' + KEPT_TRY_AGAIN)
         return MODE
     LAST_CALENDAR = calendar['id']
     words = show(m, when.day)

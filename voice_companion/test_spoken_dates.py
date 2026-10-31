@@ -18,9 +18,10 @@ class SpokenDayTests(unittest.TestCase):
                 self.assertEqual(parse_day(words, TODAY), expected)
 
     def test_weekdays(self):
-        # Today counts for "Monday"; "next Monday" is the one after today.
+        # Today counts for "Monday"; "next Monday" is the one after today. "Next Friday" is Friday of
+        # next week (Will, October 31, 2026); "this Friday" is the nearest.
         for words, expected in (('Friday', date(2026, 10, 30)), ('Friday.', date(2026, 10, 30)), ('on friday', date(2026, 10, 30)),
-                                ('next Friday', date(2026, 10, 30)), ('this Friday', date(2026, 10, 30)),
+                                ('next Friday', date(2026, 11, 6)), ('this Friday', date(2026, 10, 30)),
                                 ('Monday', TODAY), ('next Monday', date(2026, 11, 2)), ('Sunday', date(2026, 11, 1))):
             with self.subTest(words=words):
                 self.assertEqual(parse_day(words, TODAY), expected)

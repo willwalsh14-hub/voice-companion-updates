@@ -49,7 +49,8 @@ def gone(exc):
 def unsure(exc):
     """True when Thunderbird may have made the change after all (it did not answer in time),
     so the screen must not say it was not saved."""
-    return str(exc) == UNSURE
+    from thunderbird_mailbox import CHANGE_UNSURE
+    return str(exc) in (UNSURE, CHANGE_UNSURE)
 
 
 def connected():
