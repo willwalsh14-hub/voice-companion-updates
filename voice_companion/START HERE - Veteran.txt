@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.186-test.
+Guide version: 0.2.187-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -978,8 +978,8 @@ A draft with nothing written closes without the question. Throwing a draft away 
 3. If something is wrong, say "Cancel send", or press Alt+N. Fix it, then start the review again.
 4. Say "Yes", or press Alt+Y, only when the review is right.
 Before you send, you can set how important the message is, and ask for a read receipt:
-- To change the importance, say "High importance", "Low importance", or "Normal importance". Or press Control+Shift+I. Each press goes to the next one: normal, high, then low.
-- To ask the person to tell you when they open it, say "Request a read receipt", or press Control+Shift+T. Press it again, or say "No read receipt", to take it off.
+- To change the importance, say "Change importance", or press Control+Shift+I. Each press goes to the next one: normal, high, then low. You can also say "High importance", "Low importance", or "Normal importance".
+- To ask the person to tell you when they open it, say "Read receipt on or off", or press Control+Shift+T. Press it again to take it off. You can also say "Request a read receipt" or "No read receipt".
 - To hear both, say "Importance".
 The review says high or low importance, and the read receipt, when you set them. Some people's email does not send read receipts.
 Nothing is sent before the review and confirmation. If no account is connected, Companion saves a draft instead.
@@ -1053,8 +1053,8 @@ To open a folder by name, say "Go to folder", "Open folder", or "Go to", followe
 - To pick a folder to move them to, say "Move", or press M. To name the folder, say "Move to", followed by its name, such as "Move to Saved".
 "Delete message" and "Move message" act on the current message, even if other messages are marked.
 Read, unread, and flags work for accounts in Thunderbird:
-- To mark a message read or unread, say "Mark as read" or "Mark as unread". Or press Q. Each press of Q changes it.
-- To flag a message, say "Flag", or press X. To take the flag off, say "Remove flag", or press X again.
+- To mark a message read or unread, say "Mark as read or unread", "Mark as read", or "Mark as unread". Or press Q. Each press of Q changes it.
+- To flag a message, say "Flag or unflag", or "Flag". Or press X. To take the flag off, say "Remove flag", or press X again.
 - To hear the status, say "Message status".
 - If messages are marked, these change every marked message.
 - Opening a message marks it read, as in Thunderbird.
@@ -1101,8 +1101,8 @@ Email letter keys work in the message list and in an open message:
 - G: to choose a folder, say "Go to folder", or press G.
 - W: to hear the folder name, say "Which folder", or press W.
 - I: to hear the sender, subject, and date, say "Message details", or press I.
-- Q: to mark a message read or unread, say "Mark as read" or "Mark as unread", or press Q.
-- X: to flag a message or take the flag off, say "Flag" or "Remove flag", or press X.
+- Q: to mark a message read or unread, say "Mark as read or unread", or press Q.
+- X: to flag a message or take the flag off, say "Flag or unflag", or press X.
 - Alt+1 to Alt+6: to hear From, To, CC, Subject, the date sent, or how many files are attached. See part 12.1.
 - C: to copy the sender's address, say "Copy sender address", or press C.
 - E: to email the sender, say "New email to sender", or press E.

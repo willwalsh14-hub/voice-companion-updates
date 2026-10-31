@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 747
+- Actions inventoried: 745
 - Already had both ways: 582
-- Gaps found: 165
-- Gaps fixed (Added): 157
+- Gaps found: 163
+- Gaps fixed (Added): 155
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -1309,12 +1309,6 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
-### Say read, unread, flagged and importance
-
-- Voice: "Set Say read, unread, flagged and importance to ..."
-- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
-- Status: Both
-
 ### Spoken email headers
 
 - Voice: "Set email header order to ..."
@@ -1324,6 +1318,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Thunderbird window
 
 - Voice: "Set Thunderbird window to ..."
+- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Say read, unread, flagged and importance
+
+- Voice: "Set Say read, unread, flagged and importance to ..."
 - Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
@@ -1923,36 +1923,6 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: I
 - Status: Both
 
-### Mark as read or unread
-
-- Voice: "Mark as read or unread"
-- Keyboard: Q
-- Status: Both
-
-### Mark as read
-
-- Voice: "Mark as read"
-- Keyboard: Alt, 1, 11
-- Status: Added: Alt menu path
-
-### Mark as unread
-
-- Voice: "Mark as unread"
-- Keyboard: Alt, 1, 12
-- Status: Added: Alt menu path
-
-### Flag or unflag
-
-- Voice: "Flag or unflag"
-- Keyboard: X
-- Status: Both
-
-### Message status
-
-- Voice: "Message status"
-- Keyboard: Alt, 1, 14
-- Status: Added: Alt menu path
-
 ## Alt menu, Email: Select
 
 ### Mark or unmark message
@@ -1990,6 +1960,24 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "New email to sender"
 - Keyboard: E
 - Status: Both
+
+### Mark as read or unread
+
+- Voice: "Mark as read or unread"
+- Keyboard: Q
+- Status: Both
+
+### Flag or unflag
+
+- Voice: "Flag or unflag"
+- Keyboard: X
+- Status: Both
+
+### Message status
+
+- Voice: "Message status"
+- Keyboard: Alt, 2, 9
+- Status: Added: Alt menu path
 
 ## Alt menu, Email: Go to folder
 
