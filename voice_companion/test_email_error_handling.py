@@ -117,6 +117,25 @@ class HalfFinishedMoveTests(CompanionCase):
                 self.assertEqual(self.last(), mail._empty_list())
 
 
+class AfterAFolderChangeTests(CompanionCase):
+    def test_the_inbox_is_listed_not_said_to_be_empty(self):
+        # Before: "Folder change completed. Back to Inbox." with no list loaded, so the next key
+        # said "Empty list. No messages on this page of Inbox." for a full Inbox.
+        class Folders(Mailbox):
+            made = []
+            def folders(self):
+                return Mailbox.folders(self) + [(name, name.lower()) for name in self.made]
+            def create_folder(self, name, parent_id=None, parent_path=''):
+                self.made.append(name)
+        mail = MailSession('thunderbird', self.folder, Folders)
+        mail.process('go to folder work'); mail.process('next message'); mail.process('open message')
+        mail.process('create folder Bills')
+        said = mail.process('yes')
+        self.assertTrue(said.startswith('Folder change completed. Say list folders to check it. Inbox. Person 1.'), said)
+        self.assertEqual((mail.folder_name, mail.view, mail.current), ('Inbox', 'folder', 1))
+        self.assertTrue(mail.process('next message').startswith('Person 2.'))
+
+
 class YahooFlagsTests(unittest.TestCase):
     """Before: Yahoo read only the Seen flag, so "Is it flagged?" on a starred message
     said "Read, not flagged." and a reply you sent was never said."""

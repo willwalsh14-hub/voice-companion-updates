@@ -1107,9 +1107,15 @@ class MailSession:
                     client.delete_folder(ident)
                 self.folders = []
                 self.folder_name, self.folder_id = 'Inbox', 'inbox'
-                self.rows, self.current = [], None
+                self.previous_cursors.clear()
                 self._clear_marks()
-                return 'Folder change completed. Back to Inbox. Say list folders to check it.'
+                done = 'Folder change completed. Say list folders to check it. '
+                try:
+                    # The Inbox itself, so the next key is on a message, never "Empty list".
+                    return done + self.list_messages()
+                except (MailboxError, AccountError, OSError):
+                    self._uncertain_change()
+                    return done + 'The Inbox could not load. Say list messages to try again.'
             if command.startswith('move selected to '):
                 ids = self._selected_ids()
                 name = command[len('move selected to '):].strip()
