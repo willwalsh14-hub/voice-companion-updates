@@ -1,26 +1,18 @@
 {
-  "version": "0.2.192-test",
+  "version": "0.2.193-test",
   "status": "Testing build",
   "date": "October 31, 2026",
-  "baseline": "0.2.191-test",
-  "scope": "Every mark reaches your email service right away, and Companion checks that it did.",
+  "baseline": "0.2.192-test",
+  "scope": "YouTube plays in your own Chrome, with no stops.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Gmail's Important marker",
+          "title": "Help when YouTube stops",
           "details": [
-            "To mark a Gmail message important, say \"Mark as important\", or press H. Press H again to take it off.",
-            "Your phone and the Gmail website show it too.",
-            "When you send from Gmail with high importance, your copy in Sent Mail gets the marker too."
-          ]
-        },
-        {
-          "title": "Read receipts",
-          "details": [
-            "When a message asks for a read receipt, Companion asks you first. Say yes or no. Then it reads the message.",
-            "If Thunderbird is set to always or never send receipts, Companion does that and does not ask."
+            "If your own Chrome does not have the Voice Companion extension, Companion now tells you.",
+            "Say set up Chrome to add it. Then videos play in your own Chrome."
           ]
         }
       ]
@@ -29,23 +21,12 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Marks that reach your email service",
+          "title": "YouTube in your own Chrome",
           "details": [
-            "Read, unread and flags now reach Gmail right away. Before, a mark could stay on this computer until Thunderbird was closed.",
-            "Companion waits for your email service to take each change. If it does not, Companion tries again on a new connection, then tells you.",
-            "Work email from Microsoft is checked right after each change too."
-          ]
-        },
-        {
-          "title": "Gmail conversations",
-          "details": [
-            "Marking a Gmail message read marks its whole conversation read, as the Gmail website does. Opening it with Enter does too."
-          ]
-        },
-        {
-          "title": "Thunderbird",
-          "details": [
-            "Thunderbird closes and opens again one time to get this change."
+            "YouTube now opens in your own Chrome, even when Chrome is closed.",
+            "Before, it played in Voice Companion's Chrome. There you were signed out, so ads played.",
+            "Videos also stopped after a minute or so. YouTube said something went wrong.",
+            "In your own Chrome you are signed in. If you have YouTube Premium, ads do not play."
           ]
         }
       ]

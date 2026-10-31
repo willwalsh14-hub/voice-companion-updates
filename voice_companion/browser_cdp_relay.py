@@ -249,6 +249,12 @@ def extension_update_notice(relay=None):
     except Exception: return ''
 
 
+def prepared():
+    """The relay made by prepare(), linked or not. Use it to open your own Chrome and wait
+    for the extension to link; current() is None until that link is made."""
+    return _RELAY
+
+
 def current():
     return _RELAY if _RELAY is not None and _RELAY.connected.is_set() else None
 
