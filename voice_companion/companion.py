@@ -2331,6 +2331,7 @@ def save_document_before_leaving():
 
 UNSAVED_DRAFT = ('Your change is in the draft, but the draft could not be saved. Check that the disk has space, '
                  'then say save draft.')
+NEW_DRAFT_UNSAVED = 'The new email could not be saved, so it was not started. Check that the disk has space, then try again.'
 
 
 def editor_process(editor, text, **options):
@@ -3182,7 +3183,9 @@ def poll_thunderbird_addon(system=None):
         speak_status(thunderbird_setup.ADDON_UPDATE_SLOW)
     elif result == 'not closed':
         speak_status(thunderbird_setup.ADDON_NOT_CLOSED)
-    elif result in ('not replaced', 'failed'):
+    elif result == 'not replaced':
+        speak_status(thunderbird_setup.ADDON_NOT_REPLACED)
+    elif result == 'failed':
         speak_status(thunderbird_setup.ADDON_NOT_UPDATED)
     elif result == 'composing':
         ADDON_REFRESH.connection = None; ADDON_REFRESH.retry_at = time.monotonic() + ADDON_RETRY_SECONDS
@@ -3357,6 +3360,11 @@ def handle_mailbox_screen(text, command, mode, typed):
         except (MailboxError, AccountError) as exc:
             # Say what went wrong (for example an expired app password), not a guess.
             speak(str(exc))
+            return mode
+        except OSError:
+            # A full disk or a locked Email Drafts folder: no draft was made.
+            email_draft = None
+            speak(NEW_DRAFT_UNSAVED)
             return mode
         except Exception:
             speak('Open and read a message first. If the account cannot read it, ask your helper to reconnect mail.')
@@ -3756,7 +3764,8 @@ def switch_mail_account(provider, address, mode):
             email_draft.move_to_account(provider)
         else:
             email_draft.provider = provider
-            email_draft.save()
+            try: email_draft.save()
+            except OSError: speak(UNSAVED_DRAFT); return mode
     from account_picker import label
     if mode == 'mailbox':
         mail_session = MailSession(provider, APP, progress=mail_progress)
@@ -4520,7 +4529,9 @@ def _handle(text, mode, typed=False):
     if command in ('file manager','open file manager','manage files','browse files'):
         if mode=='document' and document is not None:
             if not save_document_before_leaving():return 'document'
-        elif mode=='email_draft' and email_draft is not None:email_draft.save()
+        elif mode=='email_draft' and email_draft is not None:
+            try:email_draft.save()
+            except OSError:speak(UNSAVED_DRAFT);return mode
         else:flush_note(mode)
         pending_send=None
         if FILE_MANAGER is None:FILE_MANAGER=FileManager()
@@ -5056,19 +5067,25 @@ def _handle(text, mode, typed=False):
         if mode == 'document' and document is not None:
             if not save_document_before_leaving(): return 'document'
         elif mode == 'email_draft' and email_draft is not None:
-            email_draft.save()
+            try: email_draft.save()
+            except OSError: speak(UNSAVED_DRAFT); return mode
         else:
             flush_note(mode)
         pending_website = None
         if email_request:
             selected = store.selected()
+            previous_draft = email_draft
             email_draft = VoiceEmail(APP / 'Email Drafts')
             email_draft.compose_step = 'subject' if sender_recipient else 'recipient'
             if sender_recipient:email_draft.recipient=sender_recipient
             email_draft.dictating = INPUT_MODE != 'commands'
             email_draft.automatic_dictation = INPUT_MODE != 'commands'
             if selected: email_draft.provider = selected[0]
-            email_draft.save()
+            try: email_draft.save()
+            except OSError:
+                email_draft = previous_draft   # the draft you were writing, if any, stays open
+                speak(NEW_DRAFT_UNSAVED)
+                return mode
             if typed or KEYBOARD_NAVIGATION:
                 speak('New email. '+('Subject field.' if sender_recipient else 'To field.'))
             else:
@@ -5144,7 +5161,10 @@ def _handle(text, mode, typed=False):
                        'send it', 'send that', 'send this', 'please send it', 'please send that', 'send'):
             pending_send = None
             email_draft.dictating = False
-            email_draft.save()
+            try: email_draft.save()
+            except OSError:
+                speak('The draft could not be saved, so the email was not sent. Check that the disk has space and try again.')
+                return mode
             try:
                 recipient, subject, body = message_parts(email_draft)
                 if email_draft.send_hash() in (email_draft.last_accepted_hash, email_draft.last_attempt_hash):
@@ -5443,8 +5463,16 @@ def _handle(text, mode, typed=False):
     if command.startswith('open email draft '):
         try:
             email_draft = VoiceEmail.open_existing(APP / 'Email Drafts', text[len('open email draft '):])
-        except (FileNotFoundError, ValueError, OSError, KeyError, TypeError):
+        except FileNotFoundError:
             speak_prompt('I could not open that draft. Say list email drafts to hear the names.')
+            return mode
+        except OSError:
+            speak_prompt('I could not open that draft. It may be open in another program. Close it, then try again.')
+            return mode
+        except (ValueError, KeyError, TypeError):
+            # The name was right; its saved file is damaged (never "say the names" again).
+            speak_prompt('I could not open that draft. Its saved file is damaged. Your other drafts are safe. '
+                         'Ask your helper to check the Email Drafts folder.')
             return mode
         email_draft.dictating = INPUT_MODE != 'commands'
         email_draft.automatic_dictation = INPUT_MODE != 'commands'

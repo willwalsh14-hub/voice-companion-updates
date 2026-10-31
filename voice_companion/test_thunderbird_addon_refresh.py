@@ -185,7 +185,7 @@ class CompanionPollTests(StaleCase):
             self.poll(system, relay)
             self.poll(system, relay)
         self.assertEqual(relay.asked.count('quit'), 1)
-        self.assertEqual(self.said, [thunderbird_setup.ADDON_UPDATING, thunderbird_setup.ADDON_NOT_UPDATED])
+        self.assertEqual(self.said, [thunderbird_setup.ADDON_UPDATING, thunderbird_setup.ADDON_NOT_REPLACED])
 
     def test_a_thunderbird_that_will_not_close_says_nothing_changed(self):
         # After "Thunderbird restarts for a moment", silence left the person waiting.

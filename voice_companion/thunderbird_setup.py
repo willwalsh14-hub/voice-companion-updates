@@ -580,6 +580,8 @@ def settle(system, handles, note=None):
 # restarted once, the normal way, and never while a message is being written.
 ADDON_UPDATING = 'Updating the Voice Companion connection in Thunderbird. Thunderbird restarts for a moment.'
 ADDON_UPDATED = 'The Voice Companion connection in Thunderbird is updated.'
+ADDON_NOT_REPLACED = ('The Voice Companion connection in Thunderbird could not be updated. Another program may be '
+                      'using its file. Email works as before. Voice Companion tries again the next time you open it.')
 ADDON_UPDATE_SLOW = ('Thunderbird has not started again yet. Your email is safe. '
                      'Say check email, and Voice Companion starts it.')
 ADDON_NOT_CLOSED = ('Thunderbird did not close, so its Voice Companion connection was not updated. Nothing changed. '
