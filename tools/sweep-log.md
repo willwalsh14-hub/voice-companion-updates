@@ -9,7 +9,7 @@ The format for each night:
 
 ## October 31, 2026 (night 3, a code review of error handling): version 0.2.189-test
 
-Release pull request 111. No new Windows-only tests, so no try branch. All three checks were green at 10:07 AM UTC, but the merge was blocked by this session's permission check, so it is not published yet. The next sweep finishes it (step 0a) once Will allows the merge.
+Release pull request 111. No new Windows-only tests, so no try branch. All three checks were green at 10:07 AM UTC. This session's permission check blocked the merge, so Will merged it himself. It was published at 4:05 PM UTC.
 
 ### Fixed
 
