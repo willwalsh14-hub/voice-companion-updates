@@ -415,7 +415,25 @@ async function bridgeChecks() {
   assert.deepEqual(named, loaded, 'every function the schema names is there, and only those');
 }
 
+// Thunderbird loads every Experiment script of the add-on into one shared scope (October 31, 2026:
+// marks.js reused two names from implementation.js and did not load at all in real Thunderbird,
+// while these tests, loading each file alone, passed). Load them together, in manifest order.
+function sharedScopeChecks() {
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'manifest.json'), 'utf8'));
+  const context = vm.createContext({
+    ChromeUtils: {importESModule: url => (url.includes('Timer') ? {setTimeout, clearTimeout} : {ExtensionCommon: {ExtensionAPI: class {}}}),
+      generateQI: () => function QueryInterface() { return this; }},
+    Services: {}, Ci: {}, Cc: {}, setTimeout, clearTimeout,
+  });
+  for (const [name, api] of Object.entries(manifest.experiment_apis)) {
+    const file = path.join(__dirname, api.parent.script);
+    assert.doesNotThrow(() => vm.runInContext(fs.readFileSync(file, 'utf8'), context, {filename: file}), name);
+    assert.equal(typeof vm.runInContext(name, context), 'function', name + ' is defined');
+  }
+}
+
 module.exports = (async () => {
+  sharedScopeChecks();
   await experimentChecks();
   await bridgeChecks();
   console.log('Read, unread, flag, Important and receipt add-on tests passed.');
