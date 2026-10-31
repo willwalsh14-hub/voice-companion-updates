@@ -139,7 +139,9 @@ class MediaErrorTests(unittest.TestCase):
         (Path(self.temp.name) / 'Radio Recordings').write_text('not a folder', encoding='utf-8')
         station = {'name': 'Jazz 24', 'url': serve(SHOUTCAST, self)}
         self.hub.record_now(station, 1)
-        self.assertTrue(self.wait_for_notice(), 'the recorder stopped without a word')
+        recorder = self.hub.recording
+        recorder.join(10)
+        self.assertTrue(self.notices, 'the recorder stopped without a word')
         self.assertIn('could not be saved', self.notices[-1])
         self.assertIn('then try again', self.notices[-1])
         # The station is fine: it must not be hidden from searches for a day.
@@ -224,7 +226,15 @@ class AppPathTests(unittest.TestCase):
         self.assertEqual(spoken_error(OSError('Radio Browser mirrors are unavailable.')),
                          'Radio Browser mirrors are unavailable.')
         self.assert_plain(spoken_error(IndexError('list index out of range')))
-        self.assert_plain(spoken_error(OSError(28, 'No space left on device')))
+        self.assertEqual(spoken_error(OSError(28, 'No space left on device')), 'The disk is full. Make some room, then try again.')
+        self.assert_plain(spoken_error(__import__('urllib.error').error.URLError('timed out')))
+
+    def test_a_radiosure_file_that_is_not_there_is_named_plainly(self):
+        self.companion.MEDIA_SECTION = 'radio'
+        missing = str(Path(self.temp.name) / 'stations.rsd')
+        self.companion.handle('import radiosure ' + missing, 'media')
+        self.assertEqual(self.said[-1], 'I could not complete that media request. '
+                         'That file was not found. Check its name and folder, then try again.')
 
 
 class WindowErrorTests(unittest.TestCase):

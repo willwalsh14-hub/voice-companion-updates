@@ -37,9 +37,14 @@ def spoken_error(exc):
     """A media error in plain words. A message written for people (a ValueError, or an
     OSError raised with only a message) is said as it is. A system error never reads
     out an error number, a file path or Python's own words."""
+    import errno
     text=str(exc).strip()
     if isinstance(exc,ValueError) and text:return text
     if isinstance(exc,OSError) and text and exc.errno is None and exc.filename is None and not text.startswith('<'):return text
+    if isinstance(exc,FileNotFoundError):return 'That file was not found. Check its name and folder, then try again.'
+    if isinstance(exc,OSError) and exc.errno==errno.ENOSPC:return 'The disk is full. Make some room, then try again.'
+    if isinstance(exc,(PermissionError,FileExistsError,IsADirectoryError,NotADirectoryError)):
+        return 'Companion could not use that file or folder. It may be open in another program. Close it, then try again.'
     return MEDIA_PROBLEM
 
 
