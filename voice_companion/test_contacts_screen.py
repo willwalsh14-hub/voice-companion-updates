@@ -439,6 +439,22 @@ class ContactsScreenTests(CompanionHarness):
                     self.assertEqual(self.said(), reason)
                     self.assertIsNone(app.email_draft)
 
+    def test_email_by_name_uses_the_last_list_when_thunderbird_does_not_answer(self):
+        # The list read a while ago is old, and Thunderbird is slow this time. Before, "Email John
+        # Smith" said "No contact named John Smith", though he is in Thunderbird.
+        import time
+        app.handle('Email John.', 'awake')
+        app.email_draft = None
+        contacts_book.CACHE['at'] = time.monotonic() - contacts_book.KEEP_SECONDS - 1
+        reason = 'Thunderbird did not answer in time. Wait a minute, then try again.'
+        with mock.patch.object(thunderbird_pim, 'contacts', side_effect=thunderbird_pim.PimError(reason)):
+            mode = app.handle('Send an email to John Smith', 'awake')
+            self.assertEqual((mode, app.email_draft.recipient), ('email_draft', 'john@example.com'))
+            app.email_draft = None
+            # A name that is not in the old list: the reason, not "No contact named".
+            app.handle('Email Zelda.', 'awake')
+            self.assertEqual(self.said(), reason)
+
     def test_email_a_contact_by_name_from_the_main_menu(self):
         mode = app.handle('Email John.', 'awake')
         self.assertEqual((mode, app.email_draft.recipient, app.email_draft.compose_step), ('email_draft', 'john@example.com', 'subject'))

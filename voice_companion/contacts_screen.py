@@ -791,6 +791,8 @@ def email_by_name(m, command, mode):
     else:
         people = book(m)
         contacts = people.cached()
+        if people.unread:
+            unread = people.notice
         # Thunderbird's contacts not read yet (Thunderbird not started): read them now, starting it.
         if contacts_book.CACHE['at'] is None and thunderbird_pim.usable(m.APP):
             contacts = people.load()

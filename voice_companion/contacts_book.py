@@ -149,7 +149,10 @@ class ContactBook:
         """Contacts without asking Thunderbird, unless it is connected and the kept list is old."""
         fresh = CACHE['at'] is not None and time.monotonic() - CACHE['at'] < KEEP_SECONDS
         if not fresh and thunderbird_pim.connected():
-            return self.load()
+            found = self.load()
+            if not self.unread or CACHE['at'] is None:
+                return found
+            # Thunderbird did not answer this time: the list it gave last time is better than none.
         return merge(CACHE['contacts'] if CACHE['at'] is not None else [], self.local_contacts())
 
     def preferred_book(self):
