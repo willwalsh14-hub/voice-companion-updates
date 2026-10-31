@@ -256,6 +256,12 @@ def _shows(results):
     return shows
 
 
+def _saved_episodes(value):
+    """The usable episodes of a saved subscription. A damaged list or entry is left out."""
+    return [e for e in (value if isinstance(value, list) else []) if isinstance(e, dict)
+            and isinstance(e.get('title'), str) and isinstance(e.get('url'), str) and _http_url(e['url'])]
+
+
 def _sentence(text):
     text = str(text).strip()
     return text if text.endswith(('.', '!', '?')) else text + '.'
@@ -1000,7 +1006,7 @@ class MediaHub:
         if feed is None: self.show_index=index
         try: episodes=self._feed_episodes(show)
         except (OSError,ValueError,ET.ParseError,TimeoutError):
-            cached=next((s.get('episodes',[]) for s in self.saved_subscriptions()
+            cached=next((_saved_episodes(s.get('episodes')) for s in self.saved_subscriptions()
                          if s['feed']==show['feed']),[])
             if not cached: return 'The podcast feed is unavailable. Try again later.'
             episodes=cached
@@ -1100,7 +1106,7 @@ class MediaHub:
                 current=self._load('podcast-subscriptions.json',[])
                 entry=next((s for s in (current if isinstance(current,list) else []) if isinstance(s,dict) and s.get('feed')==show['feed']),None)
                 if entry is None: continue
-                old={e.get('url') for e in entry.get('episodes',[])}
+                old={e['url'] for e in _saved_episodes(entry.get('episodes'))}
                 new=sum(e['url'] not in old for e in episodes) if old else 0
                 entry['episodes']=episodes
                 entry['last_checked']=time.time()
@@ -1221,14 +1227,18 @@ class MediaHub:
 
     def chapter(self, direction):
         if not self.chapters: return 'This episode does not provide supported chapter markers.'
-        current=self.player.control('position')
-        if current is None: return 'Play the episode first.'
-        if direction=='next':
-            item=next((c for c in self.chapters if c['time']>current+1),None)
-        else:
-            item=next((c for c in reversed(self.chapters) if c['time']<current-2),None)
-        if not item: return 'There is no '+direction+' chapter.'
-        if self.player.control('seek',position=item['time']) is None: return 'This audio cannot seek.'
+        try:
+            current=self.player.control('position')
+            if current is None: return 'Play the episode first.'
+            if direction=='next':
+                item=next((c for c in self.chapters if c['time']>current+1),None)
+            else:
+                item=next((c for c in reversed(self.chapters) if c['time']<current-2),None)
+            if not item: return 'There is no '+direction+' chapter.'
+            if self.player.control('seek',position=item['time']) is None: return 'This audio cannot seek.'
+        except Exception:
+            # The player's browser closed or stopped answering, as Pause and Play say.
+            return 'The audio player could not respond. Try opening that audio again.'
         return item['title']+'.'
 
     def audio_command(self, cmd):

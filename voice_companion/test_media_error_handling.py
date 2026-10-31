@@ -146,6 +146,35 @@ class MediaErrorTests(unittest.TestCase):
         self.assertTrue(self.hub._usable(station))
         self.assertIsNone(self.hub.recording)
 
+    # The player's browser closed under it (Playwright raises its own Error).
+    def test_chapters_with_a_player_that_does_not_answer(self):
+        class Gone:
+            kind = 'podcast'
+            def control(self, *args, **kwargs): raise RuntimeError('Target page, context or browser has been closed')
+        self.hub.player = Gone()
+        self.hub.chapters = [{'time': 0, 'title': 'Start'}, {'time': 600, 'title': 'Middle'}]
+        for spoken in ('next chapter', 'previous chapter'):
+            self.assertEqual(self.hub.command(spoken, section='podcast'),
+                             'The audio player could not respond. Try opening that audio again.')
+
+    # A subscription whose saved episode list is damaged: the other shows still refresh.
+    def test_one_damaged_subscription_does_not_stop_the_others_refreshing(self):
+        import json
+        shows = [{'name': 'Damaged', 'feed': 'https://pod.example/damaged', 'episodes': 'not a list'},
+                 {'name': 'Fine', 'feed': 'https://pod.example/fine', 'episodes': [None, 5]}]
+        (Path(self.temp.name) / 'podcast-subscriptions.json').write_text(json.dumps(shows), encoding='utf-8')
+        episodes = [{'title': 'New', 'url': 'https://pod.example/new.mp3'}]
+        self.hub._feed_episodes = lambda show: episodes
+        self.assertEqual(self.hub.refresh_subscriptions(), 'Checked 2 of 2 subscribed podcast feeds.')
+        saved = json.loads((Path(self.temp.name) / 'podcast-subscriptions.json').read_text(encoding='utf-8'))
+        self.assertEqual([show['episodes'] for show in saved], [episodes, episodes])
+        # Offline, a damaged saved list reads as no episodes, never an error.
+        self.hub._feed_episodes = lambda show: (_ for _ in ()).throw(OSError('offline'))
+        (Path(self.temp.name) / 'podcast-subscriptions.json').write_text(json.dumps(shows), encoding='utf-8')
+        self.hub.shows = self.hub.saved_subscriptions()
+        self.assertEqual(self.hub.open_podcast(1), 'The podcast feed is unavailable. Try again later.')
+        self.assertEqual(self.hub.open_podcast(2), 'The podcast feed is unavailable. Try again later.')
+
 
 class AppPathTests(unittest.TestCase):
     """Through the app, by key and by voice: the error is said in plain words."""
