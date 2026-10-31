@@ -45,6 +45,28 @@ class FileDownloading(WebError):
     """The address is a file: the browser downloads it and the page stays as it was."""
 
 
+# Why a page did not load, from the browser's own error ("net::ERR_INTERNET_DISCONNECTED").
+# Without this, no internet, a wrong address and a slow site all sounded the same.
+LOAD_FAILURES=(
+    (('ERR_INTERNET_DISCONNECTED','ERR_NETWORK_CHANGED','ERR_NETWORK_ACCESS_DENIED','ERR_ADDRESS_UNREACHABLE','ERR_PROXY_CONNECTION_FAILED','ERR_TUNNEL_CONNECTION_FAILED'),
+     'The page did not open. This computer may not be connected to the internet. Check the connection, then try again.'),
+    (('ERR_NAME_NOT_RESOLVED','ERR_NAME_RESOLUTION_FAILED'),
+     'No website was found at that address. Check the address and the internet connection, then try again.'),
+    (('ERR_TIMED_OUT','ERR_CONNECTION_TIMED_OUT','TIMEOUT '),
+     'The page took too long to open. Try again in a moment.'),
+    (('ERR_CONNECTION_REFUSED','ERR_CONNECTION_RESET','ERR_CONNECTION_CLOSED','ERR_EMPTY_RESPONSE','ERR_CONNECTION_FAILED'),
+     'The website did not answer. Try again later.'),
+    (('ERR_CERT_','ERR_SSL_'),
+     'The page did not open because the website failed a security check. Check the address, or try again later.'))
+
+
+def load_failure(error,otherwise):
+    """What to say when a page did not load: the reason, then what to do next."""
+    message=str(error).upper()
+    if type(error).__name__=='TimeoutError':message+=' TIMEOUT '
+    return next((said for codes,said in LOAD_FAILURES if any(code in message for code in codes)),otherwise)
+
+
 LINK_DOWNLOADING='This link is a file, so it is downloading. Press Control+D to see your downloads.'
 ADDRESS_DOWNLOADING='This address is a file, so it is downloading. Press Control+D to see your downloads.'
 # Guided Chrome is started by the driver, which does not keep its downloads.
@@ -128,6 +150,7 @@ def match_choices(items, request):
 
 class Favorites:
     UNREADABLE = 'Your favorites could not be opened just now. Try again in a moment.'
+    UNSAVED = 'Your favorites could not be saved just now. Nothing changed. Try again in a moment.'
 
     def __init__(self, folder):
         self.path = Path(folder) / 'web-favorites.json'
@@ -154,15 +177,25 @@ class Favorites:
         try:return self._read()[0]
         except OSError:return {}
 
-    def _write(self, data, damaged):
+    def _write(self, data, damaged, error=None):
+        """Save the list. Windows can refuse the file for a moment (an antivirus scan
+        or OneDrive): that is said plainly, never as a raw error that stops the app."""
         from storage import keep_damaged
-        if damaged is not None:keep_damaged(self.path,damaged)
-        write_text_atomic(self.path,json.dumps(data,ensure_ascii=False,indent=2))
+        try:
+            if damaged is not None:keep_damaged(self.path,damaged)
+            write_text_atomic(self.path,json.dumps(data,ensure_ascii=False,indent=2))
+        except OSError as exc:
+            raise (error or WebError)(self.UNSAVED) from exc
 
-    def add(self, name, url):
+    @staticmethod
+    def _check_name(name):
         name = _plain(name)
         if not name or len(name) > 60 or any(c in name for c in '\r\n'):
             raise WebError('Use a short name for the favorite.')
+        return name
+
+    def add(self, name, url):
+        name = self._check_name(name)
         parsed = urlsplit(url)
         if parsed.scheme not in ('http','https') or not parsed.hostname:
             raise WebError('Only HTTP and HTTPS pages can be saved.')
@@ -184,7 +217,7 @@ class Favorites:
         except OSError as exc:raise ValueError(self.UNREADABLE) from exc
         if data.pop(_plain(name).casefold(), None) is None:
             raise ValueError('That favorite no longer exists.')
-        self._write(data,damaged)
+        self._write(data,damaged,ValueError)
 
     def rename(self, name, replacement):
         item = self.get(name)
@@ -192,9 +225,17 @@ class Favorites:
             raise ValueError('That favorite no longer exists.')
         if self.get(replacement) and replacement.casefold() != name.casefold():
             raise ValueError('That favorite name already exists. Choose another name.')
-        self.add(replacement, item['url'])
-        if replacement.casefold() != name.casefold():
-            self.delete(name)
+        if replacement.casefold() == name.casefold():
+            self.add(replacement, item['url']);return
+        # One write, so a failure never leaves both names, or neither.
+        self._check_name(replacement)
+        try:data,damaged = self._read()
+        except OSError as exc:raise WebError(self.UNREADABLE) from exc
+        old=next((key for key,value in data.items() if value is item or value==item),None)
+        if old is None:raise ValueError('That favorite no longer exists.')
+        del data[old]
+        data[_plain(replacement).casefold()] = {'name': _plain(replacement), 'url': item['url']}
+        self._write(data,damaged)
 
 
 def navigation_interrupted(error):
@@ -1813,9 +1854,10 @@ class WebSession:
                     page.goto(address,wait_until='domcontentloaded',timeout=30000)
                 else:page.reload(wait_until='domcontentloaded',timeout=30000)
                 return self._refresh()
-            except Exception:
-                return 'The page reload did not finish. Wait a moment, then press F5 again, or return to the browser menu.'
+            except Exception as exc:
+                return load_failure(exc,'The page reload did not finish. Wait a moment, then press F5 again, or return to the browser menu.')
         try:self._sync_browser_tab()
+        except WebError as exc:return str(exc)   # its own reason, such as "Open a normal website tab"
         except Exception:return 'The browser connection is not ready. Keep Voice Companion open; it will reconnect automatically.'
         if not self.snapshot:return 'Open a website first.'
         if self.browse is None:self.browse=BrowseCursor(self.snapshot)
@@ -2328,7 +2370,10 @@ class WebSession:
             dialog_notice=GOOGLE_SIGN_IN_NOTICE+'.'+(' '+dialog_notice if dialog_notice else '')
         dialog=self._dialog_change(leaving,known_state,old_anchor,read)
         if dialog:return (dialog_notice+' ' if dialog_notice else '')+dialog
-        return ((dialog_notice+' ' if dialog_notice else '')+('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
+        # A page with no title says "Page loaded. Site: ..."; a title's own period is not doubled.
+        title=_plain(self.snapshot.get('title'))
+        return ((dialog_notice+' ' if dialog_notice else '')+('Page loaded' if getattr(self.backend,'page_ready',True) else 'Page content ready') +
+                (': '+title+('' if title[-1] in '.!?' else '.') if title else '.') + ' Site: ' +
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
     def _live_news(self):
@@ -2588,8 +2633,8 @@ class WebSession:
             return str(exc)
         except ValueError as exc:
             return str(exc)
-        except Exception:
-            return self.take_leave_notice() or 'The page did not open. Check the address and internet connection.'
+        except Exception as exc:
+            return self.take_leave_notice() or load_failure(exc,'The page did not open. Check the address and internet connection.')
 
     def take_leave_notice(self):
         """The notice for a page that stayed open because of unsaved changes, once."""
@@ -2607,8 +2652,11 @@ class WebSession:
             notice=self._navigate(base + quote(query))
             result = self._refresh()
             return notice+'Searching with ' + name + '. ' + result
-        except Exception:
-            return name + ' could not open. Your search engine was not changed. Try again or choose another search engine.'
+        except WebError as exc:
+            # The browser's own reason (it could not start) is what to fix, not the engine.
+            return str(exc)
+        except Exception as exc:
+            return load_failure(exc,name + ' could not open. Your search engine was not changed. Try again or choose another search engine.')
 
     def engine_names(self):
         return [{'google':'Google','bing':'Bing','brave':'Brave Search','duckduckgo':'DuckDuckGo'}[e] for e in self.engine_choices]
@@ -2793,8 +2841,11 @@ class WebSession:
         matches.sort(key=lambda pair: pair[0], reverse=True)
         if not matches:
             return 'I did not find that in the readable page text. Try describing it differently or ask your helper.'
-        return ('This page says: ' + ' '.join(text for _, text in matches[:2]) +
-                '. Source: ' + _plain(self.snapshot['title']) + ', ' +
+        said = ' '.join(text for _, text in matches[:2])
+        title = _plain(self.snapshot.get('title'))
+        # One period, never "opens at 9.. Source: , example.com".
+        return ('This page says: ' + said + ('' if said[-1] in '.!?' else '.') +
+                ' Source: ' + (title + ', ' if title else '') +
                 (urlsplit(self.snapshot['url']).hostname or 'unknown site') +
                 '. This is an excerpt; check the page for the full context.')
 
@@ -2810,7 +2861,9 @@ class WebSession:
             except Exception: pass
         fields = [c for c in self.snapshot['controls'] if c['role'] == 'field']
         examples = ', '.join(_label(c) for c in links[:3])
-        return ('You are on ' + _plain(self.snapshot['title']) + ', at ' +
+        # A page with no title is named by its site alone, never "You are on , at".
+        title = _plain(self.snapshot.get('title'))
+        return ('You are on ' + (title + ', at ' if title else '') +
                 (urlsplit(self.snapshot['url']).hostname or 'an unknown site') + '. ' +
                 (('I see choices such as ' + examples + '. ') if examples else 'I could not identify clickable controls on this page. ') +
                 (('I found ' + str(len(fields)) + ' form fields. ') if fields else '') +
@@ -2839,12 +2892,14 @@ class WebSession:
         # The words page reading uses, not code words such as textarea or tel.
         if item.get('tag') == 'textarea' or item.get('tag') == 'input' and kind in ('text','search','email','tel','url','number','input'):
             kind = 'edit field'
-        return 'Focused ' + _plain(item.get('label')) + ', ' + kind + '. ' + state
+        # A field with no name says "Unlabeled", as on the page line.
+        return 'Focused ' + (_plain(item.get('label')) or 'Unlabeled') + ', ' + kind + '. ' + state
 
     def handoff(self):
         if not self.snapshot: return 'No website is open. Ask your helper to open the site with you.'
         url = urlsplit(self.snapshot['url'])
-        return ('Ask your helper to look at the ' + browser_name(self.running_browser()) + ' window titled ' + _plain(self.snapshot['title']) +
+        title = _plain(self.snapshot.get('title'))
+        return ('Ask your helper to look at the ' + browser_name(self.running_browser()) + ' window' + (' titled ' + title if title else '') +
                 '. The site is ' + (url.hostname or 'unknown') + '. ' +
                 ('The form has ' + str(len(self.form_answers)) + ' answers entered by voice. ' if self.form_answers else '') +
                 'Review the site address, all form fields, and the final action together. I have not sent your answers to anyone.')
@@ -2992,7 +3047,8 @@ class WebSession:
             self.form_index=None;return 'Your answer was entered, but the form could not be checked again. Nothing was submitted. Say read page to retry.'
         if getattr(self,'review_edit_active',False):
             self.review_edit_active=False;self.form_index=None
-            self._refresh(read=False,wait=False)
+            try:self._refresh(read=False,wait=False)
+            except Exception:return 'Field updated, but the page could not be read again. Nothing was submitted. Say read page, then review and submit form.'
             return 'Field updated. '+self.prepare_submit()
         return ('Password entered. ' if item.get('type')=='password' else 'Recorded ' + value + ' for ' + _label(item) + '. ') + self._ask_field()
 
@@ -3039,7 +3095,7 @@ class WebSession:
         piece = self.review_parts[self.review_cursor:end]
         self.review_cursor = end
         result = ('Form review, fields ' + str(end - len(piece) + 1) + ' through ' + str(end) +
-                  ' of ' + str(len(self.review_parts)) + ': ' + '. '.join(piece) + '. ')
+                  ' of ' + str(len(self.review_parts)) + ': ' + ' '.join(p if p[-1:] in '.!?' else p + '.' for p in piece) + ' ')
         if end < len(self.review_parts):
             return result + 'Say change this field to correct it, or continue review for the remaining fields. Submission is not ready yet.'
         if self.review_submission:
@@ -3052,7 +3108,9 @@ class WebSession:
         return result + 'End of form review. Nothing has been submitted.'
 
     def edit_review_field(self,request='this field'):
-        current=self.backend.snapshot()
+        # The browser can be busy or gone; the app must not stop on "change Subject".
+        try:current=self.backend.snapshot()
+        except Exception:return 'I could not read the form just now. Say read page, then try again.'
         if current.get('url')!=self.snapshot.get('url'):return 'The page changed. Say read page before editing this form.'
         fields=self._form_controls(current)
         request=request.strip().rstrip('.!?').casefold()
@@ -3190,8 +3248,23 @@ class WebSession:
             return describe(item,self.browse.elements)
         return 'Move to a link or heading first.'
 
+    COMMAND_FAILED='That did not work. The page may have changed. Press F5 to refresh the page, then try again.'
+
     def command(self, spoken):
+        """A spoken web command. Nothing here may stop the app: an unexpected error
+        is said plainly, and its details are kept in web-command-error.txt."""
+        try:return self._command(spoken)
+        except WebError as exc:return str(exc)
+        except Exception as exc:
+            # Where it failed and the error's type only: its words can hold page text or typing.
+            import traceback
+            try:write_text_atomic(self.folder/'web-command-error.txt',''.join(traceback.format_tb(exc.__traceback__))+type(exc).__name__+'\n')
+            except OSError:pass
+            return self.COMMAND_FAILED
+
+    def _command(self, spoken):
         try:self._sync_browser_tab()
+        except WebError as exc:return str(exc)   # its own reason, such as "Open a normal website tab"
         except Exception:return 'The browser connection is not ready. Keep Voice Companion open; it will reconnect automatically.'
         command = _plain(spoken).rstrip('.!?').lower()
         if self.list_focus in ('fields','favorites') and command in ('cancel','go back','close list','back to page','escape','no','no thanks'):

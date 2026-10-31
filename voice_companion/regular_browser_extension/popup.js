@@ -11,4 +11,7 @@ for (const button of document.querySelectorAll('button')) {
   });
 }
 
-chrome.runtime.sendMessage({command:"status"}).then(result=>{document.getElementById("status").textContent=result.message;});
+// If the worker cannot answer, say so; never stay on "Checking" or read "undefined".
+chrome.runtime.sendMessage({command:"status"}).then(
+  result=>{document.getElementById("status").textContent=result?.ok===false?result.error:result?.message||'Open Voice Companion. The browser will reconnect automatically.';},
+  ()=>{document.getElementById("status").textContent='The browser connection stopped. Open Voice Companion; the browser will reconnect automatically.';});
