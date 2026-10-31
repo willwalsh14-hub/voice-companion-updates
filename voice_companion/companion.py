@@ -118,9 +118,17 @@ PUNCTUATION_LEVEL = 'some'
 VERBOSITY = 'high'
 SETTINGS_PANEL = None
 SETTINGS_RETURN_MODE = 'awake'
-try:
-    PREFERENCES = DEFAULTS | json.loads((APP/'preferences.json').read_text(encoding='utf-8'))
-except (OSError,ValueError,TypeError): PREFERENCES = dict(DEFAULTS)
+def load_preferences(folder):
+    """The saved options, and True when preferences.json is there but damaged.
+    A missing file (the first start) is not damaged."""
+    try:
+        return DEFAULTS | json.loads((Path(folder)/'preferences.json').read_text(encoding='utf-8')), False
+    except OSError:
+        return dict(DEFAULTS), False
+    except (ValueError,TypeError):
+        return dict(DEFAULTS), True
+PREFERENCES, PREFERENCES_DAMAGED = load_preferences(APP)
+PREFERENCES_DAMAGED_NOTICE = 'Your saved options could not be read, so Voice Companion is using the usual options. To set them again, press Alt+O.'
 VERBOSITY = PREFERENCES.get('verbosity','high')
 # Options, Web browser, "Guided Chrome window" (see web_assistant.CHROME_IN_BACKGROUND).
 __import__('web_assistant').CHROME_IN_BACKGROUND = PREFERENCES.get('browser_window') == 'Run the browser in the background'
@@ -5617,7 +5625,7 @@ def announce_startup():
 
     Every startup path comes here: normal, microphone off or broken, after an update,
     an update offered, Chrome setup asked for by the installer. Returns the first mode."""
-    global SLEEP_RETURN_MODE, STARTUP_NOTICES, STARTUP_QUESTION
+    global SLEEP_RETURN_MODE, STARTUP_NOTICES, STARTUP_QUESTION, PREFERENCES_DAMAGED
     import startup_speech
     if STARTUP_NOTICES is None:STARTUP_NOTICES = []
     mode = startup_update_mode()
@@ -5641,6 +5649,12 @@ def announce_startup():
         except (OSError, ValueError):update_result = None
         try:result_file.unlink(missing_ok=True)
         except OSError:pass
+    if PREFERENCES_DAMAGED:
+        # Kept for a helper: the next change of any option writes a new preferences.json.
+        PREFERENCES_DAMAGED = False
+        try:shutil.copyfile(APP/'preferences.json', APP/'preferences-damaged.json')
+        except OSError:pass
+        STARTUP_NOTICES.append(PREFERENCES_DAMAGED_NOTICE)
     # Gmail and Microsoft accounts connected directly by older versions are removed, said once.
     retire_old_mail_accounts()
     apply_transcript()
