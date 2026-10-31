@@ -102,6 +102,10 @@ class GeneralAnswerTests(CompanionCase):
         control.assert_not_called()
 
     def test_f1_in_a_yes_or_no_question_says_it_again(self):
+        def heard(text, *args, **kwargs):
+            companion.remember_question(text); self.said.append(str(text))
+        p = patch.object(companion, 'speak', heard); p.start(); self.addCleanup(p.stop)
+        p = patch.object(companion, 'LAST_YES_NO', ''); p.start(); self.addCleanup(p.stop)
         self.assertEqual(companion.handle('exit companion', 'awake'), 'exit_confirm')
         question = self.last()
         self.assertIn('Yes or no', question)

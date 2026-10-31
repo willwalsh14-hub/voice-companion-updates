@@ -1965,12 +1965,17 @@ def discard_feedback_events(cloud):
     for event in remaining:cloud.events.put(event)
 
 
+def remember_question(text):
+    """F1 says the open yes or no question again. Anything else said (but the choice itself) ends it."""
+    global LAST_YES_NO
+    if not isinstance(text,str):return
+    if 'yes or no' in text.casefold():LAST_YES_NO=text
+    elif text not in ('Yes.','No.','Start of list.','End of list.'):LAST_YES_NO=''
+
+
 def speak(text):
-    global KEYBOARD_BATCH_TEXT, LAST_YES_NO
-    if isinstance(text,str):
-        # F1 says the open question again. Anything else said (but the choice itself) ends it.
-        if 'yes or no' in text.casefold():LAST_YES_NO=text
-        elif text not in ('Yes.','No.','Start of list.','End of list.'):LAST_YES_NO=''
+    global KEYBOARD_BATCH_TEXT
+    remember_question(text)
     if KEYBOARD_BATCH:
         KEYBOARD_BATCH_TEXT=text;return
     TRANSCRIPT.said(text)   # off unless chosen; never raises
