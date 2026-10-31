@@ -4847,7 +4847,7 @@ def _handle(text, mode, typed=False):
                         'next podcast','previous podcast','next show','previous show'))):
         speak(MEDIA_HUB.command(text))
         return mode
-    if command == 'pause' and mode not in ('web', 'mailbox', 'media') and not writing_dictation(mode, typed):
+    if command == 'pause' and mode not in ('web', 'mailbox', 'media', 'local_media', 'downloads', 'youtube') and not writing_dictation(mode, typed):
         # Nothing is playing: Pause stops Companion's speech, as Stop does. Resume goes on (Will, October 31, 2026).
         control_speech('pause')
         return mode
