@@ -1427,6 +1427,8 @@ APP_FOCUS_KINDS=('link','button','edit','combobox','listbox','checkbox','radio',
                  'menuitem','menuitemcheckbox','menuitemradio','treeitem','option')
 
 
+LEFT_BOX='You left this text box with Escape, so that was not typed. To type here, press Enter or say edit current field.'
+
 class WebSession:
     def __init__(self, folder, backend=None, progress=None):
         self.progress=progress or (lambda text:None)
@@ -1554,7 +1556,7 @@ class WebSession:
                 value=item.get('value','')
             field['value']=value;field['_original_value']=value
         else:field['value']=item.get('selected_label','')
-        self.keyboard_field=field;self.web_edit_caret=0;self.selection=None;self._web_field_selection=None;self.combo_seen=()
+        self.keyboard_field=field;self.left_box=None;self.web_edit_caret=0;self.selection=None;self._web_field_selection=None;self.combo_seen=()
         return True
 
     def auto_focus_position(self):
@@ -1888,6 +1890,8 @@ class WebSession:
                 old_index=self.browse.index;item=self.browse.current()
                 message=self.browse.move('',key=='ShiftTab',tab=True)
                 if self.browse.index==old_index:
+                    if not str(self.reading.text or '').strip():
+                        return 'This page is empty. There is nothing to move to.'   # one message, not two (sweep, October 31, 2026)
                     self.reading.position=item.get('start',0) if item else 0
                     text=self.reading.move('line',-1 if key=='ShiftTab' else 1)
                     self.browse.set_position(self.reading.position)
@@ -1907,7 +1911,12 @@ class WebSession:
                 return 'Page view.'
             elif key=='Escape':
                 if self.keyboard_field and editable_combo(self.keyboard_field):return self.combo_escape()
-                if self.keyboard_field:self.keyboard_field=None;return 'Field editing canceled. Press Escape again for the web browser menu.'
+                if self.keyboard_field:
+                    # Escape leaves the box: later sentences are not typed into it (Will, October 31, 2026).
+                    field=self.keyboard_field;self.keyboard_field=None;self.left_box=self._box_here()
+                    try:self.backend.blur_field(field)
+                    except Exception:pass
+                    return 'Field editing canceled. Press Escape again for the web browser menu.'
                 if (self.snapshot or {}).get('modal_key'):
                     self.backend.page.keyboard.press('Escape')
                     result=self._refresh(read=False,wait=False)
@@ -2052,6 +2061,11 @@ class WebSession:
         return (isinstance(field,dict) and text_field(field) and not editable_combo(field)
                 and not choice_field(field) and field.get('type')!='password' and not field.get('readonly'))
 
+    def _box_here(self):
+        """Where the browse cursor is, to know whether it is still on the box Escape left."""
+        item=self.browse.current() if self.browse else None
+        return None if item is None else (self.browse.index,item.get('key') or item.get('selector') or item.get('label'))
+
     def dictate_to_focus(self, spoken, literal=False):
         self.last_dictated_text=None
         if not self.snapshot: return 'Open a website first.'
@@ -2059,6 +2073,8 @@ class WebSession:
         self.review_submission = None
         if not self.keyboard_field and self.browse and self.browse.current():
             if not text_field(self.browse.current()):return 'No text field is active. Move to a field and press Enter, or say edit current field.'
+            if getattr(self,'left_box',None) is not None and self.left_box==self._box_here():
+                return LEFT_BOX
             self.focus_current()
         if self.keyboard_field:
             if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
@@ -2711,6 +2727,18 @@ class WebSession:
             return ('I could not identify a matching link or button' + (', or find ' + words + ' in the page text' if words else '') + '. ' +
                     'The site may have changed or hidden its controls. '
                     'Say list links to hear what I can find, or ask your helper to inspect the page.')
+        wanted = _tokens(request)
+        if len(wanted) == 1 and len(self.choices) > 1:
+            # One word must be a link's whole name; a word inside several names gives a choice
+            # (Will, October 31, 2026). Before, "page" jumped to the first link with "page" in it.
+            whole = [c for c in self.choices if _tokens(_label(c)) == wanted]
+            if len(whole) == 1:
+                self.choices = whole + [c for c in self.choices if c is not whole[0]]
+            else:
+                self.pending = None
+                names = '. '.join(str(n) + ', ' + _label(c) for n, c in enumerate(self.choices, 1))
+                return (str(len(self.choices)) + ' links or buttons have that word. ' + names +
+                        '. Say open choice and a number, or say more of the name.')
         self.suggestion_index = 0
         return self._suggest()
 
@@ -3522,6 +3550,8 @@ class WebSession:
                  'what ', 'help ', 'list ', 'read ', 'fill ', 'submit ', 'click ', 'choose ', 'save ')):
             # Keep the field's own copy and the site's box the same.
             return self.dictate_to_focus(spoken)
+        if getattr(self,'left_box',None) is not None and not self.keyboard_field and self.left_box==self._box_here():
+            return LEFT_BOX
         if self.input_mode == 'mixed' and not command.startswith(('open ', 'go to ', 'search ', 'look up ',
                  'what ', 'help ', 'list ', 'read ', 'fill ', 'submit ', 'click ', 'choose ', 'save ')):
             try:

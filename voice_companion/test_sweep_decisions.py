@@ -295,5 +295,105 @@ class RecentListTests(CompanionCase):
         self.assertEqual(self.last(), '1 file is gone, so it was removed from the list. No recent documents yet. Choose Open a document.')
 
 
+
+class WebEscapeTests(unittest.TestCase):
+    """After Escape in a web text box, later sentences are not typed into the page."""
+    def test_escape_leaves_the_box_until_enter(self):
+        import tempfile
+        from unittest.mock import Mock
+        from web_assistant import WebSession, LEFT_BOX
+        from web_browse import BrowseCursor
+        box = dict(key='m', role='field', tag='textarea', type='textarea', label='Message', start=0, end=7)
+        with tempfile.TemporaryDirectory() as folder:
+            backend = Mock(); backend.document_stamp.return_value = None; backend.field_value.return_value = ''
+            backend.dictate_focused.return_value = 'Typed into the page.'
+            session = WebSession(folder, backend)
+            session.snapshot = {'text': 'Message, edit', 'elements': [box], 'url': 'https://mail.test/'}
+            session.browse = BrowseCursor(session.snapshot); session.browse.move('e')
+            session.keyboard('Activate')
+            self.assertIsNotNone(session.keyboard_field)
+            self.assertIn('Field editing canceled', session.keyboard('Escape'))
+            backend.blur_field.assert_called_once()
+            self.assertEqual(session.dictate_to_focus('See you soon.'), LEFT_BOX)
+            self.assertEqual(session.command('See you soon.'), LEFT_BOX)
+            backend.dictate_focused.assert_not_called()
+            session.keyboard('Activate')
+            self.assertIn('Text entered', session.dictate_to_focus('See you soon.'))
+
+
+
+class WebWordsTests(unittest.TestCase):
+    def session(self, controls, text='Home. Next page. Page two.'):
+        import tempfile
+        from unittest.mock import Mock
+        from web_assistant import WebSession
+        from web_browse import BrowseCursor
+        folder = tempfile.mkdtemp(); self.addCleanup(__import__('shutil').rmtree, folder, True)
+        backend = Mock(); backend.document_stamp.return_value = None
+        session = WebSession(folder, backend)
+        session.snapshot = {'text': text, 'elements': controls, 'controls': controls, 'url': 'https://site.test/'}
+        session.browse = BrowseCursor(session.snapshot)
+        session.reading.set_text(text)
+        return session
+
+    def link(self, label, n):
+        return dict(key=str(n), role='link', tag='a', label=label, href='https://site.test/' + str(n), start=n, end=n + 1)
+
+    def test_one_word_inside_several_link_names_gives_a_choice(self):
+        session = self.session([self.link('Next page', 1), self.link('Home page', 2)])
+        answer = session.find('page')
+        self.assertTrue(answer.startswith('2 links or buttons have that word. 1, Next page. 2, Home page.'), answer)
+        self.assertIsNone(session.pending)
+        self.assertIn('Next page', session.choose('1'))
+
+    def test_one_word_that_is_a_whole_link_name_is_offered(self):
+        session = self.session([self.link('Next page', 1), self.link('Page', 2)])
+        self.assertTrue(session.find('page').startswith('I found Page'))
+
+    def test_tab_on_an_empty_page_says_one_thing(self):
+        session = self.session([], text='')
+        self.assertEqual(session.keyboard('Tab'), 'This page is empty. There is nothing to move to.')
+
+    def test_no_next_heading_without_end_of_list(self):
+        from web_browse import BrowseCursor
+        cursor = BrowseCursor({'elements': []})
+        self.assertEqual(cursor.move('h'), 'No next heading.')
+
+    def test_international_site_names(self):
+        from browser_navigation import prepare_address, spoken_address_request
+        self.assertEqual(prepare_address('münchen.de')[0], 'https://xn--mnchen-3ya.de')
+        self.assertEqual(spoken_address_request('Go to münchen dot de.'), 'https://xn--mnchen-3ya.de')
+
+
+
+class MediaWordsTests(unittest.TestCase):
+    def test_skip_on_youtube_skips_an_ad_only_while_one_shows(self):
+        from unittest.mock import Mock
+        import youtube_screen as ys
+        m = Mock(); m.speech_control.return_value = None; m.speech_setting_request.return_value = None
+        m.spoken_control.return_value = None; m.VOICE_LIST_COMMANDS = ()
+        s = Mock(pending=None, asking=False); s.has_video.return_value = True
+        with patch.object(ys, 'run', return_value='Ad skipped.') as run:
+            s.ad_showing.return_value = True
+            self.assertEqual(ys.here(m, s, 'Skip.', 'skip'), ys.MODE)
+            self.assertEqual(run.call_args.args[2], 'skip ad')
+            run.reset_mock()
+            s.ad_showing.return_value = False
+            ys.here(m, s, 'Skip.', 'skip')
+            self.assertNotIn('skip ad', [c.args[2] for c in run.call_args_list])
+
+    def test_go_back_in_radio_results_goes_back_as_escape_does(self):
+        from unittest.mock import Mock
+        from media_navigation import MediaNavigation
+        hub = Mock(); hub.stations = [{'name': 'WGN'}, {'name': 'WBEZ'}]; hub.station_index = 0
+        nav = MediaNavigation.__new__(MediaNavigation)
+        with patch.object(MediaNavigation, 'voice_key', return_value='Station actions.') as key, \
+             patch.object(MediaNavigation, 'set_keyboard_mode'):
+            nav.hub = hub; nav.form = None; nav.pending = None
+            self.assertEqual(nav.command('Go back.'), 'Station actions.')
+        key.assert_called_once_with('Escape')
+        hub.command.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main()

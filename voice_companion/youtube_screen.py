@@ -1157,6 +1157,12 @@ class YouTubeScreen:
         on = self.player.toggle_fullscreen()
         return 'Video full screen on. Press F again to turn it off.' if on else 'Video full screen off.'
 
+    def ad_showing(self):
+        try:
+            return bool((self.player.state().get('ad') or {}).get('showing'))
+        except Exception:
+            return False
+
     def skip_ad(self):
         problem = self.need_video()
         if problem:
@@ -1980,6 +1986,10 @@ def here(m, s, raw, command, typed=False):
         return None
     if command in ('main menu', 'back to main menu'):
         return 'awake'   # handle() says Main menu, and stops the video unless audio keeps playing
+    if command in ('skip', 'skip it', 'skip this') and s.has_video() and s.ad_showing():
+        # While an ad shows, "Skip" means Skip ad (Will, October 31, 2026).
+        m.speak(run(m, s, 'skip ad', raw, command))
+        return MODE
     action = COMMANDS.get(command)
     if action is None:
         action, raw = parse(command, raw)

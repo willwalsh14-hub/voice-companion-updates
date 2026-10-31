@@ -4860,7 +4860,9 @@ def _handle(text, mode, typed=False):
             speak(media_navigation().enter(MEDIA_SECTION,keyboard=KEYBOARD_NAVIGATION))
             return 'media'
         try:
-            speak(media_navigation().command(text));sync_app_context('media',True)
+            said=media_navigation().command(text)
+            if said=='__main__':return handle('media menu','media')   # "Go back" from the Radio or Podcasts menu
+            speak(said);sync_app_context('media',True)
         except (OSError,ValueError,IndexError,ET.ParseError) as exc:
             speak('I could not complete that media request. ' + __import__('media_navigation').spoken_error(exc))
         return 'media'

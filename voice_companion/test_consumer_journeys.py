@@ -271,8 +271,8 @@ class PageWordsTests(unittest.TestCase):
         expected={'e':'text box','c':'choice box','g':'picture','f':'form control','r':'radio button','i':'list item','s':'list box','x':'checkbox','k':'link','h':'heading','d':'landmark','m':'frame'}
         for key,name in expected.items():
             with self.subTest(key=key):
-                self.assertEqual(cursor.move(key),'End of list. No next '+name+'.')
-                self.assertEqual(cursor.move(key,backward=True),'Start of list. No previous '+name+'.')
+                self.assertEqual(cursor.move(key),'No next '+name+'.')
+                self.assertEqual(cursor.move(key,backward=True),'No previous '+name+'.')
 
 
 class LiveBase(unittest.TestCase):
