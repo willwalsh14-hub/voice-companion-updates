@@ -1309,12 +1309,6 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
-### Say read, unread, flagged and importance
-
-- Voice: "Set Say read, unread, flagged and importance to ..."
-- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
-- Status: Both
-
 ### Spoken email headers
 
 - Voice: "Set email header order to ..."
@@ -1324,6 +1318,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Thunderbird window
 
 - Voice: "Set Thunderbird window to ..."
+- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Say read, unread, flagged and importance
+
+- Voice: "Set Say read, unread, flagged and importance to ..."
 - Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
