@@ -377,6 +377,8 @@ class YahooMailbox:
                     continue
                 msg = BytesParser(policy=policy.default).parsebytes(header or b'', headersonly=True)
                 flags = re.search(rb'FLAGS \(([^)]*)\)', details)
+                # IMAP flags are not case sensitive. Starred in Yahoo Mail is \Flagged.
+                marks = set(flags.group(1).lower().split()) if flags else set()
                 delivery = re.search(rb'INTERNALDATE "([^"]+)"', details)
                 size = re.search(rb'RFC822\.SIZE (\d+)', details)
                 rows.append({'id': uid.group(1).decode('ascii'),
@@ -385,7 +387,8 @@ class YahooMailbox:
                              'date': message_date(_internal_date(delivery.group(1).decode('ascii')) if delivery
                                                   else _header(msg, 'Date')),
                              'size': int(size.group(1)) if size else 'unavailable',
-                             'unread': not flags or b'\\seen' not in flags.group(1).lower()})
+                             'unread': b'\\seen' not in marks, 'flagged': b'\\flagged' in marks,
+                             'replied': b'\\answered' in marks, 'forwarded': b'$forwarded' in marks})
             following = str(skip + limit) + ':' + str(total) if oldest > 1 else None
             return rows, following
         return self._with(operation)

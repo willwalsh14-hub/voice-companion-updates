@@ -99,5 +99,28 @@ class HalfFinishedMoveTests(CompanionCase):
                 self.assertEqual(self.last(), mail._empty_list())
 
 
+class YahooFlagsTests(unittest.TestCase):
+    """Before: Yahoo read only the Seen flag, so "Is it flagged?" on a starred message
+    said "Read, not flagged." and a reply you sent was never said."""
+    def test_flagged_replied_and_forwarded_come_from_yahoo(self):
+        import tempfile
+        from test_yahoo_mail import YahooIMAPServer, ADDRESS, APP_PASSWORD, message
+        from yahoo_mailbox import YahooMailbox
+        server = YahooIMAPServer(); self.addCleanup(server.close)
+        server.add('Inbox', message(subject='Plain'), flags=('\\Seen',))
+        server.add('Inbox', message(subject='Starred'), flags=('\\Seen', '\\Flagged', '\\Answered', '$Forwarded'))
+        rows, _ = YahooMailbox(ADDRESS, APP_PASSWORD, server.factory).list_messages('Inbox')
+        self.assertEqual([(r['subject'], r['flagged'], r['replied'], r['forwarded']) for r in rows],
+                         [('Starred', True, True, True), ('Plain', False, False, False)])
+        factory = lambda *args: YahooMailbox(ADDRESS, APP_PASSWORD, server.factory)
+        with patch('mail_voice.account_token', return_value=(ADDRESS, APP_PASSWORD)), \
+                tempfile.TemporaryDirectory() as folder:
+            session = MailSession('yahoo', folder, factory)
+            self.assertTrue(session.process('open inbox').startswith('Inbox. Flagged, replied, forwarded.'))
+            self.assertEqual(session.process('Is it flagged?'), 'Read, flagged, replied, forwarded.')
+            session.process('next message')
+            self.assertEqual(session.process('message status'), 'Read, not flagged.')
+
+
 if __name__ == '__main__':
     unittest.main()
