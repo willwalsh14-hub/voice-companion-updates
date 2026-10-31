@@ -909,6 +909,9 @@ class CompanionWindow:
                             if role not in roles:roles.append(role)
                     if 'link' in roles:notice='Link '+notice;roles.remove('link')
                     if roles:notice+=', '+', '.join(roles)+'.'
+                if self.context.get('document_headings') and not selection() and (key in ('Up','Down','Prior','Next') or control and key in ('Up','Down','Home','End')):
+                    from keyboard_text import heading_notice
+                    notice=heading_notice(self.context['document_headings'],caret,notice)
                 self.feedback(notice);cancel_phonetic()
                 if char and self.context.get('phonetic') and phonetic(char):
                     local['phonetic']=root.after(int(float(self.context.get('delay',.5))*1000),lambda:self.feedback(phonetic(char)))

@@ -95,7 +95,10 @@ class SameAddressTwoWaysTests(AccountScreenTestCase):
         self.assertEqual(self.last(), 'Thunderbird, will@yahoo.com, 2 of 3.')
         self.assertEqual(self.key('Enter', 'awake'), 'mailbox')
         self.assertEqual(self.store.selected(), BIRD_WILL)
-        self.assertTrue(self.said[-1].startswith('Switched to Thunderbird, will@yahoo.com.'), self.said[-1])
+        # Said at once, before the inbox loads; the inbox follows.
+        said = self.said[-4:]
+        self.assertIn('Switched to Thunderbird, will@yahoo.com.', said)
+        self.assertLess(said.index('Switched to Thunderbird, will@yahoo.com.'), len(said) - 1, said)
 
     def test_voice_choice_in_the_list(self):
         companion.handle('switch account', 'awake')

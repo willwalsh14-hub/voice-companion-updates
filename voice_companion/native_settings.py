@@ -11,6 +11,35 @@ from menu_navigation import boundary_notice, next_match,menu_label
 def choice_feedback(value,index,count):
     return str(value)
 
+
+# What kind of control each setting is, said with it, as a screen reader would (Will, October 30, 2026):
+# "Announce email header names, check box, not checked." "Speech rate, combo box, 0, 11 of 21."
+ROLES={'check':'check box','choice':'combo box','combo':'edit combo box','text':'edit','password':'password edit',
+       'action':'button','headers':'list box'}
+
+
+def check_words(value):
+    return 'checked' if value else 'not checked'
+
+
+def control_words(field,value,index=None,count=None):
+    """The label, the kind of control, and its value, for a setting that gets focus."""
+    role=ROLES.get(field.kind,'')
+    if field.kind=='check':return field.label+', check box, '+check_words(value)+'.'
+    if field.kind=='action':return field.label+', button.'
+    if field.kind=='password':return field.label+', password edit, '+('hidden' if value else 'blank')+'.'
+    if field.kind=='choice':
+        if not getattr(field,'choices',()):return field.label+', combo box, unavailable.'
+        where=', '+str(index+1)+' of '+str(count) if index is not None and count and 0<=index<count else ''
+        return field.label+', combo box, '+(str(value) if str(value) else 'none')+where+'.'
+    if field.kind in ('combo','text'):
+        return field.label+', '+role+', '+(str(value) if str(value).strip() else 'blank')+'.'
+    return field.label+(', '+role if role else '')+', '+str(value)+'.'
+
+
+BUTTON_WORDS={'OK':'OK, button. Saves your settings.','Cancel':'Cancel, button. Discards your changes.',
+              'Close settings':'Close settings, button.'}
+
 def settings_bottom(fields,step):
     """The lowest pixel the settings use, laid out step pixels apart (as render does)."""
     y=-17;bottom=0
@@ -93,17 +122,14 @@ class NativeSettings:
             if hwnd in buttons:return buttons[hwnd]
             field=controls.get(hwnd)
             if not field:return ''
-            if field.kind=='headers':return headers[0].label()+'. Space enables or disables. Alt+Up or Alt+Down changes order.'
-            if field.kind=='password':return field.label+'. Hidden.'
-            if field.kind=='action':return field.label+'. Button.'
+            if field.kind=='headers':return field.label.split(';')[0]+', list box. '+headers[0].label()+'. Space enables or disables. Alt+Up or Alt+Down changes order.'
             value=raw(hwnd,field)
-            value='on' if value is True else 'off' if value is False else value
             if field.kind=='choice' and field.choices:
-                return choice_feedback(field.label+', '+str(value),int(send(hwnd,0x147,0,0)),len(field.choices))
-            return field.label+', '+str(value)
+                return control_words(field,value,int(send(hwnd,0x147,0,0)),len(field.choices))
+            return control_words(field,value)
         def changed_value(hwnd):
             field=controls[hwnd];value=raw(hwnd,field)
-            notice='on' if value is True else 'off' if value is False else str(value)
+            notice=check_words(value) if field.kind=='check' else str(value)
             if field.choices:
                 index=int(send(hwnd,0x147,0,0));notice=choice_feedback(notice,index,len(field.choices))
             return notice.strip()
@@ -119,7 +145,7 @@ class NativeSettings:
             u.SetWindowTextW(self.hwnd,'Voice Companion Options - '+self.session.category_name() if editing[0] else 'Voice Companion Options (Alt+O)')
             if not editing[0]:
                 close_button=control('BUTTON','Close settings',0x10000,595,530,100,32,2)
-                children.append(close_button);buttons[close_button]='Close settings.'
+                children.append(close_button);buttons[close_button]=BUTTON_WORDS['Close settings']
                 focus(category[0]);return
             # Settings sit 62 pixels apart. A long category (Email gained a Thunderbird window
             # setting in 0.2.174) packs them closer, so the last one never lands on the
@@ -145,7 +171,7 @@ class NativeSettings:
                     send(hwnd,0x186,0,0)
                     for j,(label,action) in enumerate((('Enable / disable','toggle'),('Move up','up'),('Move down','down'))):
                         button=control('BUTTON',label,0x10000,225+j*155,y+110,145,27,300+j)
-                        children.append(button);buttons[button]=label+'. Button.';header_buttons[button]=action
+                        children.append(button);buttons[button]=label+', button.';header_buttons[button]=action
                     y+=90
                 elif field.kind in ('choice','combo'):
                     hwnd=control('COMBOBOX','',0x10000|0x200000|(3 if field.kind=='choice' else 2),225,y+22,460,300,200+index)
@@ -158,7 +184,7 @@ class NativeSettings:
                 else:hwnd=control('EDIT',str(value),0x10000|0x80|(0x20 if field.kind=='password' else 0),225,y+22,460,28,200+index,0x200)
                 controls[hwnd]=field;children.append(hwnd)
             ok=control('BUTTON','OK',0x10000|1,485,530,100,32,1);cancel=control('BUTTON','Cancel',0x10000,595,530,100,32,2)
-            buttons[ok]='OK. Save settings.';buttons[cancel]='Cancel. Discard changes.';children.extend((ok,cancel))
+            buttons[ok]=BUTTON_WORDS['OK'];buttons[cancel]=BUTTON_WORDS['Cancel'];children.extend((ok,cancel))
             target=next((h for h,f in controls.items() if f.key==focus_key),next((h for h in controls if u.IsWindowEnabled(h)),ok));focus(target)
         def change_header(action):
             model=headers[0]

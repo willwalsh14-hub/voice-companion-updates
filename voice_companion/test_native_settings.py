@@ -198,11 +198,11 @@ class NativeSettingsTests(unittest.TestCase):
         # One step at a time: wait for each step to be spoken before the next, or the
         # commands queue up faster than the dialog answers and skip past the button.
         for _ in range(20):
-            if any('Add an email account. Button.' in n for n in self.notices):break
+            if any('Add an email account, button.' in n for n in self.notices):break
             before=len(self.notices);self.panel.command('next setting')
             until=time.monotonic()+3
             while len(self.notices)==before and time.monotonic()<until:time.sleep(.02)
-        self.wait(lambda:any('Add an email account. Button.' in n for n in self.notices))
+        self.wait(lambda:any('Add an email account, button.' in n for n in self.notices))
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,205),0x100,0x0D,0)
         self.assertTrue(self.panel.closed.wait(5),self.notices)
         self.assertEqual(actions,['add_account']);self.assertFalse(self.saved)

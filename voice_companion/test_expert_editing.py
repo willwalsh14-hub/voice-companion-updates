@@ -133,7 +133,7 @@ class FormattingIsConfirmedInPlainWords(EditorCase):
         for command, said in (('make this italic', 'Formatted the current paragraph. Italic.'),
                               ('remove italic', 'Formatted the current paragraph. Not italic.'),
                               ('make this bold', 'Formatted the current paragraph. Bold.'),
-                              ('heading 2', 'Formatted the current paragraph. Heading 2.'),
+                              ('heading 2', 'Formatted the current paragraph. Heading level 2.'),
                               ('normal text', 'Formatted the current paragraph. Normal text.'),
                               ('bulleted list', 'Formatted the current paragraph. Bulleted list.'),
                               ('align center', 'Formatted the current paragraph. Alignment center.'),

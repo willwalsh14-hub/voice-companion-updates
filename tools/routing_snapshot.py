@@ -61,6 +61,9 @@ SENTENCES = (
     'Star this message', 'Is it flagged?', 'High importance.', 'Change importance', 'Read receipt on or off',
     'Request a read receipt.', 'Importance', 'This is of high importance.', 'Flag the car down at the corner.',
     'Mark as read when you get it.', 'The status of the order is late.',
+    # Headings in documents (Will, October 30, 2026).
+    'Heading 1', 'Heading level two.', 'Next heading', 'Previous heading', 'Read paragraph.', 'Toggle bold',
+    'The heading of the letter is short.',
 )
 
 
