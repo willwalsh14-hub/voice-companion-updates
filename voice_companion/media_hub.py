@@ -729,28 +729,44 @@ class MediaHub:
         codec = str(station.get('codec','')).lower()
         ext = '.aac' if 'aac' in codec else '.ogg' if 'ogg' in codec else '.mp3'
         folder = self._path('Radio Recordings')
-        folder.mkdir(parents=True, exist_ok=True)
         target = folder / (_safe(station['name']) + ' ' + self.clock().strftime('%Y-%m-%d %H-%M-%S') + ext)
         deadline = time.monotonic()+minutes*60
         size = 0
+        # A problem with the file (the folder cannot be made, the disk is full) is not the
+        # station's fault: it is said as a saving problem, and the station is not hidden.
+        disk = False
         try:
-            with request.urlopen(request.Request(url, headers={'User-Agent':'VoiceCompanion/0.2','Icy-MetaData':'0'}),timeout=20) as stream, target.open('wb') as output:
+            try: folder.mkdir(parents=True, exist_ok=True)
+            except OSError: disk = True; raise
+            with request.urlopen(request.Request(url, headers={'User-Agent':'VoiceCompanion/0.2','Icy-MetaData':'0'}),timeout=20) as stream:
                 content_type = stream.headers.get('Content-Type','').lower()
                 if not any(t in content_type for t in ('audio/','application/octet-stream')):
                     raise ValueError('The station did not provide a direct audio stream.')
-                while not stop.is_set() and time.monotonic()<deadline and size<MAX_DOWNLOAD:
-                    chunk = stream.read(16384)
-                    if not chunk: break
-                    output.write(chunk); size += len(chunk)
+                try: output = target.open('wb')
+                except OSError: disk = True; raise
+                with output:
+                    while not stop.is_set() and time.monotonic()<deadline and size<MAX_DOWNLOAD:
+                        chunk = stream.read(16384)
+                        if not chunk: break
+                        try: output.write(chunk)
+                        except OSError: disk = True; raise
+                        size += len(chunk)
             if size:
                 self.notify('Saved radio recording ' + target.name + '.')
             else:
                 target.unlink(missing_ok=True)
                 self.notify('The recording had no audio. Nothing was saved.')
         except (OSError, ValueError, TimeoutError, HTTPException):
-            if not size: target.unlink(missing_ok=True)
-            self._mark_bad(station)
-            self.notify('Radio recording stopped because the stream failed. Check saved recordings before retrying.')
+            try:
+                if not size: target.unlink(missing_ok=True)
+                if not disk: self._mark_bad(station)
+            except OSError: pass
+            if disk:
+                self.notify('The radio recording could not be saved. ' +
+                            ('The part recorded so far is in Radio Recordings. ' if size else '') +
+                            'Check that the disk has room, then try again.')
+            else:
+                self.notify('Radio recording stopped because the stream failed. Check saved recordings before retrying.')
         finally:
             with self._lock:
                 if self.recording is threading.current_thread(): self.recording = None

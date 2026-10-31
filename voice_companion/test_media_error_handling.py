@@ -134,6 +134,18 @@ class MediaErrorTests(unittest.TestCase):
         self.assertTrue(all(isinstance(entry['name'], str) and isinstance(entry['tags'], str) for entry in saved), saved)
         self.assertIn('Good', [entry['name'] for entry in saved])
 
+    # The recordings folder cannot be made: before, the recorder stopped without a word.
+    def test_a_recording_that_cannot_be_saved_says_so_and_keeps_the_station(self):
+        (Path(self.temp.name) / 'Radio Recordings').write_text('not a folder', encoding='utf-8')
+        station = {'name': 'Jazz 24', 'url': serve(SHOUTCAST, self)}
+        self.hub.record_now(station, 1)
+        self.assertTrue(self.wait_for_notice(), 'the recorder stopped without a word')
+        self.assertIn('could not be saved', self.notices[-1])
+        self.assertIn('then try again', self.notices[-1])
+        # The station is fine: it must not be hidden from searches for a day.
+        self.assertTrue(self.hub._usable(station))
+        self.assertIsNone(self.hub.recording)
+
 
 class AppPathTests(unittest.TestCase):
     """Through the app, by key and by voice: the error is said in plain words."""
