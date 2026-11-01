@@ -159,6 +159,7 @@ class OnboardHelpTests(unittest.TestCase):
                 request=app.navigation_key(key,'help');app.handle_keyboard(request,'help')
                 say.assert_called_with(expected)
             app.handle('previous paragraph','help');say.assert_called_with('Second.')
+            app.handle('next paragraph','help');say.assert_called_with('Third.')
             app.handle('next paragraph','help');say.assert_called_with('End of topic. Third.')
 
     def test_companion_help_preserves_mailbox_and_document_modes(self):
