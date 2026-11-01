@@ -155,7 +155,7 @@ class CapitalPreferenceTests(unittest.TestCase):
         from types import SimpleNamespace
         field=next(f for f in fields('Verbosity',{}) if f.key=='capital_letters')
         self.assertEqual(field.label,'When encountering capital letters')
-        self.assertEqual(field.choices,('raise pitch','lower pitch','play a sound','do nothing'))
+        self.assertEqual(field.choices,('raise pitch','lower pitch','play a sound','say cap','do nothing'))
         with tempfile.TemporaryDirectory() as folder:
             app=SimpleNamespace(APP=Path(folder),PREFERENCES=dict(DEFAULTS))
             for value in field.choices:
@@ -166,6 +166,14 @@ class CapitalPreferenceTests(unittest.TestCase):
                 self.assertEqual(reloaded.values['typing_echo'],DEFAULTS['typing_echo'])
                 self.assertEqual(reloaded.voice_setting('when encountering capital letters '+value),('capital_letters',value))
         with self.assertRaises(ValueError):session.set('capital_letters','invalid')
+
+    def test_capital_letters_by_voice_tolerate_speech_punctuation(self):
+        for said in ('Capital letters say cap.','Capital letters, say cap','capital letters cap','When encountering capital letters: say cap'):
+            session=SettingsSession(dict(DEFAULTS),{})
+            request=session.voice_setting(said)
+            self.assertIsNotNone(request,said)
+            session.set(*request)
+            self.assertEqual(session.values['capital_letters'],'say cap',said)
 
     def test_old_capital_choices_migrate_to_the_new_names(self):
         for old,new in (('with a sound','play a sound'),('with a higher pitch','raise pitch'),('with a lower pitch','lower pitch')):

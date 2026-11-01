@@ -203,6 +203,9 @@ class YouTubeScreen:
         self.return_mode = 'media_menu'
         self.signing_in = False   # Google's sign-in page is open; coming back loads YouTube again
         self.opened_window = False  # a browser window or tab opened; the keyboard comes back to Companion
+        # Windows of your own Chrome that Companion opened for YouTube. They close when YouTube or
+        # Companion closes (Will, October 31, 2026). A Chrome window you opened yourself never does.
+        self.own_chrome_windows = set()
         self.lists = yp.YouTubePage(lambda: self.list_page)
         self.player = yp.YouTubePage(lambda: self.video_page)
 
@@ -1666,6 +1669,7 @@ class YouTubeScreen:
             return None
         if announce:
             self.m.speak_status(announce)
+        before = self.chrome_windows()
         if not system.open_chrome(address):
             return None
         import user_stop
@@ -1673,8 +1677,100 @@ class YouTubeScreen:
             user_stop.wait(relay.connected, OWN_CHROME_SECONDS)
         except user_stop.Stopped:
             return 'Stopped waiting for your own Chrome.'
+        self.note_opened_chrome(before)
         self.keep_keyboard()
         return True if relay.connected.is_set() else OWN_CHROME_NOT_LINKED
+
+    CHROME_WINDOW_WAIT = 2.0   # seconds for Chrome's new window to show once the extension linked
+
+    def desktop(self):
+        """Chrome's windows on Windows; None elsewhere or when Windows cannot be asked."""
+        try:
+            import os
+            if os.name != 'nt':
+                return None
+            from window_hiding import Win32Desktop
+            return Win32Desktop('chrome.exe')
+        except Exception:
+            return None
+
+    def chrome_windows(self):
+        """Handles of the Chrome browser windows open now (only main windows with a title bar)."""
+        desktop = self.desktop()
+        if desktop is None:
+            return set()
+        try:
+            return {w.handle for w in desktop.windows() if w.kind == 'Chrome_WidgetWin_1' and not w.owned and not w.tool}
+        except Exception:
+            return set()
+
+    def note_opened_chrome(self, before):
+        """A window that was not there before Chrome was opened is Companion's to close later.
+        When Chrome was already open, it adds a tab to your window instead: then only that tab closes."""
+        if self.desktop() is None:
+            return
+        new = set()
+        waited = 0.0
+        while True:
+            new = self.chrome_windows() - set(before)
+            if new or waited >= self.CHROME_WINDOW_WAIT:
+                break
+            time.sleep(0.2)
+            waited += 0.2
+        if new and not self.own_chrome_windows:
+            import atexit
+            atexit.register(close_own_chrome_at_exit, self)
+        self.own_chrome_windows |= new
+
+    def close_own_chrome(self):
+        """YouTube or Companion closed: the YouTube tabs close, and so does any Chrome window
+        Companion opened for YouTube. Your own Chrome windows stay open. Returns True if one closed."""
+        if self.engine_is_own_chrome():
+            self.close_pages()
+            # The list tab is also the web screen's tab, so close_pages keeps it. Here YouTube is
+            # closing, so a tab still on YouTube closes too; a tab you moved to another site stays.
+            page = self.list_page
+            try:
+                if self.alive(page) and 'youtube.com' in (page.url or ''):
+                    page.close()
+            except Exception:
+                pass
+            self.list_page = self.video_page = None
+            self.single_tab = False
+        windows, self.own_chrome_windows = self.own_chrome_windows, set()
+        desktop = self.desktop() if windows else None
+        closed = False
+        for handle in windows:
+            try:
+                if desktop is not None and desktop.exists(handle):
+                    closed = desktop.close(handle) or closed
+            except Exception:
+                pass
+        if closed:
+            self.release_own_chrome()
+        return closed
+
+    def release_own_chrome(self):
+        """Your own Chrome is closing: the web screen goes back to its usual browser, started
+        when it is next needed, and links your Chrome again when you open it."""
+        web = getattr(self.m, 'web_session', None)
+        try:
+            from connected_browser import ConnectedBrowserBackend
+            from web_assistant import BrowserBackend
+            if web is not None and isinstance(web.backend, ConnectedBrowserBackend):
+                web.backend.close()
+                web.backend = BrowserBackend(Path(web.folder) / ('Browser Profile ' + web.browser), web.browser)
+                web.snapshot = None
+        except Exception:
+            pass
+
+    def engine_is_own_chrome(self):
+        if getattr(self.m, 'web_session', None) is None:
+            return False   # never start a browser just to ask
+        try:
+            return self.engine() == 'regular'
+        except Exception:
+            return False
 
     def keep_keyboard(self):
         window = getattr(self.m, 'APP_WINDOW', None)
@@ -2205,6 +2301,13 @@ def leave(m, s):
     The video keeps playing, like radio; going to the main menu stops it."""
     s.pending = None
     s.end_asking()
+    if not s.has_video():
+        # Nothing plays: YouTube is closed, so your own Chrome opened for it closes too.
+        s.stopped()
+        try:
+            s.close_own_chrome()
+        except Exception:
+            pass
     target = s.return_mode or 'media_menu'
     if target == 'media_menu':
         return m.task_navigation().enter('media_menu', 'Media menu', 3)
@@ -2255,11 +2358,26 @@ def toggle_audio(m):
     return 'Video ' + result[0].lower() + result[1:] if result in ('Playing.', 'Paused.') else result
 
 
+def close_own_chrome_at_exit(s):
+    try:
+        s.close_own_chrome()
+    except Exception:
+        pass
+
+
 def main_menu(m):
-    """Going back to the main menu stops the video, unless audio keeps playing in the background."""
-    if SCREEN is None or SCREEN.m is not m or not SCREEN.has_video():
+    """Going back to the main menu stops the video, unless audio keeps playing in the background.
+    Your own Chrome, opened for YouTube, closes with it."""
+    if SCREEN is None or SCREEN.m is not m:
         return
-    if m.PREFERENCES.get('keep_audio_playing', False) and SCREEN.owner:
+    if SCREEN.has_video() and m.PREFERENCES.get('keep_audio_playing', False) and SCREEN.owner:
+        return
+    youtube_tabs = SCREEN.alive(SCREEN.list_page) or SCREEN.alive(SCREEN.video_page)
+    if SCREEN.own_chrome_windows or youtube_tabs and SCREEN.engine_is_own_chrome():
+        SCREEN.stopped()
+        SCREEN.close_own_chrome()
+        return
+    if not SCREEN.has_video():
         return
     try:
         SCREEN.stop()

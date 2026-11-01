@@ -578,3 +578,86 @@ class AlwaysOwnChromeTests(unittest.TestCase):
     def test_a_chosen_embedded_edge_is_kept(self):
         s, _ = self.go('webview2', saved='webview2')
         s.link_own_chrome.assert_not_called()
+
+
+class CloseOwnChromeTests(unittest.TestCase):
+    """Will, October 31, 2026: "when YouTube or voice companion closes, chrome should close as well."
+    Only a Chrome window Companion opened for YouTube closes; one you opened yourself stays."""
+
+    class Desktop:
+        def __init__(self, handles):
+            self.handles, self.closed = set(handles), []
+        def windows(self):
+            from window_hiding import Window
+            return [Window(h, 'Chrome_WidgetWin_1', 'YouTube - Google Chrome', False, False, False) for h in sorted(self.handles)]
+        def exists(self, handle):
+            return handle in self.handles
+        def close(self, handle):
+            self.closed.append(handle); self.handles.discard(handle); return True
+
+    def screen(self, before, after):
+        import threading
+        import browser_cdp_relay
+        import chrome_setup
+        m = Mock(PREFERENCES={}, APP=Path(tempfile.mkdtemp()), APP_WINDOW=None, web_session=None)
+        s = ys.YouTubeScreen(m)
+        s.CHROME_WINDOW_WAIT = 0
+        ys.SCREEN = s
+        self.addCleanup(setattr, ys, 'SCREEN', None)
+        desktop = self.Desktop(before)
+        s.desktop = lambda: desktop
+        relay = Mock(); relay.connected = threading.Event()
+
+        class Chrome:
+            def supported(self): return True
+            def extension_state(self): return 'enabled'
+            def open_chrome(self, address):
+                desktop.handles |= set(after); relay.connected.set(); return True
+        with patch.object(browser_cdp_relay, 'prepared', lambda: relay), patch.object(chrome_setup, 'WindowsChrome', Chrome), \
+                patch('atexit.register') as register:
+            self.assertIs(s.link_own_chrome('https://www.youtube.com/', ys.OWN_CHROME_START), True)
+        return s, m, desktop, register
+
+    def test_the_chrome_window_companion_opened_closes_when_youtube_closes(self):
+        s, m, desktop, register = self.screen(before={7}, after={42})
+        self.assertEqual(s.own_chrome_windows, {42})
+        register.assert_called_once_with(ys.close_own_chrome_at_exit, s)   # and when Companion closes
+        ys.main_menu(m)
+        self.assertEqual(desktop.closed, [42])     # window 7 was yours: it stays open
+        self.assertEqual(s.own_chrome_windows, set())
+
+    def test_chrome_you_already_had_open_is_never_closed(self):
+        s, m, desktop, register = self.screen(before={7}, after=set())   # the tab joined your window
+        self.assertEqual(s.own_chrome_windows, set())
+        register.assert_not_called()
+        self.assertFalse(s.close_own_chrome())
+        self.assertEqual(desktop.closed, [])
+
+    def test_leaving_youtube_with_nothing_playing_closes_it_but_a_playing_video_keeps_it(self):
+        s, m, desktop, _ = self.screen(before=set(), after={42})
+        s.has_video = lambda: True
+        ys.leave(m, s)
+        self.assertEqual(desktop.closed, [])       # the video plays on, like radio
+        s.has_video = lambda: False
+        ys.leave(m, s)
+        self.assertEqual(desktop.closed, [42])
+
+    def test_companion_closing_closes_it(self):
+        s, m, desktop, _ = self.screen(before=set(), after={42})
+        ys.close_own_chrome_at_exit(s)
+        self.assertEqual(desktop.closed, [42])
+        ys.close_own_chrome_at_exit(s)             # twice is safe
+        self.assertEqual(desktop.closed, [42])
+
+    def test_a_window_already_closed_by_you_is_skipped(self):
+        s, m, desktop, _ = self.screen(before=set(), after={42})
+        desktop.handles.clear()
+        self.assertFalse(s.close_own_chrome())
+        self.assertEqual(desktop.closed, [])
+
+    def test_with_audio_kept_playing_the_main_menu_keeps_the_video_and_chrome(self):
+        s, m, desktop, _ = self.screen(before=set(), after={42})
+        m.PREFERENCES['keep_audio_playing'] = True
+        s.has_video = lambda: True; s.owner = True
+        ys.main_menu(m)
+        self.assertEqual(desktop.closed, [])

@@ -13,7 +13,11 @@ def prepare(text,mode='do nothing'):
     mode={'with a higher pitch':'raise pitch','with a lower pitch':'lower pitch','with a sound':'play a sound'}.get(mode,mode)
     capital=is_capital(text)
     delta=(4 if mode=='raise pitch' else -4 if mode=='lower pitch' else 0) if capital else 0
-    return CharacterSpeech(str(text),capital,delta,capital and mode=='play a sound')
+    words=str(text)
+    if capital and mode=='say cap' and not words.lower().startswith('cap '):
+        # Will, October 31, 2026: "cap B", with no comma or pause between them.
+        words='cap '+words
+    return CharacterSpeech(words,capital,delta,capital and mode=='play a sound')
 
 def pitch_for(text,base=0):return max(-10,min(10,int(base)+getattr(text,'pitch_delta',0)))
 
