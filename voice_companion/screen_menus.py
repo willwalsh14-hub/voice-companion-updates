@@ -267,7 +267,8 @@ MENUS = {
             ('Beginning of document', '', 'go to beginning of document'),
             ('End of document', '', 'go to end of document'),
             ('Formatting', 'Insert+F', 'what formatting'),
-            ('Selected text', 'Insert+Shift+Down', 'what is selected')]),
+            ('Selected text', 'Insert+Shift+Down', 'what is selected'),
+            ('Say all from here', 'Insert+Down', 'say all')]),
         ('Move by', [
             ('Next heading', 'H', 'next heading'),
             ('Previous heading', 'Shift+H', 'previous heading'),

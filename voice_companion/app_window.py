@@ -517,15 +517,15 @@ class CompanionWindow:
                     update_key='Alt+'+key.upper() if alt_held(event.state) else key
                     if update_key in ('F5','Alt+S','Escape','Alt+C'):
                         self.commands.put(('keyboard',update_key));return 'break'
-                if mode in ('document','file_reader') and not self.command_entry_active:
+                if (mode in ('document','file_reader') or mode in ('email_draft','mailbox','help','web') and self.context.get('source')) and not self.command_entry_active:
                     if key in ('Insert','Caps_Lock'):
                         if key=='Caps_Lock':
                             if caps_modifier['synthetic']:caps_modifier['synthetic']-=1;return 'break'
                             if key not in document_modifiers:caps_modifier.update(before=bool(event.state&2),used=False)
                         document_modifiers.add(key);return 'break'
                     prefix='CapsLock' if 'Caps_Lock' in document_modifiers else 'Insert' if 'Insert' in document_modifiers else None
-                    chord=prefix+('+' if prefix=='CapsLock' or not shift else '+Shift+')+('F' if key.lower()=='f' else key) if prefix else None
-                    if chord in ('Insert+F','CapsLock+F','Insert+Shift+Down','CapsLock+Down'):
+                    chord=prefix+('+Shift+' if shift and key in ('Up','Down') else '+')+('F' if key.lower()=='f' else key) if prefix else None
+                    if chord in ('Insert+F','CapsLock+F','Insert+Down','CapsLock+Down','Insert+Up','CapsLock+Up','Insert+Shift+Down','CapsLock+Shift+Down'):
                         if prefix=='CapsLock':caps_modifier['used']=True
                         flush_pending_edit();send_text_position();cancel_phonetic()
                         self.commands.put(('keyboard',chord));return 'break'
@@ -906,13 +906,17 @@ class CompanionWindow:
                 if local['web_navigation_pending']:return
                 local['link']=None
                 text=editor.get('1.0','end-1c');caret=offset()
-                notice,char=caret_feedback(text,caret,key,control,selection())
-                if not selection() and key in ('Up','Down') and not control:
-                    notice=editor.get('insert display linestart','insert display lineend') or 'Blank.'
-                    if self.context.get('rich_spans'):
+                selected,old_selected=selection(),local.get('selection')
+                local['selection']=selected
+                notice,char=caret_feedback(text,caret,key,control,selected,old_selected)
+                if not selected and key in ('Up','Down') and not control:
+                    from keyboard_text import spoken_line
+                    notice=spoken_line(editor.get('insert display linestart','insert display lineend'))
+                    if self.context.get('rich_spans') and notice!='Blank.':
                         from email_reader import MessageBody,spoken_range
                         start=offset('insert display linestart');end=offset('insert display lineend')
-                        notice=spoken_range(MessageBody(text,spans=self.context['rich_spans']),start,end)
+                        # An email's empty line says Blank too, never nothing (Will, October 31, 2026).
+                        notice=spoken_line(spoken_range(MessageBody(text,spans=self.context['rich_spans']),start,end))
                         if notice.lstrip().startswith('• '):notice='Bullet '+notice.lstrip()[2:]
                         if any(a<=caret<b and style=='heading' for a,b,style,url in self.context['rich_spans']):notice='Heading. '+notice
                 if self.context.get('web_elements') and key in ('Up','Down','Home','End') and not selection():
@@ -947,8 +951,11 @@ class CompanionWindow:
                 if shortcut(event)=='break':return 'break'
                 cancel_phonetic()
                 if event.keysym=='Escape':return navigation(event)
-                if event.keysym=='a' and event.state&4:
-                    editor.tag_add('sel','1.0','end-1c');read_caret('Right');send_text_position();return 'break'
+                if event.keysym.lower()=='a' and event.state&4 and not event.state&1:
+                    editor.tag_add('sel','1.0','end-1c');editor.mark_set('insert','end-1c')
+                    local['selection']=None
+                    self.feedback('All text selected.' if editor.get('1.0','end-1c') else 'There is no text to select.')
+                    send_text_position();return 'break'
                 nav=event.keysym in ('Left','Right','Up','Down','Home','End','Prior','Next')
                 if self.context.get('readonly') and event.keysym=='Return' and link_at_caret():
                     span=link_at_caret()
@@ -972,10 +979,13 @@ class CompanionWindow:
                 if self.context.get('readonly') and not nav and event.keysym not in ('Shift_L','Shift_R','Control_L','Control_R','Tab'):
                     if event.state&4 and event.keysym.lower()=='c':return
                     return 'break'
-                if event.state&4 and event.keysym in ('Up','Down'):
-                    from keyboard_text import paragraph_destination
+                if event.state&4 and event.keysym in ('Up','Down','Left','Right'):
+                    # Paragraphs and words move the same way on every screen, as in Windows:
+                    # Control+Right stops at each word, each line end and each empty line.
+                    from keyboard_text import paragraph_destination,word_destination
                     old_index=editor.index('insert')
-                    destination=paragraph_destination(editor.get('1.0','end-1c'),offset(),-1 if event.keysym=='Up' else 1)
+                    move=paragraph_destination if event.keysym in ('Up','Down') else word_destination
+                    destination=move(editor.get('1.0','end-1c'),offset(),-1 if event.keysym in ('Up','Left') else 1)
                     target='1.0 + '+str(destination)+' chars'
                     editor.mark_set('insert',target)
                     if event.state&1:

@@ -9,13 +9,15 @@ from reading_navigation import ReadingCursor, reading_request
 
 class HelpReadingCursor(ReadingCursor):
     """Read complete blocks without advancing past text that has not been requested."""
-    def read(self, from_top=False):
-        if from_top:self.position=self.continuation=0
+    def read(self, how=False):
+        """how: True or 'top' from the top; 'all' (Say all) every block to the end of the topic."""
+        if how is True or how=='top':self.position=self.continuation=0
         spans=self._spans('paragraph')
-        span=next((s for s in spans if s.end()>self.continuation),None)
-        if span is None:return 'End of topic.'
-        self.position=span.start();self.continuation=span.end()
-        return span.group().strip()
+        rest=[s for s in spans if s.end()>self.continuation]
+        if not rest:return 'End of topic.'
+        span=rest[-1] if how=='all' else rest[0]
+        self.position=rest[0].start();self.continuation=span.end()
+        return ' '.join(s.group().strip() for s in (rest if how=='all' else rest[:1]))
 
     def move(self,unit,direction):
         spans=self._spans(unit)
@@ -204,7 +206,7 @@ class HelpSession:
             request = reading_request(command)
             if request:
                 unit, direction = request
-                return (self.reading.read(direction == 'top') if unit == 'read'
+                return (self.reading.read(direction) if unit == 'read'
                         else self.reading.move(unit, direction))
             return None
         if command in ('next', 'next topic', 'next subsection', 'move down', 'down',

@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 749
-- Already had both ways: 585
+- Actions inventoried: 750
+- Already had both ways: 586
 - Gaps found: 164
 - Gaps fixed (Added): 156
 - Not applicable (N/A, with reason): 8
@@ -3055,6 +3055,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "What is selected"
 - Keyboard: Insert+Shift+Down
+- Status: Both
+
+### Say all from here
+
+- Voice: "Say all"
+- Keyboard: Insert+Down
 - Status: Both
 
 ## Alt menu, Document: Move by

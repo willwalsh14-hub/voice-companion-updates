@@ -564,11 +564,11 @@ def app_context(mode):
         context.update(source='file:'+str(id(FILE_READER)),text=FILE_READER.text,rich_spans=FILE_READER.spans,selection=FILE_READER.selection,readonly=True,caret=FILE_READER.reading.position,ack=EDIT_ACK.get('file:'+str(id(FILE_READER)),0))
     elif logical=='help' and help_session and help_session.level=='article':
         source='help:'+str(id(help_session))+':'+str(help_session.topic_index)+':'+str(help_session.subtopic_index)
-        context.update(source=source,text=help_session.reading.text,readonly=True,help_reader=True,caret=help_session.reading.position,ack=EDIT_ACK.get(source,0))
+        context.update(source=source,text=help_session.reading.text,readonly=True,help_reader=True,caret=help_session.reading.position,selection=getattr(help_session.reading,'selection',None),ack=EDIT_ACK.get(source,0))
     elif logical=='mailbox' and mail_session and mail_session.view=='message':
         mail_session.set_format(PREFERENCES.get('email_format','html'))
         source='mail:'+str(id(mail_session))+':'+str(mail_session.current)
-        context.update(source=source,text=mail_session.body_text,rich_spans=getattr(mail_session.body_text,'spans',[]) if PREFERENCES.get('email_format','html')=='html' else [],readonly=True,caret=mail_session.reading.position,ack=EDIT_ACK.get(source,0))
+        context.update(source=source,text=mail_session.body_text,rich_spans=getattr(mail_session.body_text,'spans',[]) if PREFERENCES.get('email_format','html')=='html' else [],readonly=True,caret=mail_session.reading.position,selection=getattr(mail_session.reading,'selection',None),ack=EDIT_ACK.get(source,0))
         context['email_html']=PREFERENCES.get('email_format','html')=='html'
     return context
 
@@ -611,6 +611,7 @@ def apply_keyboard_edit(payload,mode):
         reader=FILE_READER.reading if context['mode']=='file_reader' else help_session.reading if context['mode']=='help' else web_session.reading if context['mode']=='web' else mail_session.reading
         reader.position=payload['caret'];reader.continuation=payload['caret']
         if context['mode']=='file_reader':FILE_READER.selection=payload.get('selection')
+        if context['mode'] in ('mailbox','help'):reader.selection=payload.get('selection')
         if context['mode']=='web' and web_session.browse and web_session.keyboard_field is None:
             web_session.selection=payload.get('selection')
             web_session.browse.set_position(payload['caret'])
@@ -1111,6 +1112,49 @@ def yes_no_open(mode):
     return bool(THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or mode=='browser_menu' and web_session is not None and web_session.menu.level=='confirm' or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending)))
 
 
+def review_place(mode):
+    """The reading place and selection of a screen you read but do not type in, as
+    (reader, selection, store); None elsewhere. store(selection) keeps a new selection."""
+    if mode=='file_reader' and FILE_READER:
+        return FILE_READER.reading,FILE_READER.selection,lambda value:setattr(FILE_READER,'selection',value)
+    if mode=='mailbox' and mail_session and mail_session.view=='message' and not mail_session.pending:
+        mail_session.reading.set_text(mail_session.body_text)
+        return mail_session.reading,getattr(mail_session.reading,'selection',None),lambda value:setattr(mail_session.reading,'selection',value)
+    if mode=='help' and help_session and help_session.level=='article':
+        return help_session.reading,getattr(help_session.reading,'selection',None),lambda value:setattr(help_session.reading,'selection',value)
+    if mode=='web' and web_session and web_session.snapshot and web_session.keyboard_field is None and not web_session.list_focus \
+            and web_session.form_index is None and not (web_session.pending or web_session.submit_pending):
+        web_session.reading.set_text(web_session.snapshot.get('text',''))
+        def keep(value):
+            if web_session.browse:web_session.browse.set_position(web_session.reading.position)
+            web_session.cursor_changed()   # this clears the old selection, so the new one comes after
+            web_session.selection=value
+        return web_session.reading,getattr(web_session,'selection',None),keep
+    return None
+
+def review_text_command(text,mode):
+    """Select, read or copy text by voice on a screen you read (Will, October 31, 2026).
+    Returns the words to say, or None when the command is not one of these."""
+    import text_review
+    want=text_review.request(text)
+    if want is None:return None
+    place=review_place(mode)
+    if place is None:return None
+    reader,selected,store=place
+    # With no text selected, these keep the screen's own meaning: "Copy" can copy a link, and in
+    # email "What is selected" and "Clear selection" are about the messages you marked.
+    if not selected and (want[0]=='copy' or want[0] in ('say','clear') and mode=='mailbox'):return None
+    selected=tuple(selected) if selected else None
+    new,said=text_review.apply(reader,selected,want)
+    store(new)
+    return said
+
+# Screens whose text is shown in the window's text box: the reading keys work the same on each.
+TEXT_SCREENS=('document','email_draft','mailbox','help','web','file_reader')
+TEXT_READING_KEYS={'Insert+Down':'say all','CapsLock+Down':'say all',
+                   'Insert+Up':'read current line','CapsLock+Up':'read current line',
+                   'Insert+Shift+Down':'what is selected','CapsLock+Shift+Down':'what is selected'}
+
 def _navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
     interrupt_speech()
@@ -1128,6 +1172,10 @@ def _navigation_key(key,mode):
         if request!='':return request
     # A list opened over a menu ("List documents", Open a note) owns the list keys,
     # as its prompt says; the menu below it must not take Enter, Home or End.
+    reading_key=TEXT_READING_KEYS.get(key)
+    if reading_key and mode in TEXT_SCREENS and app_context(mode).get('source'):
+        # The same reading keys on every screen with text, as in JAWS and NVDA (Will, October 31, 2026).
+        return reading_key
     list_over_menu=NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape','Home','End') and task_navigation().items(mode) is not None
     task_key=None if list_over_menu else task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
@@ -1160,7 +1208,7 @@ def _navigation_key(key,mode):
         return {'Up':'previous','Down':'next','Left':'previous','Right':'next','Home':'home','End':'end','Enter':'enter','Space':'toggle selection','Escape':'escape','Alt':'file manager menu','F1':'file manager help','F2':'rename','Delete':'delete','Ctrl+C':'copy','Ctrl+X':'cut','Ctrl+V':'paste','Ctrl+A':'select all','Ctrl+Shift+A':'clear selection','F5':'refresh','Ctrl+D':'drive list','Ctrl+E':'search files','Ctrl+F':'search files','Alt+N':'sort by name','Alt+C':'sort by date created','Alt+M':'sort by date modified','Alt+D':'sort by date added','Alt+A':'sort ascending','Alt+Z':'sort descending','Ctrl+Shift+F':'search subfolders','Ctrl+Shift+X':'clear search','Alt+S':'sort files','Alt+Home':'main menu','Ctrl+Shift+1':'sort by name','Ctrl+Shift+2':'sort by date created','Ctrl+Shift+3':'sort by date modified','Ctrl+Shift+4':'sort by date added','Ctrl+Shift+Up':'sort ascending','Ctrl+Shift+Down':'sort descending','BackSpace':'file backspace'}.get(key) if not key.startswith('Letter:') else ('file letter '+key[7:])
     if mode=='file_reader' and key=='Escape':return 'back to files'
     if mode=='file_reader':
-        return {'Insert+F':'what formatting','CapsLock+F':'what formatting','Insert+Shift+Down':'what is selected','CapsLock+Down':'what is selected','H':'next heading','Shift+H':'previous heading','T':'next table','Shift+T':'previous table','K':'next link','Shift+K':'previous link','L':'next list','Shift+L':'previous list','B':'next bookmark','Shift+B':'previous bookmark','N':'next footnote','Shift+N':'previous footnote','Enter':'follow link'}.get(key)
+        return {'Insert+F':'what formatting','CapsLock+F':'what formatting','Insert+Shift+Down':'what is selected','CapsLock+Shift+Down':'what is selected','Insert+Down':'say all','CapsLock+Down':'say all','H':'next heading','Shift+H':'previous heading','T':'next table','Shift+T':'previous table','K':'next link','Shift+K':'previous link','L':'next list','Shift+L':'previous list','B':'next bookmark','Shift+B':'previous bookmark','N':'next footnote','Shift+N':'previous footnote','Enter':'follow link'}.get(key)
     if mode=='regular_browser':
         if key=='Escape':return 'main menu'
         if key in ('Up','Down','Home','End','Enter','Space'):return 'regular browser key '+key
@@ -4528,6 +4576,9 @@ def _handle(text, mode, typed=False):
             help_session=HelpSession(GUIDE, release_notes_path=GUIDE.parent/'Voice Companion Release Notes.txt')
             speak(help_session.topic('what is new'));return 'help'
         except (OSError,ValueError):speak('Release notes could not open. Ask your helper to check the installation.');return mode
+    reviewed=review_text_command(text,mode)
+    if reviewed is not None:
+        speak(reviewed);return mode
     if mode == 'help' and not spoken_control(command) and command not in (
             'faster', 'slower', 'speak faster', 'speak slower', 'louder', 'quieter',
             'list voices', 'next voice', 'previous voice') and command not in INPUT_MODE_COMMANDS \
@@ -4707,7 +4758,7 @@ def _handle(text, mode, typed=False):
             speak(FILE_READER.follow_link());return mode
         if request:
             unit,direction=request
-            result=FILE_READER.reading.read(direction=='top') if unit=='read' else FILE_READER.reading.move(unit,direction)
+            result=FILE_READER.reading.read(direction) if unit=='read' else FILE_READER.reading.move(unit,direction)
             if unit!='read':result=__import__('reading_navigation').edge_notice(FILE_READER.reading,'document')+result
             speak(result)
         elif command in ('beginning of document','top of document','go to beginning of document'):
@@ -5452,7 +5503,7 @@ def _handle(text, mode, typed=False):
         if request:
             note_reading.set_text(' '.join(note_buffer))
             unit, direction = request
-            result = note_reading.read(direction == 'top') if unit == 'read' else note_reading.move(unit, direction)
+            result = note_reading.read(direction) if unit == 'read' else note_reading.move(unit, direction)
             if unit != 'read': result = __import__('reading_navigation').edge_notice(note_reading, 'note') + result
             speak(result)
             return mode
