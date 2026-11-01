@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.193-test.
+Guide version: 0.2.194-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -1934,11 +1934,12 @@ These settings are in Verbosity options.
 With at the end of a sentence, you can pause between phrases. Companion keeps them and reads the whole sentence once it ends. You hear the text without an Added label. A new task or a speech stop clears what is waiting.
 To change these by voice, say the setting name and the value. For example, say "Verbosity medium", "Punctuation most", "Typing echo words", "Phonetics off", or "Phonetic delay 1 second".
 When encountering capital letters sets how a single capital letter sounds while you type or read by character.
-- Choose raise pitch, lower pitch, play a sound, or do nothing. Do nothing is the default.
+- Choose raise pitch, lower pitch, play a sound, say cap, or do nothing. Do nothing is the default.
+- Say cap says the word cap just before the letter, with no pause. You hear "cap B".
 - The sound is a short tone before the letter. The cue plays once when you reach or type the letter.
 - The delayed letter name uses your normal pitch and plays no tone.
 - To set it, open Options, then Verbosity. Tab to When encountering capital letters. Use the arrows to choose, then choose OK. Cancel keeps your old choice.
-- By voice, say "Capital letters play a sound", "Capital letters raise pitch", "Capital letters lower pitch", or "Capital letters do nothing". These save at once.
+- By voice, say "Capital letters play a sound", "Capital letters raise pitch", "Capital letters lower pitch", "Capital letters say cap", or "Capital letters do nothing". These save at once.
 The choice is used in every part of the app, and is kept after you close it.
 Letter names, such as Alpha after A, use your normal voice. Whole words and sentences keep their usual voice. With an AI voice, single letters use the local voice so you hear them quickly. Private password text is never read aloud.
 
@@ -2287,7 +2288,7 @@ When you press Enter on a video, you hear "Loading video". Then the video plays 
 - Home starts the video again.
 - Escape goes back to the list you came from, such as your search results. The video keeps playing.
 To come back to the player, press Enter on the video that is playing, or say "Player".
-If YouTube says something went wrong, Companion loads the video again once by itself. YouTube stops videos after about a minute in a browser a program controls. So when your own Chrome has the Voice Companion extension, YouTube always opens in your own Chrome, and videos play without stopping. If Chrome is closed, Companion opens it and gives your keys back. If a video still stops in Companion's Chrome, it goes on in your own Chrome, from where it stopped. If your own Chrome does not have the extension yet, Companion says so. Say "Set up Chrome" to add it. In your own Chrome, you are signed in to your account. So if you have YouTube Premium, ads do not play. If it still does not play, press Enter to try again, or choose another video.
+If YouTube says something went wrong, Companion loads the video again once by itself. YouTube stops videos after about a minute in a browser a program controls. So when your own Chrome has the Voice Companion extension, YouTube always opens in your own Chrome, and videos play without stopping. If Chrome is closed, Companion opens it and gives your keys back. If a video still stops in Companion's Chrome, it goes on in your own Chrome, from where it stopped. When you go to the main menu, leave YouTube with nothing playing, or close Companion, the Chrome window Companion opened for YouTube closes too. A Chrome window you opened yourself stays open. Only the YouTube tab closes. If your own Chrome does not have the extension yet, Companion says so. Say "Set up Chrome" to add it. In your own Chrome, you are signed in to your account. So if you have YouTube Premium, ads do not play. If it still does not play, press Enter to try again, or choose another video.
 The letter keys below also work in a YouTube list while a video plays. In the YouTube menu and the filter lists, letters move to the next name instead.
 - To play or pause, say "Play or pause video", or press Space.
 - To skip back, say "Skip back". To skip forward, say "Skip forward".

@@ -163,10 +163,22 @@ class CapitalFeedbackTests(unittest.TestCase):
             self.assertFalse(is_capital(text))
             self.assertEqual(pitch_for(prepare(text,'with a higher pitch'),1),1)
 
+    def test_say_cap_says_cap_then_the_letter_with_no_pause(self):
+        """Will, October 31, 2026: "cap B", no comma or gap between them."""
+        from keyboard_text import character,phonetic
+        from capital_feedback import prepare,pitch_for
+        self.assertEqual(str(prepare(character('B'),'say cap')),'cap B')
+        self.assertEqual(str(prepare('T','say cap')),'cap T')
+        self.assertEqual(pitch_for(prepare('T','say cap'),1),1)    # normal pitch, no tone
+        self.assertFalse(prepare('T','say cap').sound)
+        for text in ('b','Apple','7',phonetic('B')):
+            self.assertEqual(str(prepare(text,'say cap')),str(text))
+        self.assertEqual(str(prepare(prepare('B','say cap'),'say cap')),'cap B')   # never cap cap B
+
     def test_delayed_phonetic_never_repeats_capital_cue(self):
         from keyboard_text import character,phonetic
         from capital_feedback import prepare
-        for mode in ('raise pitch','lower pitch','play a sound','do nothing'):
+        for mode in ('raise pitch','lower pitch','play a sound','say cap','do nothing'):
             initial=prepare(character('B'),mode)
             delayed=prepare(phonetic('B'),mode)
             self.assertEqual(str(delayed),'Bravo')

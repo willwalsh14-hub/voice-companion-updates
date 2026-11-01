@@ -1,18 +1,20 @@
 {
-  "version": "0.2.193-test",
+  "version": "0.2.194-test",
   "status": "Testing build",
   "date": "October 31, 2026",
-  "baseline": "0.2.192-test",
-  "scope": "YouTube plays in your own Chrome, with no stops.",
+  "baseline": "0.2.193-test",
+  "scope": "Chrome closes with YouTube, and a new way to hear capital letters.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Help when YouTube stops",
+          "title": "Say cap for capital letters",
           "details": [
-            "If your own Chrome does not have the Voice Companion extension, Companion now tells you.",
-            "Say set up Chrome to add it. Then videos play in your own Chrome."
+            "There is a new choice for capital letters. It is called say cap.",
+            "Find it in Options, then Verbosity.",
+            "You hear cap just before a capital letter, with no pause. For example, cap B.",
+            "By voice, say capital letters say cap."
           ]
         }
       ]
@@ -21,12 +23,11 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "YouTube in your own Chrome",
+          "title": "Chrome closes with YouTube",
           "details": [
-            "YouTube now opens in your own Chrome, even when Chrome is closed.",
-            "Before, it played in Voice Companion's Chrome. There you were signed out, so ads played.",
-            "Videos also stopped after a minute or so. YouTube said something went wrong.",
-            "In your own Chrome you are signed in. If you have YouTube Premium, ads do not play."
+            "Did Companion open Chrome for YouTube? Then that Chrome window now closes when YouTube closes.",
+            "It closes when you go to the main menu, or leave YouTube with nothing playing. It also closes when you close Companion.",
+            "A Chrome window you opened yourself stays open. Only the YouTube tab closes."
           ]
         }
       ]

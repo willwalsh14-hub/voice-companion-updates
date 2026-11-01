@@ -194,6 +194,13 @@ class Win32Desktop:
     def exists(self, handle):
         return bool(self.user.IsWindow(handle))
 
+    def close(self, handle):
+        """Ask a window to close, as its X button does. The program may still ask a question first."""
+        post = self.user.PostMessageW
+        post.restype = self.w.BOOL
+        post.argtypes = [self.w.HWND, self.w.UINT, self.w.WPARAM, self.w.LPARAM]
+        return bool(post(handle, 0x0010, 0, 0))   # WM_CLOSE
+
     def style(self, handle):
         return int(self.user.GetWindowLongPtrW(handle, self.GWL_EXSTYLE))
 
