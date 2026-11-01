@@ -1,20 +1,31 @@
 {
-  "version": "0.2.194-test",
+  "version": "0.2.195-test",
   "status": "Testing build",
   "date": "October 31, 2026",
-  "baseline": "0.2.193-test",
-  "scope": "Chrome closes with YouTube, and a new way to hear capital letters.",
+  "baseline": "0.2.194-test",
+  "scope": "The same reading keys everywhere, Blank on every empty line, and full text selection.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Say cap for capital letters",
+          "title": "Say all",
           "details": [
-            "There is a new choice for capital letters. It is called say cap.",
-            "Find it in Options, then Verbosity.",
-            "You hear cap just before a capital letter, with no pause. For example, cap B.",
-            "By voice, say capital letters say cap."
+            "Press Insert+Down Arrow to read from your place to the end. Caps Lock+Down Arrow does too.",
+            "Or say say all, or read from here.",
+            "Insert+Up Arrow reads the line you are on."
+          ]
+        },
+        {
+          "title": "Select text by voice",
+          "details": [
+            "To choose text by voice, say select, then a word for the part.",
+            "The parts are character, word, line, sentence and paragraph.",
+            "Say select next word or select previous line to choose the next or last one.",
+            "Say extend selection by word to add to what you chose.",
+            "Say select to end of line, or select to the end.",
+            "These now work in email you read, the Document reader, web pages and Help too.",
+            "Say copy to copy what you chose."
           ]
         }
       ]
@@ -23,11 +34,26 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Chrome closes with YouTube",
+          "title": "The same keys everywhere",
           "details": [
-            "Did Companion open Chrome for YouTube? Then that Chrome window now closes when YouTube closes.",
-            "It closes when you go to the main menu, or leave YouTube with nothing playing. It also closes when you close Companion.",
-            "A Chrome window you opened yourself stays open. Only the YouTube tab closes."
+            "The arrows work as in JAWS and NVDA on every screen with text.",
+            "Control+Left and Control+Right move by word. They stop at each line end and each empty line.",
+            "In Help, Up and Down now move by line, and Control+Up and Control+Down by paragraph.",
+            "In a note, the arrows read the note when the typing box is empty."
+          ]
+        },
+        {
+          "title": "Blank lines",
+          "details": [
+            "An empty line is always said as Blank. Before, some email lines said nothing.",
+            "The end of a line says Blank too."
+          ]
+        },
+        {
+          "title": "Selecting with Shift",
+          "details": [
+            "Shift and an arrow now say only what changed, such as Selected b or Unselected b.",
+            "Control+A says All text selected. It no longer reads all of the text."
           ]
         }
       ]

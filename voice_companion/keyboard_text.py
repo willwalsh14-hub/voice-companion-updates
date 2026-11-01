@@ -158,7 +158,7 @@ def selection_feedback(text,old,new):
     if not new or new[0]==new[1]:
         return 'Unselected.' if old and old[0]!=old[1] else None
     a,b=new
-    if a==0 and b==len(text) and len(text)>1 and not (old and tuple(old)==(a,b)):return 'All text selected.'
+    if a==0 and b==len(text) and len(text)>1 and not (old and old[0]!=old[1]):return 'All text selected.'
     if old and old[0]!=old[1]:
         x,y=old
         if a==x and b>y:return 'Selected '+spoken_piece(text[y:b])

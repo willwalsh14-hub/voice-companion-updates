@@ -95,7 +95,7 @@ def reading_request(command):
     if command in ('continue reading','read more'):
         return ('read', 'continue')
     if command in ('say all','read all','read from here','read from the cursor','read from cursor',
-                   'read to the end','read to end','read the rest','read from caret','read from the caret',
+                   'read to the end','read to end','read the rest','read rest','read from caret','read from the caret',
                    'read from current position','read from this point'):
         return ('read', 'all')
     match = re.fullmatch(r'(previous|next|read|current) (character|letter|word|line|sentence|paragraph)', command)

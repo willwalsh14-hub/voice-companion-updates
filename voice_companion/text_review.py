@@ -91,13 +91,18 @@ def spoken(text, a, b):
     return spoken_piece(text[a:b])
 
 
+def sentence(words):
+    """words with one closing mark: 'Selected there.' never 'Selected there..'."""
+    return words if words.endswith(('.', '?', '!')) else words + '.'
+
+
 def apply(reader, selection, want, clipboard=None):
     """Do a selection command on a screen's reading place. Returns (selection, words to say).
     selection is (start, end) or None. reader.position moves to the end you are working at."""
     text = reader.text
     kind = want[0]
     if kind == 'say':
-        return selection, ('Selected: ' + spoken(text, *selection) + '.' if selection else 'No text is selected.')
+        return selection, (sentence('Selected: ' + spoken(text, *selection)) if selection else 'No text is selected.')
     if kind == 'clear':
         return None, ('Selection cleared.' if selection else 'No text is selected.')
     if kind == 'copy':
@@ -119,7 +124,7 @@ def apply(reader, selection, want, clipboard=None):
         if not span:
             return selection, 'There is no ' + want[1] + ' to select.'
         reader.position = reader.continuation = span[0]
-        return span, 'Selected ' + spoken(text, *span) + '.'
+        return span, sentence('Selected ' + spoken(text, *span))
     if kind == 'extend':
         unit, direction = want[1], want[2]
         a, b = selection or (caret, caret)
@@ -133,13 +138,13 @@ def apply(reader, selection, want, clipboard=None):
             if end is None:
                 return selection, 'Nothing more to select.'
             reader.position = reader.continuation = end
-            return (a, end), 'Selected ' + spoken(text, b, end) + '.'
+            return (a, end), sentence('Selected ' + spoken(text, b, end))
         prev = [(m.start(), m.end()) for m in reader._spans(unit) if m.start() < a]
         if not prev:
             return selection, 'Nothing more to select.'
         new = (prev[-1][0], b)
         reader.position = reader.continuation = new[0]
-        return new, 'Selected ' + spoken(text, new[0], a) + '.'
+        return new, sentence('Selected ' + spoken(text, new[0], a))
     if kind == 'to':
         edge, scope = want[1], want[2]
         start, end = scope_span(text, caret, scope)
@@ -148,5 +153,5 @@ def apply(reader, selection, want, clipboard=None):
         if new[0] >= new[1]:
             return selection, 'Nothing to select there.'
         reader.position = reader.continuation = new[1] if edge > 0 else new[0]
-        return new, 'Selected ' + spoken(text, *new) + '.'
+        return new, sentence('Selected ' + spoken(text, *new))
     return selection, ''

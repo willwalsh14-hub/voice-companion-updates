@@ -517,7 +517,8 @@ class CompanionWindow:
                     update_key='Alt+'+key.upper() if alt_held(event.state) else key
                     if update_key in ('F5','Alt+S','Escape','Alt+C'):
                         self.commands.put(('keyboard',update_key));return 'break'
-                if (mode in ('document','file_reader') or mode in ('email_draft','mailbox','help','web') and self.context.get('source')) and not self.command_entry_active:
+                if (mode in ('document','file_reader') or mode in ('email_draft','mailbox','help','web') and self.context.get('source')
+                        or mode=='note' and not typed.get()) and not self.command_entry_active:
                     if key in ('Insert','Caps_Lock'):
                         if key=='Caps_Lock':
                             if caps_modifier['synthetic']:caps_modifier['synthetic']-=1;return 'break'
@@ -667,8 +668,8 @@ class CompanionWindow:
                     elif not field and key=='space':request='Web:Space'
                     elif key=='Left' and alt_held(event.state):request='Web:Back'
 
-                elif self.context.get('help_reader') and not shift and not alt_held(event.state) and key in ('Up','Down','Left','Right','Home','End') and not (event.widget==typed and self.command_entry_active):
-                    request='Help:'+('Ctrl+' if control and key in ('Left','Right') else '')+key
+                # A Help topic is read with the arrows as every other text is: no keys of its own
+                # (Will, October 31, 2026: the same as JAWS and NVDA, whatever you are doing).
                 elif mode=='document' and key=='F2':request='F2'
                 elif mode=='mailbox':
                     from input_parity import mail_header_key

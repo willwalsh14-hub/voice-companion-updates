@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.194-test'
+APP_VERSION = '0.2.195-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -1173,7 +1173,7 @@ def _navigation_key(key,mode):
     # A list opened over a menu ("List documents", Open a note) owns the list keys,
     # as its prompt says; the menu below it must not take Enter, Home or End.
     reading_key=TEXT_READING_KEYS.get(key)
-    if reading_key and mode in TEXT_SCREENS and app_context(mode).get('source'):
+    if reading_key and (mode=='note' or mode in TEXT_SCREENS and app_context(mode).get('source')):
         # The same reading keys on every screen with text, as in JAWS and NVDA (Will, October 31, 2026).
         return reading_key
     list_over_menu=NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape','Home','End') and task_navigation().items(mode) is not None
@@ -1188,7 +1188,9 @@ def _navigation_key(key,mode):
     from input_parity import screen_command,MAIL_HEADER_KEYS
     if mode=='mailbox' and key in MAIL_HEADER_KEYS:return MAIL_HEADER_KEYS[key]
     if mode=='youtube':return __import__('youtube_screen').navigation_key(sys.modules[__name__],key)  # youtube_screen.py
-    direct=screen_command(key,mode)
+    from input_parity import NOTE_READING_KEYS
+    # The list of saved notes owns the arrows while it is open; the note is read again after.
+    direct=None if mode=='note' and NAMED_LIST and key in NOTE_READING_KEYS else screen_command(key,mode)
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
     if key=='Ctrl+T' and mode in ('email_draft','attachments','files') and direct:
         __import__('attachment_screen').old_key_used()   # the attach key before Control+O
@@ -1271,7 +1273,7 @@ def _navigation_key(key,mode):
         return 'oldest message' if key=='Ctrl+End' else 'newest message'
     if mode=='help' and key=='Escape':return 'go back'
     if mode=='help' and help_session and help_session.level=='article' and (key.startswith('Help:') or key in ('Up','Down','Left','Right','Home','End')):
-        return {'Up':'previous paragraph','Down':'next paragraph','Home':'first block','End':'last block',
+        return {'Up':'previous line','Down':'next line','Home':'first block','End':'last block',
                 'Left':'previous character','Right':'next character','Ctrl+Left':'previous word','Ctrl+Right':'next word'}[key[5:] if key.startswith('Help:') else key]
     if key.startswith('Letter:'):
         if mode=='web' and web_session and not web_session.list_focus and key[-1] in __import__('web_browse').QUICK_KEYS:return 'web key Quick:'+key[-1]

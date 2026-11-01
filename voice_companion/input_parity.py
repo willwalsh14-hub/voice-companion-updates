@@ -9,7 +9,12 @@ SCREEN_KEYS = {
     'awake': {'F1': 'help', 'Ctrl+V': 'what version', 'Ctrl+M': 'what mode',
               'Ctrl+G': 'open user guides', 'Ctrl+T': 'start tutorial'},
     'note': {'Ctrl+S': 'save note', 'Ctrl+R': 'read from top', 'F1': 'help with notepad',
-             'Ctrl+Z': 'undo', 'Ctrl+Y': 'redo'},
+             'Ctrl+Z': 'undo', 'Ctrl+Y': 'redo',
+             # With nothing in the typing box, the arrows read the note as they read every other
+             # text (Will, October 31, 2026). While you type, they move in what you type.
+             'Up': 'previous line', 'Down': 'next line', 'Left': 'previous character', 'Right': 'next character',
+             'Ctrl+Left': 'previous word', 'Ctrl+Right': 'next word',
+             'Ctrl+Up': 'previous paragraph', 'Ctrl+Down': 'next paragraph'},
     'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+R': 'read email draft', 'F1': 'help with writing email',
                     'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline',
                     'Ctrl+K': 'list contacts', 'Ctrl+O': 'attach a file', 'Ctrl+L': 'list attachments',
@@ -62,8 +67,6 @@ SCREEN_KEYS = {
     'local_media': {'F1': 'help with media player'},
     # YouTube (youtube_screen.py): one key per action, most as on YouTube itself (K, J, L, M, C, F).
     'youtube': dict(__import__('youtube_screen').KEYS),
-    # Sentences in an open help topic (Up and Down move by paragraph).
-    'help': {'Ctrl+Down': 'next sentence', 'Ctrl+Up': 'previous sentence'},
     'tutorial': {'Ctrl+R': 'repeat', 'F1': 'list commands', 'Ctrl+L': 'lesson list',
                  'Ctrl+F': 'find lesson {value}', 'Ctrl+E': 'explain command {value}',
                  'Ctrl+Down': 'continue reading'},
@@ -98,8 +101,9 @@ for _mode in ('awake', 'note', 'email_draft', 'mailbox', 'file_reader', 'web', '
               'recent_documents', 'media_menu', 'local_media', 'notepad_menu', 'reader_menu', 'reader_recent', 'help', 'tutorial', 'document', 'files', 'document_menu', 'downloads',
               'contacts', 'calendar', 'attachments', 'youtube'):
     SCREEN_KEYS.setdefault(_mode, {})['Ctrl+F12'] = 'go to sleep'
+NOTE_READING_KEYS = {'Up', 'Down', 'Left', 'Right', 'Ctrl+Left', 'Ctrl+Right', 'Ctrl+Up', 'Ctrl+Down'}
 # Keys that work only in one part of a screen.
-HELP_ARTICLE_ONLY = {'Ctrl+Down', 'Ctrl+Up'}
+HELP_ARTICLE_ONLY = set()
 # Formatting keys apply to the message body, not to an address or subject box.
 BODY_ONLY = {'Ctrl+B', 'Ctrl+I', 'Ctrl+U'}
 
@@ -145,6 +149,8 @@ def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
         return None  # arrows, Home and Delete edit a typed command
     if mode == 'mailbox' and key in ('Next', 'Prior') and (context.get('source') or typed_text):
         return None  # Page keys scroll an open message; they change pages only in the list.
+    if mode == 'note' and typed_text and key in NOTE_READING_KEYS:
+        return None  # words in the typing box: the arrows move in them
     if mode == 'note' and key in ('Ctrl+Z', 'Ctrl+Y') and typed_text:
         return None  # words still in the typing box: the box undoes its own typing
     if mode == 'email_draft' and key in BODY_ONLY and email_field:
