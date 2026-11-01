@@ -67,7 +67,8 @@ SHORTCUTS = {key: command for items in DOCUMENT_ACTIONS.values() for _, key, com
 # Control+Shift+S, the Save As key before F12, still works.
 SHORTCUTS['Ctrl+Shift+S'] = 'save as'
 SHORTCUTS.update({'Ctrl+Alt+'+str(level):'heading '+str(level) for level in range(1,7)})
-SHORTCUTS.update({'CapsLock+F':'what formatting','CapsLock+Down':'what is selected',
+SHORTCUTS.update({'CapsLock+F':'what formatting','CapsLock+Shift+Down':'what is selected','CapsLock+Down':'say all','Insert+Down':'say all',
+                 'Insert+Up':'read current line','CapsLock+Up':'read current line',
                  'Ctrl+Shift+L':'bulleted list','Ctrl+Shift+7':'numbered list','Ctrl+Alt+T':'create table with {value}',
                  'Ctrl+Shift+H':'highlight {value}','Ctrl+Alt+H':'list headings','Ctrl+Alt+Down':'next heading',
                  'Ctrl+Alt+Up':'previous heading','Ctrl+Shift+Delete':'delete selection','Ctrl+Alt+S':'select {value}'})

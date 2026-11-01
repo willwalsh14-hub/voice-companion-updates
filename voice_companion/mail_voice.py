@@ -931,7 +931,7 @@ class MailSession:
             request = reading_request(command)
             if self.view == 'message' and request:
                 unit, direction = request
-                result = (self.reading.read(direction == 'top').replace('End of text.', 'End of message.')
+                result = (self.reading.read(direction).replace('End of text.', 'End of message.')
                           if unit == 'read' else self.reading.move(unit, direction))
                 if unit=='read':result=self._spoken_read_result(result)
                 if unit in ('line','sentence','paragraph'):

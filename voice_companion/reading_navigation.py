@@ -11,11 +11,14 @@ class ReadingCursor:
         self._cache={}
         # 'start' or 'end' when the last move could not go further; screens say so.
         self.edge = None
+        # (start, end) of text chosen with Shift and the arrows, or by voice; None when none is.
+        self.selection = None
 
     def set_text(self, value, reset=False):
         value = str(value or '')
         if value != self.text:
             self.text = value
+            self.selection = None
             self.position = 0 if reset else min(self.position, max(0, len(value) - 1))
             self.continuation = 0
             self._cache={}
@@ -50,16 +53,21 @@ class ReadingCursor:
         self.position = spans[index].start()
         self.continuation = self.position
         value=spans[index].group()
+        from keyboard_text import character, is_blank, BLANK
         if unit=='character':
-            from keyboard_text import character
-            return character(value)
-        return value.strip() or 'Blank.'
+            # A line break says Blank, as the arrow keys do (Will, October 31, 2026).
+            return BLANK if value in '\n\r' else character(value)
+        return BLANK if is_blank(value) else value.strip()
 
-    def read(self, from_top=False):
+    SAY_ALL = 20000   # characters Say all reads at once: in practice, to the end
+
+    def read(self, how=False):
+        """Read on from the reading place. how: True or 'top' starts at the top; 'all' is Say all,
+        which reads on to the end, as Insert+Down does in JAWS and NVDA; otherwise a part is read."""
         if not self.text.strip(): return 'There is no text to read.'
-        if from_top: self.position = self.continuation = 0
+        if how is True or how == 'top': self.position = self.continuation = 0
         if self.continuation >= len(self.text): return 'End of text.'
-        end = min(self.continuation + 1200, len(self.text))
+        end = min(self.continuation + (self.SAY_ALL if how == 'all' else 1200), len(self.text))
         if end < len(self.text):
             boundary = self.text.rfind(' ', self.continuation + 900, end)
             if boundary > self.continuation: end = boundary
@@ -86,6 +94,10 @@ def reading_request(command):
         return ('read', 'top')
     if command in ('continue reading','read more'):
         return ('read', 'continue')
+    if command in ('say all','read all','read from here','read from the cursor','read from cursor',
+                   'read to the end','read to end','read the rest','read rest','read from caret','read from the caret',
+                   'read from current position','read from this point'):
+        return ('read', 'all')
     match = re.fullmatch(r'(previous|next|read|current) (character|letter|word|line|sentence|paragraph)', command)
     if match:
         return (match[2].replace('letter','character'), {'previous':-1,'next':1,'read':0,'current':0}[match[1]])

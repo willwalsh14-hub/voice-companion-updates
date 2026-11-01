@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.194-test.
+Guide version: 0.2.195-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -367,12 +367,14 @@ Press Alt to open the help menu. It has Help topics, Subsections, Release notes,
 3.2 Read part of a topic
 Each Help topic has a list of smaller parts. Choose the part you want, then listen.
 Help reads one whole paragraph or list item at a time. Long paragraphs are read in full.
-- For the next block, say "Continue reading", or press Down Arrow.
+- For the next block, say "Continue reading".
+- To read the rest of the part, say "Say all", or press Insert+Down Arrow.
 - To start the part again, say "Read from top".
-- To move by paragraph, say "Next paragraph" or "Previous paragraph", or press Down Arrow or Up Arrow.
-- To move by sentence, say "Next sentence" or "Previous sentence", or press Control+Down Arrow or Control+Up Arrow.
-- To move by word, say "Next word" or "Previous word", or press Control+Right Arrow or Control+Left Arrow.
-- For the first or last block, say "First block" or "Last block", or press Home or End.
+- To move by paragraph, say "Next paragraph" or "Previous paragraph", or press Control+Down Arrow or Control+Up Arrow.
+- To move by sentence, say "Next sentence" or "Previous sentence".
+- To move by line, press Down Arrow or Up Arrow. To move by word, press Control+Right Arrow or Control+Left Arrow.
+- For the first or last block, say "First block" or "Last block".
+The arrows work in Help as they do in all other text.
 - To silence speech, press Control.
 When you choose another Help item, the old speech stops first.
 To return to the smaller parts, say "Back to subsections", or press Escape.
@@ -452,35 +454,44 @@ These commands work in documents, email, web pages, and notes.
 - In a note or email draft, you can also press Control+R. In a document, press Control+Shift+R, because Control+R aligns text to the right there.
 - In the Document reader, say "Read document", or press Control+R.
 - For the next part, say "Continue reading", or press Down Arrow.
+- To read from your place to the end, say "Say all" or "Read from here", or press Insert+Down Arrow.
 - To move by letter or symbol, say "Next character" or "Previous character", or press Right Arrow or Left Arrow.
 - To move by word, say "Next word" or "Previous word", or press Control+Right Arrow or Control+Left Arrow.
 - To move by line, say "Next line" or "Previous line", or press Down Arrow or Up Arrow.
-- To move by sentence, say "Next sentence" or "Previous sentence". In Help, press Control+Down Arrow or Control+Up Arrow. In a document, press Alt, 5, then Q or R.
-- To move by paragraph, say "Next paragraph" or "Previous paragraph", or press Control+Down Arrow or Control+Up Arrow. In Help, press Down Arrow or Up Arrow.
+- To move by sentence, say "Next sentence" or "Previous sentence". In a document, you can also press Alt, 5, then Q or R.
+- To move by paragraph, say "Next paragraph" or "Previous paragraph", or press Control+Down Arrow or Control+Up Arrow.
 - To reach the start or end of a line, say "Go to start of line" or "Go to end of line", or press Home or End.
 A line ends at a line break in the text. It may not match a line shown on the screen.
 
 5.2 Read with the keyboard
-These keys work in documents, email, and notes:
+These keys work the same everywhere you read text. That is documents, the Document reader, email you read or write, web pages, Help, and notes. They work as in JAWS and NVDA.
 - Left Arrow and Right Arrow move by character.
-- Control+Left Arrow and Control+Right Arrow move by word.
+- Control+Left Arrow and Control+Right Arrow move by word. They also stop at the end of each line.
 - Up Arrow and Down Arrow move by line.
 - Control+Up Arrow and Control+Down Arrow move by paragraph.
 - Home and End reach the start or end of a line.
 - Control+Home and Control+End reach the start or end of the text.
-In Help, Up Arrow reads the previous paragraph or list item. Down Arrow reads the next one. Home and End reach the first and last blocks of the topic.
+- Insert+Down Arrow reads from your place to the end. Caps Lock+Down Arrow does too.
+- Insert+Up Arrow reads the line you are on.
+An empty line is always said as Blank. So is the end of a line. This is true even if the line has only spaces or hidden marks, as some emails do.
+In a note, the arrows read the note when the typing box is empty. While you type, they move in the words you are typing.
 On web pages, Page Up and Page Down move a longer way. Page reading starts from the place you last chose.
 The same keys can review a received email. You can read and copy its text, but you cannot change that message.
 
 5.3 Select text
 Selected text is the part you have chosen to copy, change, or delete.
-- From the keyboard, hold Shift while you press a movement key.
-- To select all the text, say "Select all", or press Control+A.
+- From the keyboard, hold Shift while you press a movement key. Companion says only what you added or took away, such as "Selected b" or "Unselected b".
+- To select all the text, say "Select all", or press Control+A. You hear "All text selected".
 - For the current part, say "Select word", "Select line", "Select sentence", "Select character", or "Select paragraph".
-- To check what you chose, say "What is selected" or "Read selection". In a document, you can also press Insert+Shift+Down Arrow.
+- For the next or previous part, say "Select next word" or "Select previous line", and so on.
+- To add to what you chose, say "Extend selection by word". Or say "Extend selection to previous sentence".
+- To select to an end, say "Select to end of line", "Select to beginning of line", "Select to the end", or "Select to the beginning".
+- To check what you chose, say "What is selected" or "Read selection", or press Insert+Shift+Down Arrow.
+- To copy it, say "Copy", or press Control+C. To clear it, say "Clear selection".
+These work in documents, the Document reader, email you read, web pages, and Help.
 In a document or draft, say "Select", followed by the part you want. You can use first, next, previous, last, current, or a number with character, word, line, sentence, or paragraph. For example, say "Select first paragraph", "Select next paragraph", "Select previous paragraph", or "Select paragraph 3".
 In an email address box, a subject box, a note, or a web text box, selection stays inside that box.
-Web page text is read-only. To change a web answer, go into its text box first.
+You can select and copy web page text, but you cannot change it. To change a web answer, go into its text box first.
 
 5.4 Choose named words
 To select a word or phrase, say "Select", followed by the words. For example, say "Select red fox". In a document, you can also press Control+Alt+S, type the words, and press Enter.
@@ -823,7 +834,7 @@ For Notepad help, say "Help with notepad", or press F1.
 Press Alt to open the note menu. Its Notepad group has Save and close note, Read note, Saved notes, Notepad options, Notepad help, and Main menu. Its Edit group has New line, Undo, Redo, and Remove last words. Words you typed are added to the note first.
 
 9.2 Review or change a note
-- To review, say "Next word", "Previous word", "Next line", or "Previous line".
+- To review, say "Next word", "Previous word", "Next line", or "Previous line". Or use the arrows when the typing box is empty, as in other text.
 - For longer text, say "Next sentence", "Previous sentence", "Next paragraph", or "Previous paragraph".
 - To check spelling, say "Next character" or "Previous character".
 - To choose text, say "Select all", "Select word", or "Select paragraph". Say "Read selection" to check it. Say "Scratch" to remove it.

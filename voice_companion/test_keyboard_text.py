@@ -617,16 +617,15 @@ class WindowKeyboardTests(unittest.TestCase):
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Escape'))
         self.wait(lambda:any(item==('keyboard','Escape') for item in self.window.commands.queue))
 
-    def test_help_arrows_dispatch_blocks_without_native_line_speech(self):
-        self.context(mode='help',readonly=True)
-        self.window.set_context(self.window.context|{'help_reader':True})
-        self.wait(lambda:self.window.context.get('help_reader'))
-        self.call(lambda:self.window.editor.focus_force())
-        for key in ('Down','Up','Home','End'):
-            self.call(lambda k=key:self.window.editor.event_generate('<KeyPress>',keysym=k))
-            self.wait(lambda k=key:('keyboard','Help:'+k) in self.window.commands.queue)
-        self.assertTrue(self.window.key_feedback.empty())
-        self.assertFalse(any(isinstance(item,tuple) and item[0]=='text_edit' for item in self.window.commands.queue))
+    def test_help_arrows_read_lines_as_in_every_other_text(self):
+        # Will, October 31, 2026: the arrows work the same on every screen, Help included.
+        self.window.set_context(dict(mode='help',source='help-topic',text='First line.\nSecond line.',caret=0,selection=None,
+                                     echo='characters',phonetic=False,ack=0,readonly=True,help_reader=True,focus=True))
+        self.wait(lambda:self.window.context.get('source')=='help-topic')
+        self.call(lambda:(self.window.editor.focus_force(),self.window.editor.mark_set('insert','1.0')))
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Down'))
+        self.wait(lambda:'Second line.' in [str(x) for x in self.window.key_feedback.queue])
+        self.assertFalse(any(isinstance(item,tuple) and str(item[1]).startswith('Help:') for item in self.window.commands.queue))
 
     def test_web_semantic_quick_keys_and_link_list_name_typing(self):
         self.window.set_context(dict(mode='web',source='page',text='Page',caret=0,readonly=True,ack=0,web_browse=True))

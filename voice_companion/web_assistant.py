@@ -1499,9 +1499,9 @@ class WebSession:
             self.reading.position=start if key=='Home' else end
         elif key in ('Left','Right'):
             if control:
-                starts=[m.start() for m in re.finditer(r'\S+',text)]
-                candidates=[x for x in starts if x<position] if direction<0 else [x for x in starts if x>position]
-                self.reading.position=(candidates[-1] if direction<0 else candidates[0]) if candidates else 0 if direction<0 else len(text)
+                # Words, line ends and empty lines, as on every other screen.
+                from keyboard_text import word_destination
+                self.reading.position=word_destination(text,position,direction)
             else:self.reading.position=max(0,min(len(text),position+direction))
         elif control:
             from keyboard_text import paragraph_destination
@@ -3384,12 +3384,12 @@ class WebSession:
             unit,direction=request
             if unit=='line' and direction and self.keyboard_field.get('tag')!='textarea' and not self.keyboard_field.get('editable'):return self.leave_field('Up' if direction<0 else 'Down')
             reader=ReadingCursor();reader.set_text(self.keyboard_field.get('value',''));reader.position=getattr(self,'web_edit_caret',0)
-            result=reader.read(direction=='top') if unit=='read' else reader.move(unit,direction)
+            result=reader.read(direction) if unit=='read' else reader.move(unit,direction)
             self.web_edit_caret=reader.position;self.selection=None;return result
         if request and self.snapshot:
             unit, direction = request
             self.reading.set_text(self.snapshot.get('text', ''))
-            result=self.reading.read(direction == 'top') if unit == 'read' else self.reading.move(unit, direction)
+            result=self.reading.read(direction) if unit == 'read' else self.reading.move(unit, direction)
             if unit=='line' and self.reading.edge:result=('Bottom of page. ' if self.reading.edge=='end' else 'Top of page. ')+result
             if self.browse:self.browse.set_position(self.reading.position)
             self.auto_focus_position();self.cursor_changed()

@@ -153,10 +153,14 @@ class OnboardHelpTests(unittest.TestCase):
         import companion as app
         session=HelpSession(GUIDE);session._open_article(['First.','Second.','Third.'],'Example')
         with patch.object(app,'help_session',session),patch.object(app,'interrupt_speech'),patch.object(app,'sync_app_context'),patch.object(app,'speak') as say:
-            for key,expected in [('Help:Down','Second.'),('Up','First.'),('Home','First.'),('Help:End','Third.'),('Help:Down','End of topic. Third.')]:
+            # Will, October 31, 2026: Up and Down move by line in Help, as in all text, so the empty
+            # line between blocks says Blank. Paragraphs are still whole blocks by voice.
+            for key,expected in [('Down','Blank.'),('Down','Second.'),('Up','Blank.'),('Home','First.'),('End','Third.')]:
                 request=app.navigation_key(key,'help');app.handle_keyboard(request,'help')
                 say.assert_called_with(expected)
             app.handle('previous paragraph','help');say.assert_called_with('Second.')
+            app.handle('next paragraph','help');say.assert_called_with('Third.')
+            app.handle('next paragraph','help');say.assert_called_with('End of topic. Third.')
 
     def test_companion_help_preserves_mailbox_and_document_modes(self):
         import companion

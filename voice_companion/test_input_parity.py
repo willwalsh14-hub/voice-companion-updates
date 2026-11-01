@@ -75,9 +75,10 @@ class ScreenKeyTableTests(unittest.TestCase):
         self.assertIsNone(screen_key('note','s',ALT_STATE|4,{}))
         self.assertIsNone(screen_key('note','s',0,{}))
         self.assertIsNone(screen_key('awake','F1',1,{}))
-        # Sentence keys work only inside an open help topic, not in the topic list.
+        # Control+Down in a Help topic moves by paragraph in the text box, as on every screen with text
+        # (Will, October 31, 2026); it is no longer a key of its own there.
         self.assertIsNone(screen_key('help','Down',4,{}))
-        self.assertEqual(screen_key('help','Down',4,{'help_reader':True}),'Ctrl+Down')
+        self.assertIsNone(screen_key('help','Down',4,{'help_reader':True}))
         self.assertEqual(chord('Page_Down',0),'Next')
 
     def test_page_keys_change_mail_pages_only_in_the_message_list(self):
@@ -415,15 +416,17 @@ class NewKeyEffectTests(ScreenKeyEffectTests):
         self.both('web','F8','List fields.')
         self.assertEqual(self.last(),'Fields: Name, Email.')
 
-    def test_help_sentence_keys_match_voice(self):
+    def test_help_sentences_by_voice_and_paragraph_keys_in_the_text_box(self):
+        """Will, October 31, 2026: the arrows in a Help topic work as in every other text. Sentences
+        are still read by voice; Control+Up and Control+Down are paragraph keys of the text box."""
         app.handle('help','awake')
         topic=next(i for i,t in enumerate(app.help_session.topics) if t['name'].casefold()=='getting started')
-        def open_topic():
-            app.help_session.topic_index=topic;app.help_session.level='topics';app.handle('that one','help');app.handle('that one','help')
-        positions=[]
-        for key,voice in (('Ctrl+Down','next sentence'),('Ctrl+Up','previous sentence')):
-            positions.append(self.both('help',key,voice,setup=open_topic,state=lambda:app.help_session.reading.position))
+        app.help_session.topic_index=topic;app.help_session.level='topics';app.handle('that one','help');app.handle('that one','help')
         self.assertEqual(app.help_session.level,'article')
+        self.assertNotIn('Ctrl+Down',SCREEN_KEYS.get('help',{}))
+        start=app.help_session.reading.position
+        app.handle('next sentence','help')
+        self.assertGreater(app.help_session.reading.position,start)
 
     def test_tutorial_keys_match_voice(self):
         def fresh():

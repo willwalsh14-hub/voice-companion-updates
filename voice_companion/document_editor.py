@@ -1467,7 +1467,7 @@ class VoiceDocument:
                 current_end = current_base+len(self.paragraphs[self.cursor].text)
                 if not current_base <= self.reading.position <= current_end: self.reading.position = current_base
             looked_from = self.reading.position
-            result = self.reading.read(direction == 'top') if unit == 'read' else self.reading.move(unit, direction)
+            result = self.reading.read(direction) if unit == 'read' else self.reading.move(unit, direction)
             # "Read current line" reads the line and leaves you where you were in it.
             look = unit in ('paragraph', 'line') and direction == 0
             if look: self.reading.position = looked_from

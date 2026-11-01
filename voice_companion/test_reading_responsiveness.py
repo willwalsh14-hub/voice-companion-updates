@@ -43,7 +43,7 @@ class ReadingResponsivenessTests(unittest.TestCase):
         for unit in ('character','word','line','sentence','paragraph'):
             cursor.position=0;value=cursor.move(unit,1);self.assertNotRegex(value,r'^(Character|Word|Line|Sentence|Paragraph) \d+ of ')
             spans=cursor._spans(unit);cursor.move(unit,-1);self.assertIs(cursor._spans(unit),spans)
-        cursor.set_text('a b\nc');cursor.position=0;self.assertEqual(cursor.move('character',1),'space');cursor.position=2;self.assertEqual(cursor.move('character',1),'new line')
+        cursor.set_text('a b\nc');cursor.position=0;self.assertEqual(cursor.move('character',1),'space');cursor.position=2;self.assertEqual(cursor.move('character',1),'Blank.')   # a line break says Blank, as the arrows do
         cursor.position=1;self.assertEqual(cursor.move('word',-1),'a');cursor.position=1;self.assertEqual(cursor.move('word',1),'b')
     def test_keyboard_and_voice_share_position_and_cross_paragraphs(self):
         with tempfile.TemporaryDirectory() as folder:
